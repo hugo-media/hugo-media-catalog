@@ -1,0 +1,30 @@
+export const TABLE = 'hmg_catalog_products';
+export const BUCKET = 'hmg-catalog-photos';
+export const MAX_IMAGES = 8;
+export const SPEC_KEYS = ['cpu','generation','ram','ssd','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise'];
+export function validateProduct(p){
+ if(!String(p.name||'').trim()||!String(p.brand||'').trim())throw Error('validation');
+ if(String(p.name).length>180||String(p.brand).length>80)throw Error('validation');
+ if(!Number.isFinite(Number(p.price))||Number(p.price)<0||Number(p.price)>10000000)throw Error('validation');
+ if(!Number.isInteger(Number(p.cat))||Number(p.cat)<0||Number(p.cat)>5)throw Error('validation');
+ if(!Number.isInteger(Number(p.status))||Number(p.status)<0||Number(p.status)>3)throw Error('validation');
+ if((p.images||[]).length>MAX_IMAGES)throw Error('validation');
+ for(const k of ['descUk','descPl'])if(String(p[k]||'').length>10000)throw Error('validation');
+}
+export function toRow(p){validateProduct(p);return {name:p.name.trim(),brand:p.brand.trim(),cat:Number(p.cat),status:Number(p.status),price:Math.round(Number(p.price)*100)/100,condition:String(p.condition||''),warranty:String(p.warranty||''),desc_uk:String(p.descUk||''),desc_pl:String(p.descPl||''),images:p.images||[],specs:Object.fromEntries(SPEC_KEYS.map(k=>[k,String(p[k]||'').trim()]))};}
+export function fromRow(r){return {...r,...r.specs,price:Number(r.price),descUk:r.desc_uk||'',descPl:r.desc_pl||'',images:Array.isArray(r.images)?r.images:[]};}
+export function reconcileCart(ids,products){return [...new Set(ids)].filter(id=>products.some(p=>p.id===id&&p.status===0));}
+export function orderText(items,lang='uk',origin=''){
+ const lines=[lang==='pl'?'Dzień dobry! Interesują mnie te produkty:':'Вітаю! Цікавлять ці товари:'];
+ for(const p of items){lines.push(`• ${p.name} / HMG-${String(p.id).padStart(3,'0')} — ${Number(p.price).toFixed(2)} zł`);if(origin)lines.push(`${origin}/?product=${p.id}`);}
+ const total=Math.round(items.reduce((s,p)=>s+Math.round(p.price*100),0));
+ lines.push(`${lang==='pl'?'Razem':'Разом'}: ${(total/100).toFixed(2)} zł`);
+ lines.push(lang==='pl'?'Proszę o potwierdzenie dostępności.':'Прошу підтвердити наявність.');return lines.join('\n');
+}
+export function telegramLink(text){return `https://t.me/HUGO_Media?text=${encodeURIComponent(text)}`;}
+export function publicConfigValid(c){
+ try { const url=new URL(c.supabaseUrl);if(url.protocol!=='https:'||!url.hostname.endsWith('.supabase.co')||url.pathname!=='/'||url.search||url.hash||url.username||url.password)return false;
+ const key=c.supabaseKey||'';if(key.startsWith('sb_publishable_'))return key.length>25;
+ const payload=JSON.parse(atob(key.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));return payload.role==='anon';
+ }catch{return false;}
+}
