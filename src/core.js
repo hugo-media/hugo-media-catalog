@@ -1,13 +1,18 @@
 export const TABLE = 'hmg_catalog_products';
 export const BUCKET = 'hmg-catalog-photos';
 export const MAX_IMAGES = 8;
-export const SPEC_KEYS = ['cpu','generation','ram','ssd','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise'];
+export const SPEC_KEYS = ['cpu','generation','ram','ssd','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','bestseller','discount'];
+export const DISCOUNTS = [0,5,10,15,20,25,30];
+export function discountPercent(p){const value=Number(p?.discount||0);return DISCOUNTS.includes(value)?value:0;}
+export function effectivePrice(p){return Math.round(Number(p.price)*(100-discountPercent(p)))/100;}
 export function validateProduct(p){
  if(!String(p.name||'').trim()||!String(p.brand||'').trim())throw Error('validation');
  if(String(p.name).length>180||String(p.brand).length>80)throw Error('validation');
  if(!Number.isFinite(Number(p.price))||Number(p.price)<0||Number(p.price)>10000000)throw Error('validation');
  if(!Number.isInteger(Number(p.cat))||Number(p.cat)<0||Number(p.cat)>5)throw Error('validation');
  if(!Number.isInteger(Number(p.status))||Number(p.status)<0||Number(p.status)>3)throw Error('validation');
+ if(!DISCOUNTS.includes(Number(p.discount||0)))throw Error('validation');
+ if(!['','true'].includes(String(p.bestseller||'')))throw Error('validation');
  if((p.images||[]).length>MAX_IMAGES)throw Error('validation');
  for(const k of ['descUk','descPl'])if(String(p[k]||'').length>10000)throw Error('validation');
 }
@@ -16,8 +21,8 @@ export function fromRow(r){return {...r,...r.specs,price:Number(r.price),descUk:
 export function reconcileCart(ids,products){return [...new Set(ids)].filter(id=>products.some(p=>p.id===id&&p.status===0));}
 export function orderText(items,lang='uk',origin=''){
  const lines=[lang==='pl'?'Dzień dobry! Interesują mnie te produkty:':'Вітаю! Цікавлять ці товари:'];
- for(const p of items){lines.push(`• ${p.name} / HMG-${String(p.id).padStart(3,'0')} — ${Number(p.price).toFixed(2)} zł`);if(origin)lines.push(`${origin}/?product=${p.id}`);}
- const total=Math.round(items.reduce((s,p)=>s+Math.round(p.price*100),0));
+ for(const p of items){lines.push(`• ${p.name} / HMG-${String(p.id).padStart(3,'0')} — ${effectivePrice(p).toFixed(2)} zł${discountPercent(p)?` (-${discountPercent(p)}%)`:''}`);if(origin)lines.push(`${origin}/?product=${p.id}`);}
+ const total=Math.round(items.reduce((s,p)=>s+Math.round(effectivePrice(p)*100),0));
  lines.push(`${lang==='pl'?'Razem':'Разом'}: ${(total/100).toFixed(2)} zł`);
  lines.push(lang==='pl'?'Proszę o potwierdzenie dostępności.':'Прошу підтвердити наявність.');return lines.join('\n');
 }
