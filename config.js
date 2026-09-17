@@ -1,2 +1,1 @@
-// Generated from PUBLIC Supabase settings at deployment. Never place secrets here.
-window.HUGO_CONFIG = {supabaseUrl:'',supabaseKey:''};
+window.HUGO_CONFIG = {"supabaseUrl":"https://lukxdctqcaprfwfisblw.supabase.co","supabaseKey":"sb_publishable_nov2XVq5M5oDulcz-ieUbg_YS7_oDQt"};

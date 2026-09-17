@@ -13,7 +13,7 @@ UA/PL catalog for notebooks, phones, tablets, headphones, smartwatches and monit
 
 ## Current deployment state
 
-Application code is ready for integration. The actual Supabase project, owner account and Vercel deployment still need to be configured and verified. Do not describe this as a deployed or end-to-end tested service until the checklist below has passed.
+Supabase schema and photo bucket were applied to project lukxdctqcaprfwfisblw. Transactional anonymous/non-admin/admin database access tests passed, and the temporary test records were rolled back. The actual owner account remains to be provisioned; there are no real products yet. A Vercel preview deployment was submitted; final readiness and browser acceptance remain to be verified.
 
 `prototype.html` is the approved design reference only. The production build excludes it and its simulated admin UI.
 
@@ -44,7 +44,7 @@ Photo objects are public merchandise images, including uploaded photos that have
 
 Import **hugo-media/hugo-media-catalog** into the intended Vercel account. The supplied `vercel.json` sets the build command and `dist` output. No new paid service should be enabled.
 
-Set these environment variables:
+Public client settings are supplied in public-config.json (safe to expose; all write access is enforced by RLS). The following environment variables can override them:
 
 - `SUPABASE_URL`
 - `SUPABASE_PUBLISHABLE_KEY` (preferred), or legacy `SUPABASE_ANON_KEY`
