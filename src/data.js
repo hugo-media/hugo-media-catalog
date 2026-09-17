@@ -1,15 +1,17 @@
 import {TABLE,BUCKET,toRow,fromRow,publicConfigValid} from './core.js';
 let client;
 export const ready = publicConfigValid(window.HUGO_CONFIG||{});
+export const authCallback = /(?:[?#&](?:type=invite|type=recovery|code)=)/.test(location.href);
 export async function connect(){
  if(!ready)throw Error('configuration');
- if(!client){const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.57.4');client=createClient(window.HUGO_CONFIG.supabaseUrl,window.HUGO_CONFIG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:'hmg-catalog-auth'}});}
+ if(!client){const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.57.4');client=createClient(window.HUGO_CONFIG.supabaseUrl,window.HUGO_CONFIG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'hmg-catalog-auth'}});}
  return client;
 }
 export async function listProducts(){const c=await connect();const products=[];for(let start=0;;start+=500){const {data,error}=await c.from(TABLE).select('*').order('id',{ascending:false}).range(start,start+499);if(error)throw error;products.push(...data.map(fromRow));if(data.length<500)break;}return products;}
 export async function isAdmin(){const c=await connect();const {data:{session}}=await c.auth.getSession();if(!session)return false;const {data,error}=await c.rpc('hmg_catalog_is_admin');if(error)throw error;return data===true;}
 export async function signIn(email,password){const c=await connect();const {error}=await c.auth.signInWithPassword({email,password});if(error)throw error;if(!await isAdmin()){await c.auth.signOut();throw Error('notAdmin');}}
 export async function signOut(){const c=await connect();const {error}=await c.auth.signOut({scope:'local'});if(error)throw error;}
+export async function updatePassword(password){const c=await connect();const {error}=await c.auth.updateUser({password});if(error)throw error;}
 export function photoUrl(path){if(!path)return '';const url=window.HUGO_CONFIG?.supabaseUrl;if(!url)return '';return `${url}/storage/v1/object/public/${BUCKET}/${path.split('/').map(encodeURIComponent).join('/')}`;}
 export async function compressPhoto(file){
  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>10*1024*1024)throw Error('imageError');

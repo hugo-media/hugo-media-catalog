@@ -20,3 +20,10 @@
 2. Verify deployment readiness after Vercel scope access is granted. Do not create duplicate projects/deployments just to work around the access denial.
 3. Connect the Vercel project's Git integration to this GitHub repo if desired; the current API preview uploaded build files directly.
 4. Perform real admin login/upload/persistence and customer/mobile tests. Import only verified current inventory and genuine photos.
+
+## Owner provisioning — 2026-09-17
+
+- The owner's Supabase Auth invitation was sent successfully and the administrator allowlist was populated.
+- A database trigger limits automatic owner provisioning to the configured account. The address and internal Auth ID are intentionally omitted from this public repository.
+- The one-time provisioning endpoint was immediately replaced by an HTTP 410-only implementation.
+- The frontend accepts the invite callback and requires a password of at least 8 characters.
