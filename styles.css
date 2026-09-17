@@ -142,3 +142,18 @@ body{margin:0;background:#faf9fc}#hugo-preview{max-width:1240px;margin:auto;bord
  #hugo-preview .hp-telegram-band{display:block;padding:23px 19px}
  #hugo-preview .hp-telegram-band .hp-button{width:100%;margin-top:15px}
 }
+
+/* Bestseller and promotional pricing. */
+#hugo-preview .hp-card-badges{display:flex;max-width:calc(100% - 20px);gap:5px;flex-wrap:wrap}
+#hugo-preview .hp-card-badges .hp-badge-best,#hugo-preview .hp-detail-badges .hp-badge-best{background:#32264a;color:#fff}
+#hugo-preview .hp-card-badges .hp-badge-sale,#hugo-preview .hp-detail-badges .hp-badge-sale{background:#d83a62;color:#fff}
+#hugo-preview .hp-price-stack{display:flex;min-width:0;flex-direction:column;align-items:flex-start;line-height:1.1}
+#hugo-preview .hp-old-price{color:#8a8492;font-size:12px;font-weight:500;text-decoration:line-through;white-space:nowrap}
+#hugo-preview .hp-price-stack .hp-money{color:#c42d54}
+#hugo-preview .hp-detail-badges{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:10px 0 4px}
+#hugo-preview .hp-detail-badges .hp-badge-best,#hugo-preview .hp-detail-badges .hp-badge-sale{display:inline-flex;padding:4px 9px;border-radius:6px;font-size:12px;font-weight:700}
+#hugo-preview .hp-detail-price{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+#hugo-preview .hp-detail-price .hp-old-price{font-size:15px}
+#hugo-preview .hp-sale-price{color:#c42d54;font-size:34px;font-weight:700;letter-spacing:-.8px}
+#hugo-preview .hp-sale-price small{font-size:16px;font-weight:500}
+@media(max-width:650px){#hugo-preview .hp-card-badges{top:7px;left:7px;gap:3px}#hugo-preview .hp-card-badges span{padding:3px 5px;font-size:10px}#hugo-preview .hp-product-foot{align-items:flex-end}}
