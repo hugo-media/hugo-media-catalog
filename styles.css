@@ -157,3 +157,10 @@ body{margin:0;background:#faf9fc}#hugo-preview{max-width:1240px;margin:auto;bord
 #hugo-preview .hp-sale-price{color:#c42d54;font-size:34px;font-weight:700;letter-spacing:-.8px}
 #hugo-preview .hp-sale-price small{font-size:16px;font-weight:500}
 @media(max-width:650px){#hugo-preview .hp-card-badges{top:7px;left:7px;gap:3px}#hugo-preview .hp-card-badges span{padding:3px 5px;font-size:10px}#hugo-preview .hp-product-foot{align-items:flex-end}}
+
+/* Product actions: direct order and product media in the public Telegram channel. */
+#hugo-preview .hp-detail-actions{display:flex;gap:9px;flex-wrap:wrap;margin:16px 0}
+#hugo-preview .hp-channel-button{background:#229ed9;border-color:#229ed9;color:#fff}
+#hugo-preview .hp-channel-button:hover{background:#178dca;filter:none}
+#hugo-preview .hp-choice-button{background:#fff}
+@media(max-width:650px){#hugo-preview .hp-detail-actions .hp-button{width:100%}}
