@@ -1,10 +1,16 @@
 export const TABLE = 'hmg_catalog_products';
 export const BUCKET = 'hmg-catalog-photos';
 export const MAX_IMAGES = 8;
-export const SPEC_KEYS = ['cpu','generation','ram','ssd','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','bestseller','discount'];
+export const SPEC_KEYS = ['cpu','generation','ram','ssd','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','bestseller','discount','telegramPost'];
 export const DISCOUNTS = [0,5,10,15,20,25,30];
+export const TELEGRAM_CHANNEL = 'https://t.me/h_m_g_pl';
 export function discountPercent(p){const value=Number(p?.discount||0);return DISCOUNTS.includes(value)?value:0;}
 export function effectivePrice(p){return Math.round(Number(p.price)*(100-discountPercent(p)))/100;}
+export function validTelegramPost(value=''){
+ if(!value)return true;
+ try{const url=new URL(String(value));return url.protocol==='https:'&&url.hostname==='t.me'&&/^\/h_m_g_pl(?:\/\d+)?\/?$/.test(url.pathname)&&!url.search&&!url.hash&&!url.username&&!url.password;}catch{return false;}
+}
+export function telegramPostUrl(value=''){return value&&validTelegramPost(value)?new URL(String(value)).href:TELEGRAM_CHANNEL;}
 export function validateProduct(p){
  if(!String(p.name||'').trim()||!String(p.brand||'').trim())throw Error('validation');
  if(String(p.name).length>180||String(p.brand).length>80)throw Error('validation');
@@ -13,6 +19,7 @@ export function validateProduct(p){
  if(!Number.isInteger(Number(p.status))||Number(p.status)<0||Number(p.status)>3)throw Error('validation');
  if(!DISCOUNTS.includes(Number(p.discount||0)))throw Error('validation');
  if(!['','true'].includes(String(p.bestseller||'')))throw Error('validation');
+ if(!validTelegramPost(p.telegramPost))throw Error('validation');
  if((p.images||[]).length>MAX_IMAGES)throw Error('validation');
  for(const k of ['descUk','descPl'])if(String(p[k]||'').length>10000)throw Error('validation');
 }
