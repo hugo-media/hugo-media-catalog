@@ -6,11 +6,12 @@ export const DISCOUNTS = [0,5,10,15,20,25,30];
 export const TELEGRAM_CHANNEL = 'https://t.me/h_m_g_pl';
 export function discountPercent(p){const value=Number(p?.discount||0);return DISCOUNTS.includes(value)?value:0;}
 export function effectivePrice(p){return Math.round(Number(p.price)*(100-discountPercent(p)))/100;}
-export function validTelegramPost(value=''){
- if(!value)return true;
- try{const url=new URL(String(value));return url.protocol==='https:'&&url.hostname==='t.me'&&/^\/h_m_g_pl(?:\/\d+)?\/?$/.test(url.pathname)&&!url.search&&!url.hash&&!url.username&&!url.password;}catch{return false;}
+export function normalizeTelegramPost(value=''){
+ const raw=String(value||'').trim();if(!raw)return '';
+ try{const url=new URL(/^https?:\/\//i.test(raw)?raw:`https://${raw}`);const host=url.hostname.toLowerCase().replace(/^www\./,'');let path=url.pathname.replace(/^\/s\//,'/').replace(/\/+$/,'');if(!['t.me','telegram.me'].includes(host)||!/^\/h_m_g_pl(?:\/\d+)?$/.test(path)||url.username||url.password)return null;return `https://t.me${path}`;}catch{return null;}
 }
-export function telegramPostUrl(value=''){return value&&validTelegramPost(value)?new URL(String(value)).href:TELEGRAM_CHANNEL;}
+export function validTelegramPost(value=''){return normalizeTelegramPost(value)!==null;}
+export function telegramPostUrl(value=''){return normalizeTelegramPost(value)||TELEGRAM_CHANNEL;}
 export function validateProduct(p){
  if(!String(p.name||'').trim()||!String(p.brand||'').trim())throw Error('validation');
  if(String(p.name).length>180||String(p.brand).length>80)throw Error('validation');
@@ -23,7 +24,7 @@ export function validateProduct(p){
  if((p.images||[]).length>MAX_IMAGES)throw Error('validation');
  for(const k of ['descUk','descPl'])if(String(p[k]||'').length>10000)throw Error('validation');
 }
-export function toRow(p){validateProduct(p);return {name:p.name.trim(),brand:p.brand.trim(),cat:Number(p.cat),status:Number(p.status),price:Math.round(Number(p.price)*100)/100,condition:String(p.condition||''),warranty:String(p.warranty||''),desc_uk:String(p.descUk||''),desc_pl:String(p.descPl||''),images:p.images||[],specs:Object.fromEntries(SPEC_KEYS.map(k=>[k,String(p[k]||'').trim()]))};}
+export function toRow(p){validateProduct(p);return {name:p.name.trim(),brand:p.brand.trim(),cat:Number(p.cat),status:Number(p.status),price:Math.round(Number(p.price)*100)/100,condition:String(p.condition||''),warranty:String(p.warranty||''),desc_uk:String(p.descUk||''),desc_pl:String(p.descPl||''),images:p.images||[],specs:Object.fromEntries(SPEC_KEYS.map(k=>[k,k==='telegramPost'?normalizeTelegramPost(p[k]):String(p[k]||'').trim()]))};}
 export function fromRow(r){return {...r,...r.specs,price:Number(r.price),descUk:r.desc_uk||'',descPl:r.desc_pl||'',images:Array.isArray(r.images)?r.images:[]};}
 export function reconcileCart(ids,products){return [...new Set(ids)].filter(id=>products.some(p=>p.id===id&&p.status===0));}
 export function orderText(items,lang='uk',origin=''){
