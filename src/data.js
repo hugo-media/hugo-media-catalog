@@ -1,7 +1,7 @@
 import {TABLE,BUCKET,toRow,fromRow,publicConfigValid} from './core.js';
 let client;
 export const ready = publicConfigValid(window.HUGO_CONFIG||{});
-export const authCallback = /(?:[?#&](?:type=invite|type=recovery|code)=)/.test(location.href);
+export const authCallback = /(?:[?#&]type=(?:invite|recovery)(?:&|$)|[?&]code=[^&]+)/.test(location.href);
 export async function connect(){
  if(!ready)throw Error('configuration');
  if(!client){const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.57.4');client=createClient(window.HUGO_CONFIG.supabaseUrl,window.HUGO_CONFIG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'hmg-catalog-auth'}});}
