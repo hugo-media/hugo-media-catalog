@@ -59,3 +59,86 @@ body{margin:0;background:#faf9fc}#hugo-preview{max-width:1240px;margin:auto;bord
  #hugo-preview .hp-form-actions .hp-button{flex:1}
  #hugo-preview .hp-admin-row{padding:13px}
 }
+
+/* Storefront home inspired by premium refurbished-tech shops. */
+#hugo-preview .hp-home-hero{position:relative;display:grid;grid-template-columns:minmax(0,1.12fr) minmax(320px,.88fr);min-height:390px;overflow:hidden;margin-bottom:14px;border-radius:20px;background:linear-gradient(125deg,#252134 0%,#342853 55%,#7650c7 100%);color:#fff;box-shadow:0 20px 50px #30214122}
+#hugo-preview .hp-home-copy{position:relative;z-index:2;align-self:center;max-width:650px;padding:48px 44px}
+#hugo-preview .hp-home-copy .hp-kicker{color:#d6c5ff}
+#hugo-preview .hp-home-copy h1{max-width:620px;margin-bottom:16px;font-size:clamp(38px,5vw,62px);line-height:1.02;letter-spacing:-2.4px}
+#hugo-preview .hp-home-copy p{max-width:590px;margin-bottom:25px;color:#e8e2f2;font-size:17px;line-height:1.65}
+#hugo-preview .hp-home-actions{display:flex;gap:10px;flex-wrap:wrap}
+#hugo-preview .hp-home-hero .hp-button:not(.hp-primary){border-color:#ffffff42;background:#ffffff12;color:#fff}
+#hugo-preview .hp-home-hero .hp-primary{background:#a977ff;border-color:#a977ff}
+#hugo-preview .hp-device-stage{position:relative;min-height:390px}
+#hugo-preview .hp-device-stage:after{content:"";position:absolute;width:300px;height:300px;right:38px;top:43px;border-radius:50%;background:#ffffff12;box-shadow:0 0 90px #caa9ff38}
+#hugo-preview .hp-device-card{position:absolute;z-index:2;display:flex;align-items:center;justify-content:center;border:1px solid #ffffff54;background:linear-gradient(145deg,#ffffff32,#ffffff12);box-shadow:0 22px 45px #160f2738;backdrop-filter:blur(10px);color:#fff}
+#hugo-preview .hp-device-card svg{width:45%;height:45%;stroke-width:1.15}
+#hugo-preview .hp-device-main{right:58px;top:75px;width:255px;height:185px;border-radius:18px;transform:rotate(-4deg)}
+#hugo-preview .hp-device-main span{position:absolute;bottom:16px;font-size:12px;letter-spacing:3px;font-weight:700}
+#hugo-preview .hp-device-phone{right:18px;top:190px;width:92px;height:158px;border-radius:22px;transform:rotate(8deg)}
+#hugo-preview .hp-device-watch{right:278px;top:230px;width:95px;height:95px;border-radius:26px;transform:rotate(-10deg)}
+#hugo-preview .hp-orbit{position:absolute;z-index:1;border:1px solid #ffffff24;border-radius:50%}
+#hugo-preview .hp-orbit-one{right:8px;top:22px;width:360px;height:360px}
+#hugo-preview .hp-orbit-two{right:60px;top:74px;width:260px;height:260px}
+#hugo-preview .hp-benefits{display:grid;grid-template-columns:repeat(3,1fr);margin-bottom:38px;border:1px solid var(--hp-line);border-radius:14px;background:#fff;box-shadow:0 8px 25px #3021410a}
+#hugo-preview .hp-benefits>div{display:flex;align-items:center;gap:13px;padding:20px 22px;border-right:1px solid var(--hp-line)}
+#hugo-preview .hp-benefits>div:last-child{border-right:0}
+#hugo-preview .hp-benefits svg{width:25px;height:25px;color:var(--hp-purple)}
+#hugo-preview .hp-benefits span{display:flex;min-width:0;flex-direction:column}
+#hugo-preview .hp-benefits b{font-size:14px}
+#hugo-preview .hp-benefits small{margin-top:2px;color:var(--hp-muted);font-size:12px;line-height:1.35}
+#hugo-preview .hp-home-section{margin:0 0 42px}
+#hugo-preview .hp-section-title{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:17px}
+#hugo-preview .hp-section-title h2{margin:0;font-size:28px}
+#hugo-preview .hp-section-title .hp-kicker{margin-bottom:5px}
+#hugo-preview .hp-home-link{display:flex;align-items:center;gap:7px;border:0;background:transparent;color:#6640ab;font-weight:700}
+#hugo-preview .hp-home-link:hover{color:#3e226f}
+#hugo-preview .hp-home-categories{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#hugo-preview .hp-home-category{position:relative;display:grid;grid-template-columns:66px 1fr auto;align-items:center;gap:14px;min-height:100px;padding:15px 17px;border:1px solid #ddd7e7;border-radius:14px;background:#fff;color:var(--hp-ink);text-align:left;box-shadow:0 5px 18px #30214108;transition:transform .16s,border-color .16s,box-shadow .16s}
+#hugo-preview .hp-home-category:hover{transform:translateY(-2px);border-color:#ad94df;box-shadow:0 12px 30px #30214114}
+#hugo-preview .hp-home-category>.hp-home-category-icon{display:flex;width:64px;height:64px;align-items:center;justify-content:center;border-radius:13px;background:linear-gradient(145deg,#f5f1fc,#e9defb);color:#6d43bd}
+#hugo-preview .hp-home-category-icon svg{width:31px;height:31px;stroke-width:1.45}
+#hugo-preview .hp-home-category>span:nth-child(2){display:flex;flex-direction:column;gap:4px}
+#hugo-preview .hp-home-category b{font-size:16px}
+#hugo-preview .hp-home-category small{color:var(--hp-muted);font-size:12px}
+#hugo-preview .hp-home-category>svg{width:18px;color:#8a7a9c}
+#hugo-preview .hp-home-products{grid-template-columns:repeat(4,minmax(0,1fr))}
+#hugo-preview .hp-product{position:relative}
+#hugo-preview .hp-card-badges{position:absolute;z-index:3;top:10px;left:10px}
+#hugo-preview .hp-card-badges span{display:inline-flex;padding:4px 8px;border-radius:6px;background:#fff;color:#573b88;box-shadow:0 2px 8px #241b311a;font-size:11px;font-weight:700}
+#hugo-preview .hp-product-brand{margin-bottom:4px;color:#786d82;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+#hugo-preview .hp-home-products .hp-photo{height:180px}
+#hugo-preview .hp-telegram-band{display:flex;align-items:center;justify-content:space-between;gap:25px;margin:0 0 10px;padding:30px 34px;border-radius:17px;background:linear-gradient(120deg,#eee6fb,#faf8fd);border:1px solid #dcd0ee}
+#hugo-preview .hp-telegram-band h2{margin-bottom:6px}
+#hugo-preview .hp-telegram-band p{margin:0;color:var(--hp-muted)}
+
+@media(max-width:900px){
+ #hugo-preview .hp-home-hero{grid-template-columns:1fr minmax(250px,.65fr)}
+ #hugo-preview .hp-home-copy{padding:38px 30px}
+ #hugo-preview .hp-device-main{right:35px;width:210px;height:155px}
+ #hugo-preview .hp-device-watch{right:205px}
+ #hugo-preview .hp-home-products{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #hugo-preview .hp-home-categories{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:650px){
+ #hugo-preview .hp-home-hero{display:block;min-height:0;border-radius:15px}
+ #hugo-preview .hp-home-copy{padding:31px 21px 28px}
+ #hugo-preview .hp-home-copy h1{font-size:38px;letter-spacing:-1.5px}
+ #hugo-preview .hp-home-copy p{font-size:15px}
+ #hugo-preview .hp-home-actions .hp-button{width:100%}
+ #hugo-preview .hp-device-stage{display:none}
+ #hugo-preview .hp-benefits{grid-template-columns:1fr;margin-bottom:30px}
+ #hugo-preview .hp-benefits>div{padding:15px 17px;border-right:0;border-bottom:1px solid var(--hp-line)}
+ #hugo-preview .hp-benefits>div:last-child{border-bottom:0}
+ #hugo-preview .hp-home-section{margin-bottom:32px}
+ #hugo-preview .hp-section-title{align-items:center}
+ #hugo-preview .hp-section-title h2{font-size:23px}
+ #hugo-preview .hp-home-categories{grid-template-columns:1fr;gap:9px}
+ #hugo-preview .hp-home-category{grid-template-columns:54px 1fr auto;min-height:80px;padding:12px}
+ #hugo-preview .hp-home-category>.hp-home-category-icon{width:52px;height:52px}
+ #hugo-preview .hp-home-category-icon svg{width:26px;height:26px}
+ #hugo-preview .hp-home-products{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ #hugo-preview .hp-home-products .hp-photo{height:135px}
+ #hugo-preview .hp-telegram-band{display:block;padding:23px 19px}
+ #hugo-preview .hp-telegram-band .hp-button{width:100%;margin-top:15px}
+}
