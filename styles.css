@@ -179,8 +179,13 @@ body{margin:0;background:#faf9fc}#hugo-preview{max-width:1240px;margin:auto;bord
 #hugo-preview .hp-stat-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0;border-top:1px solid var(--hp-line);font-size:13px}
 #hugo-preview .hp-stat-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #hugo-preview .hp-stat-row b{flex:0 0 auto;color:var(--hp-purple)}
+#hugo-preview .hp-stat-recent{grid-column:span 2}
+#hugo-preview .hp-stat-journey>span{display:grid;gap:2px;white-space:normal}
+#hugo-preview .hp-stat-journey>span b{color:var(--hp-ink);font-size:12px}
+#hugo-preview .hp-stat-journey small{color:var(--hp-muted);line-height:1.35}
+#hugo-preview .hp-stat-journey time{flex:0 0 auto;color:var(--hp-muted);font-size:11px;white-space:nowrap}
 @media(max-width:1000px){#hugo-preview .hp-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}#hugo-preview .hp-stat-sections{grid-template-columns:1fr 1fr}}
-@media(max-width:650px){#hugo-preview .hp-admin-tabs .hp-button{min-width:0;flex:1}#hugo-preview .hp-stats-head{align-items:flex-start}#hugo-preview .hp-stats-head .hp-sort{width:100%;margin-top:13px}#hugo-preview .hp-stat-grid{grid-template-columns:1fr 1fr;gap:9px}#hugo-preview .hp-stat-card{min-height:98px;padding:14px}#hugo-preview .hp-stat-card strong{font-size:27px}#hugo-preview .hp-stat-sections{grid-template-columns:1fr}}
+@media(max-width:650px){#hugo-preview .hp-admin-tabs .hp-button{min-width:0;flex:1}#hugo-preview .hp-stats-head{align-items:flex-start}#hugo-preview .hp-stats-head .hp-sort{width:100%;margin-top:13px}#hugo-preview .hp-stat-grid{grid-template-columns:1fr 1fr;gap:9px}#hugo-preview .hp-stat-card{min-height:98px;padding:14px}#hugo-preview .hp-stat-card strong{font-size:27px}#hugo-preview .hp-stat-sections{grid-template-columns:1fr}#hugo-preview .hp-stat-recent{grid-column:auto}}
 
 /* Sales tools: comparison, bundles, trust and reviews. */
 #hugo-preview .hp-card-actions{display:flex;align-items:center;gap:7px}

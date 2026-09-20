@@ -101,10 +101,13 @@ create policy hmg_analytics_admin_select on public.hmg_catalog_events for select
  using ((select public.hmg_catalog_is_admin()));
 alter table public.hmg_catalog_events
  add column if not exists traffic_source text not null default '' check (char_length(traffic_source)<=80);
+alter table public.hmg_catalog_events
+ add column if not exists destination text not null default '' check (char_length(destination)<=80);
 alter table public.hmg_catalog_events drop constraint if exists hmg_catalog_events_event_type_check;
 alter table public.hmg_catalog_events add constraint hmg_catalog_events_event_type_check
  check (event_type in ('page_view','product_view','telegram_click','catalog_click','cart_add','compare_add','bundle_select'));
 grant insert (traffic_source) on public.hmg_catalog_events to anon,authenticated;
+grant insert (destination) on public.hmg_catalog_events to anon,authenticated;
 create table if not exists public.hmg_catalog_reviews (
  id bigint generated always as identity primary key,
  customer_name text not null check (char_length(btrim(customer_name)) between 1 and 80),
