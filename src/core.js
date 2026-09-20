@@ -6,7 +6,7 @@ export const DISCOUNTS = [0,5,10,15,20,25,30];
 export const TELEGRAM_CHANNEL = 'https://t.me/h_m_g_pl';
 export const PURPOSES = ['study','office','programming','editing','gaming','travel'];
 export const BENEFITS = ['tested','metal','battery','keyboard','touch','light','gradeA'];
-export const BUNDLES = {mouse:45,bag:70,setup:50,upgrade:0};
+export const BUNDLES = {mouse:45,office:200,photoshop:200,software:0,setup:50,upgrade:0};
 export function csv(value=''){return [...new Set(String(value||'').split(',').map(v=>v.trim()).filter(Boolean))];}
 export function discountPercent(p){const value=Number(p?.discount||0);return DISCOUNTS.includes(value)?value:0;}
 export function effectivePrice(p){return Math.round(Number(p.price)*(100-discountPercent(p)))/100;}
@@ -40,7 +40,7 @@ export function orderText(items,lang='uk',origin='',bundleSelections={}){
  lines.push(`${lang==='pl'?'Razem':'Разом'}: ${(total/100).toFixed(2)} zł`);
  lines.push(lang==='pl'?'Proszę o potwierdzenie dostępności.':'Прошу підтвердити наявність.');return lines.join('\n');
 }
-export function bundleLabel(key,lang='uk'){const labels={uk:{mouse:'Мишка',bag:'Сумка для ноутбука',setup:'Налаштування Windows',upgrade:'Апгрейд RAM/SSD — узгодити'},pl:{mouse:'Mysz',bag:'Torba na laptopa',setup:'Konfiguracja Windows',upgrade:'Rozbudowa RAM/SSD — do ustalenia'}};return labels[lang]?.[key]||key;}
+export function bundleLabel(key,lang='uk'){const labels={uk:{mouse:'Мишка',office:'Встановлення Microsoft Office',photoshop:'Встановлення Adobe Photoshop',software:'Інші програми — за запитом',setup:'Налаштування Windows',upgrade:'Апгрейд RAM/SSD — узгодити'},pl:{mouse:'Mysz',office:'Instalacja Microsoft Office',photoshop:'Instalacja Adobe Photoshop',software:'Inne programy — na zapytanie',setup:'Konfiguracja Windows',upgrade:'Rozbudowa RAM/SSD — do ustalenia'}};return labels[lang]?.[key]||key;}
 export function telegramLink(text){return `https://t.me/HUGO_Media?text=${encodeURIComponent(text)}`;}
 export function publicConfigValid(c){
  try { const url=new URL(c.supabaseUrl);if(url.protocol!=='https:'||!url.hostname.endsWith('.supabase.co')||url.pathname!=='/'||url.search||url.hash||url.username||url.password)return false;
