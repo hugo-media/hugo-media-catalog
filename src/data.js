@@ -27,5 +27,24 @@ export async function saveProduct(p,pictures){
 }
 export async function setStatus(id,status){if(!await isAdmin())throw Error('notAdmin');const c=await connect();const {data,error}=await c.from(TABLE).update({status}).eq('id',id).select().single();if(error)throw error;return fromRow(data);}
 export async function deleteProduct(id){if(!await isAdmin())throw Error('notAdmin');const c=await connect();const {data,error}=await c.from(TABLE).delete().eq('id',id).select('id').single();if(error)throw error;return data;}
+export async function trackEvent(event){
+ if(!ready)return;const c=await connect();const {error}=await c.from('hmg_catalog_events').insert(event);if(error)throw error;
+}
+export async function listAnalytics(days=7){
+ if(!await isAdmin())throw Error('notAdmin');const c=await connect();const since=new Date(Date.now()-days*86400000).toISOString();const rows=[];
+ for(let start=0;;start+=1000){const {data,error}=await c.from('hmg_catalog_events').select('created_at,visitor_id,event_type,product_id,referrer_host,traffic_source,device_type').gte('created_at',since).order('created_at',{ascending:false}).range(start,start+999);if(error)throw error;rows.push(...data);if(data.length<1000)break;}
+ return rows;
+}
+export async function listReviews(){const c=await connect();const {data,error}=await c.from('hmg_catalog_reviews').select('*').order('created_at',{ascending:false});if(error)throw error;return data||[];}
+export async function saveReview(review,picture){
+ if(!await isAdmin())throw Error('notAdmin');const c=await connect();const {data:{user},error:userError}=await c.auth.getUser();if(userError||!user)throw Error('notAdmin');
+ let imagePath=typeof picture==='string'?picture:'';let staged='';
+ try{if(picture&&typeof picture!=='string'){staged=`${user.id}/${crypto.randomUUID()}.webp`;const {error}=await c.storage.from(BUCKET).upload(staged,picture.blob,{contentType:'image/webp',upsert:false,cacheControl:'3600'});if(error)throw error;imagePath=staged;}
+ const values={customer_name:String(review.customer_name||'').trim(),text_uk:String(review.text_uk||''),text_pl:String(review.text_pl||''),rating:Number(review.rating||5),image_path:imagePath,is_published:review.is_published!==false};
+ if(!values.customer_name||values.customer_name.length>80||values.text_uk.length>1200||values.text_pl.length>1200||values.rating<1||values.rating>5)throw Error('validation');
+ const request=review.id?c.from('hmg_catalog_reviews').update(values).eq('id',review.id):c.from('hmg_catalog_reviews').insert(values);const {data,error}=await request.select().single();if(error)throw error;return data;
+ }catch(error){if(staged)await c.storage.from(BUCKET).remove([staged]);throw error;}
+}
+export async function deleteReview(id){if(!await isAdmin())throw Error('notAdmin');const c=await connect();const {data,error}=await c.from('hmg_catalog_reviews').delete().eq('id',id).select('id').single();if(error)throw error;return data;}
 // Photos aren't deleted automatically: archive/duplicates may share a file.
 // The admin can explicitly clean unattached files via the storage dashboard.
