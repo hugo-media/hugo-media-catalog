@@ -119,13 +119,11 @@ export async function saveProduct(p, pictures) {
         continue;
       }
       const path = `${user.id}/${crypto.randomUUID()}.webp`;
-      const { error } = await c.storage
-        .from(BUCKET)
-        .upload(path, image.blob, {
-          contentType: "image/webp",
-          upsert: false,
-          cacheControl: "3600",
-        });
+      const { error } = await c.storage.from(BUCKET).upload(path, image.blob, {
+        contentType: "image/webp",
+        upsert: false,
+        cacheControl: "3600",
+      });
       if (error) throw error;
       staged.push(path);
       paths.push(path);
@@ -178,7 +176,11 @@ export async function trackEvent(event) {
 export async function listAnalytics(days = 7) {
   if (!(await isAdmin())) throw Error("notAdmin");
   const c = await connect();
-  const since = new Date(Date.now() - days * 86400000).toISOString();
+  const normalizedDays = [1, 7, 30].includes(Number(days)) ? Number(days) : 7;
+  const sinceDate = new Date();
+  sinceDate.setHours(0, 0, 0, 0);
+  sinceDate.setDate(sinceDate.getDate() - (normalizedDays - 1));
+  const since = sinceDate.toISOString();
   const rows = [];
   for (let start = 0; ; start += 1000) {
     const { data, error } = await c

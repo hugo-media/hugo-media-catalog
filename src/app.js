@@ -492,9 +492,48 @@ import {
     destOther: "Інший перехід",
     directTraffic: "Прямі переходи",
     noAnalytics: "Даних за цей період ще немає.",
-    days7: "7 днів",
-    days30: "30 днів",
-    days90: "90 днів",
+    day: "День",
+    week: "Тиждень",
+    month: "Місяць",
+    chartClose: "Закрити графік",
+    chartByHour: "Динаміка за годинами",
+    chartByDay: "Динаміка за днями",
+    chartTotal: "Значення за період",
+    chartEmpty: "За цей період подій ще немає.",
+    openChart: "Відкрити графік і пояснення",
+    analyticsClickHint: "Натисни на показник, щоб побачити графік і пояснення.",
+    recentTransitionsDesc:
+      "Останні анонімні переходи: звідки прийшла людина, куди натиснула і який товар дивилася.",
+    metricViewsDesc:
+      "Скільки разів відкривали сторінки сайту. Одна людина може створити кілька переглядів.",
+    metricVisitorsDesc:
+      "Орієнтовна кількість різних браузерів або пристроїв. Відвідувач визначається анонімним ID, а не ім’ям.",
+    metricProductViewsDesc:
+      "Скільки разів відкривали окремі сторінки товарів. Показує реальний інтерес до асортименту.",
+    metricChannelClicksDesc:
+      "Натискання кнопок, що ведуть у Telegram-канал. Це переходи, а не гарантовані підписки.",
+    metricContactClicksDesc:
+      "Натискання кнопок для особистого повідомлення в Telegram. Це найсильніший сигнал наміру зв’язатися.",
+    metricProductTelegramClicksDesc:
+      "Переходи з карток товарів до живих фото, відео й оглядів у Telegram-каналі.",
+    metricCatalogClicksDesc:
+      "Переходи зі стартової сторінки /start до каталогу товарів.",
+    metricFunnelConversionDesc:
+      "Частка сесій, які відкрили /start і потім натиснули перехід у Telegram-канал. Це головний показник ефективності посилання з TikTok.",
+    metricCartAddsDesc:
+      "Скільки разів товари додавали до «Мого вибору». Показує намір порівняти або замовити.",
+    metricCompareAddsDesc:
+      "Скільки разів товари додавали до порівняння характеристик.",
+    metricBundleAddsDesc:
+      "Скільки разів обирали додаткові послуги або комплекти до товару.",
+    metricDestinationsDesc:
+      "Куди люди переходять із сайту: канал, особисті повідомлення, огляд або замовлення.",
+    metricTopProductsDesc:
+      "Товари з найбільшою кількістю відкриттів за вибраний період.",
+    metricSourcesDesc:
+      "Звідки прийшли відвідувачі. UTM-мітка має пріоритет, інакше використовується сайт-джерело або прямий перехід.",
+    metricDevicesDesc:
+      "Розподіл переглядів за типами пристроїв: телефони, планшети та комп’ютери.",
     desktop: "Комп’ютер",
     tablet: "Планшет",
     mobile: "Телефон",
@@ -529,9 +568,47 @@ import {
     destOther: "Inne przejście",
     directTraffic: "Wejścia bezpośrednie",
     noAnalytics: "Brak danych za ten okres.",
-    days7: "7 dni",
-    days30: "30 dni",
-    days90: "90 dni",
+    day: "Dzień",
+    week: "Tydzień",
+    month: "Miesiąc",
+    chartClose: "Zamknij wykres",
+    chartByHour: "Dynamika godzinowa",
+    chartByDay: "Dynamika dzienna",
+    chartTotal: "Wartość za okres",
+    chartEmpty: "Brak zdarzeń w tym okresie.",
+    openChart: "Otwórz wykres i objaśnienie",
+    analyticsClickHint: "Kliknij wskaźnik, aby zobaczyć wykres i objaśnienie.",
+    recentTransitionsDesc:
+      "Ostatnie anonimowe przejścia: skąd przyszła osoba, gdzie kliknęła i jaki produkt oglądała.",
+    metricViewsDesc:
+      "Liczba otwarć stron serwisu. Jedna osoba może wygenerować kilka wyświetleń.",
+    metricVisitorsDesc:
+      "Szacunkowa liczba różnych przeglądarek lub urządzeń. Użytkownik jest rozpoznawany po anonimowym ID, nie po nazwisku.",
+    metricProductViewsDesc:
+      "Liczba otwarć stron poszczególnych produktów. Pokazuje rzeczywiste zainteresowanie ofertą.",
+    metricChannelClicksDesc:
+      "Kliknięcia prowadzące do kanału Telegram. Są to przejścia, a nie potwierdzone subskrypcje.",
+    metricContactClicksDesc:
+      "Kliknięcia rozpoczynające prywatną rozmowę w Telegramie. To mocny sygnał zamiaru kontaktu.",
+    metricProductTelegramClicksDesc:
+      "Przejścia z produktów do realnych zdjęć, filmów i prezentacji na kanale Telegram.",
+    metricCatalogClicksDesc:
+      "Przejścia ze strony startowej /start do katalogu produktów.",
+    metricFunnelConversionDesc:
+      "Odsetek sesji, które otworzyły /start, a następnie kliknęły kanał Telegram. To główny wskaźnik skuteczności linku z TikToka.",
+    metricCartAddsDesc:
+      "Liczba dodań produktów do „Mojego wyboru”. Pokazuje zamiar porównania lub zamówienia.",
+    metricCompareAddsDesc: "Liczba dodań produktów do porównania parametrów.",
+    metricBundleAddsDesc:
+      "Liczba wyborów dodatkowych usług lub zestawów do produktu.",
+    metricDestinationsDesc:
+      "Dokąd przechodzą użytkownicy: kanał, wiadomość prywatna, prezentacja lub zamówienie.",
+    metricTopProductsDesc:
+      "Produkty z największą liczbą otwarć w wybranym okresie.",
+    metricSourcesDesc:
+      "Skąd przyszli użytkownicy. Najpierw uwzględniana jest etykieta UTM, następnie domena odsyłająca albo wejście bezpośrednie.",
+    metricDevicesDesc:
+      "Podział wyświetleń według urządzeń: telefony, tablety i komputery.",
     desktop: "Komputer",
     tablet: "Tablet",
     mobile: "Telefon",
@@ -835,9 +912,12 @@ import {
           .map((e) => e.session_id),
       ),
       channelSessions = new Set(channelClicks.map((e) => e.session_id)),
+      convertedSessions = [...channelSessions].filter((id) =>
+        startSessions.has(id),
+      ).length,
       conversion = startSessions.size
-        ? `${Math.round((channelSessions.size / startSessions.size) * 100)}%`
-        : "0%",
+        ? Math.round((convertedSessions / startSessions.size) * 100)
+        : 0,
       transitions = [...telegram, ...catalogClicks].sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at),
       ),
@@ -851,14 +931,108 @@ import {
         telegram_order: t("destOrder"),
         telegram_cart_order: t("destCartOrder"),
       })[value] || t("destOther");
-    const metric = (label, value) =>
-      `<div class="hp-stat-card"><span>${label}</span><strong>${typeof value === "number" ? money(value) : value}</strong></div>`;
+    const valueFor = (key, rows) => {
+      const views = rows.filter((e) => e.event_type === "page_view"),
+        telegramRows = rows.filter((e) => e.event_type === "telegram_click");
+      if (key === "views") return views.length;
+      if (key === "visitors")
+        return new Set(views.map((e) => e.visitor_id)).size;
+      if (key === "productViews")
+        return rows.filter((e) => e.event_type === "product_view").length;
+      if (key === "channelClicks")
+        return telegramRows.filter((e) => e.destination === "telegram_channel")
+          .length;
+      if (key === "contactClicks")
+        return telegramRows.filter((e) => e.destination === "telegram_contact")
+          .length;
+      if (key === "productTelegramClicks")
+        return telegramRows.filter((e) => e.destination === "telegram_product")
+          .length;
+      if (key === "catalogClicks")
+        return rows.filter((e) => e.event_type === "catalog_click").length;
+      if (key === "cartAdds")
+        return rows.filter((e) => e.event_type === "cart_add").length;
+      if (key === "compareAdds")
+        return rows.filter((e) => e.event_type === "compare_add").length;
+      if (key === "bundleAdds")
+        return rows.filter((e) => e.event_type === "bundle_select").length;
+      if (key === "funnelConversion") {
+        const starts = new Set(
+            views
+              .filter((e) => e.path?.startsWith("/start"))
+              .map((e) => e.session_id),
+          ),
+          channels = new Set(
+            telegramRows
+              .filter((e) => e.destination === "telegram_channel")
+              .map((e) => e.session_id),
+          ),
+          converted = [...channels].filter((id) => starts.has(id)).length;
+        return starts.size ? Math.round((converted / starts.size) * 100) : 0;
+      }
+      return 0;
+    };
+    const metrics = [
+      ["views", t("views"), pageViews.length, "metricViewsDesc"],
+      ["visitors", t("visitors"), unique, "metricVisitorsDesc"],
+      [
+        "productViews",
+        t("productViews"),
+        productViews.length,
+        "metricProductViewsDesc",
+      ],
+      [
+        "channelClicks",
+        t("channelClicks"),
+        channelClicks.length,
+        "metricChannelClicksDesc",
+      ],
+      [
+        "contactClicks",
+        t("contactClicks"),
+        contactClicks.length,
+        "metricContactClicksDesc",
+      ],
+      [
+        "productTelegramClicks",
+        t("productTelegramClicks"),
+        productTelegramClicks.length,
+        "metricProductTelegramClicksDesc",
+      ],
+      [
+        "catalogClicks",
+        t("catalogClicks"),
+        catalogClicks.length,
+        "metricCatalogClicksDesc",
+      ],
+      [
+        "funnelConversion",
+        t("funnelConversion"),
+        conversion,
+        "metricFunnelConversionDesc",
+      ],
+      ["cartAdds", t("cartAdds"), cartEvents.length, "metricCartAddsDesc"],
+      [
+        "compareAdds",
+        t("compareAdds"),
+        compareEvents.length,
+        "metricCompareAddsDesc",
+      ],
+      [
+        "bundleAdds",
+        t("bundleAdds"),
+        bundleEvents.length,
+        "metricBundleAddsDesc",
+      ],
+    ];
+    const metric = ([key, label, value]) =>
+      `<button type="button" class="hp-stat-card" data-stat-metric="${key}" aria-label="${esc(label)} — ${esc(t("openChart"))}"><span>${esc(label)}</span><strong>${key === "funnelConversion" ? `${value}%` : money(value)}</strong><small>${icon("chart-no-axes-column-increasing")}${t("openChart")}</small></button>`;
     const list = (items, labeler) =>
       items.length
         ? items
             .map(
               ([key, value]) =>
-                `<div class="hp-stat-row"><span>${esc(labeler(key))}</span><b>${money(value)}</b></div>`,
+                `<span class="hp-stat-row"><span>${esc(labeler(key))}</span><b>${money(value)}</b></span>`,
             )
             .join("")
         : `<p class="hp-muted hp-small">${t("noAnalytics")}</p>`;
@@ -885,8 +1059,157 @@ import {
           })
           .join("")
       : `<p class="hp-muted hp-small">${t("noAnalytics")}</p>`;
+    const buckets = () => {
+      const hourly = statsRange === 1,
+        count = hourly ? 24 : statsRange,
+        points = [],
+        pad = (value) => String(value).padStart(2, "0"),
+        keyFor = (date) =>
+          hourly
+            ? `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}`
+            : `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+      for (let index = count - 1; index >= 0; index -= 1) {
+        const point = new Date();
+        if (hourly) {
+          point.setMinutes(0, 0, 0);
+          point.setHours(point.getHours() - index);
+        } else {
+          point.setHours(0, 0, 0, 0);
+          point.setDate(point.getDate() - index);
+        }
+        points.push({
+          key: keyFor(point),
+          label: hourly
+            ? point.toLocaleTimeString(lang === "uk" ? "uk-UA" : "pl-PL", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : point.toLocaleDateString(lang === "uk" ? "uk-UA" : "pl-PL", {
+                day: "2-digit",
+                month: "2-digit",
+              }),
+          rows: [],
+        });
+      }
+      const byKey = new Map(points.map((point) => [point.key, point]));
+      events.forEach((event) => {
+        const date = new Date(event.created_at),
+          point = byKey.get(keyFor(date));
+        if (point) point.rows.push(event);
+      });
+      return points;
+    };
+    const breakdowns = {
+      destinations: {
+        label: t("destinations"),
+        description: t("metricDestinationsDesc"),
+        items: destinations.map(([key, value]) => [
+          destinationLabel(key),
+          value,
+        ]),
+      },
+      topProducts: {
+        label: t("topProducts"),
+        description: t("metricTopProductsDesc"),
+        items: top.map(([id, value]) => [
+          products.find((p) => p.id === Number(id))?.name ||
+            `HMG-${String(id).padStart(3, "0")}`,
+          value,
+        ]),
+      },
+      trafficSources: {
+        label: t("trafficSources"),
+        description: t("metricSourcesDesc"),
+        items: sources.map(([key, value]) => [
+          key || t("directTraffic"),
+          value,
+        ]),
+      },
+      devices: {
+        label: t("devices"),
+        description: t("metricDevicesDesc"),
+        items: devices.map(([key, value]) => [t(key) || key, value]),
+      },
+    };
+    const breakdownPanel = (key, content) =>
+      `<button type="button" class="hp-stat-panel hp-stat-panel-action" data-stat-metric="${key}"><span class="hp-stat-panel-title">${esc(breakdowns[key].label)}${icon("arrow-up-right")}</span><span class="hp-stat-list">${content}</span></button>`;
+    const chartModal = () => {
+      if (!statsMetric) return "";
+      const breakdown = breakdowns[statsMetric],
+        metricConfig = metrics.find(([key]) => key === statsMetric);
+      if (!breakdown && !metricConfig) return "";
+      let label,
+        description,
+        value,
+        graph,
+        graphTitle = "";
+      if (breakdown) {
+        label = breakdown.label;
+        description = breakdown.description;
+        value = breakdown.items.reduce((sum, item) => sum + item[1], 0);
+        const max = Math.max(1, ...breakdown.items.map((item) => item[1]));
+        graph = breakdown.items.length
+          ? `<div class="hp-breakdown-chart">${breakdown.items
+              .map(
+                ([name, amount]) =>
+                  `<div><span title="${esc(name)}">${esc(name)}</span><i><em style="width:${Math.round((amount / max) * 100)}%"></em></i><b>${money(amount)}</b></div>`,
+              )
+              .join("")}</div>`
+          : `<p class="hp-muted">${t("chartEmpty")}</p>`;
+      } else {
+        const [key, metricLabel, metricValue, descriptionKey] = metricConfig,
+          points = buckets().map((point) => ({
+            ...point,
+            value: valueFor(key, point.rows),
+          })),
+          max = Math.max(1, ...points.map((point) => point.value)),
+          suffix = key === "funnelConversion" ? "%" : "";
+        label = metricLabel;
+        description = t(descriptionKey);
+        value = `${key === "funnelConversion" ? metricValue : money(metricValue)}${suffix}`;
+        graphTitle = statsRange === 1 ? t("chartByHour") : t("chartByDay");
+        graph = points.some((point) => point.value)
+          ? `<div class="hp-time-chart" style="--hp-chart-columns:${points.length}">${points
+              .map(
+                (point) =>
+                  `<div class="hp-chart-column" title="${esc(point.label)}: ${point.value}${suffix}"><b>${point.value}${suffix}</b><i><em style="height:${Math.max(point.value ? 5 : 0, Math.round((point.value / max) * 100))}%"></em></i><span>${esc(point.label)}</span></div>`,
+              )
+              .join("")}</div>`
+          : `<p class="hp-muted">${t("chartEmpty")}</p>`;
+      }
+      return `<div class="hp-stat-modal-backdrop"><section class="hp-stat-modal" role="dialog" aria-modal="true" aria-labelledby="hp-chart-title"><button type="button" class="hp-stat-modal-close" id="hp-stat-close" aria-label="${t("chartClose")}">${icon("x")}</button><div class="hp-kicker">${t("analytics")}</div><h2 id="hp-chart-title">${esc(label)}</h2><p>${esc(description)}</p><div class="hp-chart-summary"><span>${t("chartTotal")}</span><strong>${value}</strong></div>${graphTitle ? `<h3>${graphTitle}</h3>` : ""}${graph}</section></div>`;
+    };
     q("#hp-content").innerHTML =
-      `${adminNav("stats")}<div class="hp-intro hp-stats-head"><div><h1>${t("analyticsTitle")}</h1><span class="hp-muted">${t("analyticsSub")}</span></div><select class="hp-sort" id="hp-stats-range">${[7, 30, 90].map((days) => option(days, t("days" + days), statsRange)).join("")}</select></div>${statsLoading ? `<div class="hp-empty">${t("loading")}</div>` : statsError ? `<div class="hp-empty">${t("error")}</div>` : `<div class="hp-stat-grid">${metric(t("views"), pageViews.length)}${metric(t("visitors"), unique)}${metric(t("productViews"), productViews.length)}${metric(t("channelClicks"), channelClicks.length)}${metric(t("contactClicks"), contactClicks.length)}${metric(t("productTelegramClicks"), productTelegramClicks.length)}${metric(t("catalogClicks"), catalogClicks.length)}${metric(t("funnelConversion"), conversion)}${metric(t("cartAdds"), cartEvents.length)}${metric(t("compareAdds"), compareEvents.length)}${metric(t("bundleAdds"), bundleEvents.length)}</div><div class="hp-stat-sections"><section class="hp-stat-panel"><h3>${t("destinations")}</h3>${list(destinations, destinationLabel)}</section><section class="hp-stat-panel"><h3>${t("topProducts")}</h3>${list(top, (id) => products.find((p) => p.id === Number(id))?.name || `HMG-${String(id).padStart(3, "0")}`)}</section><section class="hp-stat-panel"><h3>${t("trafficSources")}</h3>${list(sources, (source) => source || t("directTraffic"))}</section><section class="hp-stat-panel"><h3>${t("devices")}</h3>${list(devices, (type) => t(type) || type)}</section><section class="hp-stat-panel hp-stat-recent"><h3>${t("recentTransitions")}</h3>${journeys}</section></div>`}`;
+      `${adminNav("stats")}<div class="hp-intro hp-stats-head"><div><h1>${t("analyticsTitle")}</h1><span class="hp-muted">${t("analyticsSub")}</span><small>${t("analyticsClickHint")}</small></div><div class="hp-range-tabs" role="group" aria-label="${t("analyticsTitle")}">${[
+        [1, t("day")],
+        [7, t("week")],
+        [30, t("month")],
+      ]
+        .map(
+          ([days, label]) =>
+            `<button type="button" class="hp-button ${statsRange === days ? "hp-primary" : ""}" data-stats-range="${days}">${label}</button>`,
+        )
+        .join("")}</div></div>${
+        statsLoading
+          ? `<div class="hp-empty">${t("loading")}</div>`
+          : statsError
+            ? `<div class="hp-empty">${t("error")}</div>`
+            : `<div class="hp-stat-grid">${metrics.map(metric).join("")}</div><div class="hp-stat-sections">${breakdownPanel("destinations", list(destinations, destinationLabel))}${breakdownPanel(
+                "topProducts",
+                list(
+                  top,
+                  (id) =>
+                    products.find((p) => p.id === Number(id))?.name ||
+                    `HMG-${String(id).padStart(3, "0")}`,
+                ),
+              )}${breakdownPanel(
+                "trafficSources",
+                list(sources, (source) => source || t("directTraffic")),
+              )}${breakdownPanel(
+                "devices",
+                list(devices, (type) => t(type) || type),
+              )}<section class="hp-stat-panel hp-stat-recent"><h3>${t("recentTransitions")}</h3><p class="hp-stat-panel-desc">${t("recentTransitionsDesc")}</p>${journeys}</section></div>${chartModal()}`
+      }`;
     refreshIcons();
   }
   const icons = [
@@ -1317,6 +1640,7 @@ import {
     passwordSetup = db.authCallback,
     analyticsEvents = [],
     statsRange = 7,
+    statsMetric = "",
     statsLoading = false,
     statsError = false;
   if (!["uk", "pl"].includes(lang)) lang = "uk";
@@ -1812,6 +2136,15 @@ import {
       history.replaceState(null, "", "/");
       q("#hp-search").value = "";
       render();
+    } else if (b.dataset.statsRange) {
+      statsRange = Number(b.dataset.statsRange);
+      await loadAnalytics();
+    } else if (b.dataset.statMetric) {
+      statsMetric = b.dataset.statMetric;
+      render();
+    } else if (b.id === "hp-stat-close") {
+      statsMetric = "";
+      render();
     } else if (b.hasAttribute("data-start-catalog")) {
       recordEvent("catalog_click", null, "catalog");
       view = "catalog";
@@ -2048,9 +2381,6 @@ import {
     } else if (el.id === "hp-sort") {
       sort = el.value;
       cards();
-    } else if (el.id === "hp-stats-range") {
-      statsRange = Number(el.value);
-      await loadAnalytics();
     } else if (el.dataset.bundle) {
       const id = Number(el.dataset.product),
         chosen = new Set(csv(bundleSelections[id]));
