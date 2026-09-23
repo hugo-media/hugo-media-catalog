@@ -3738,6 +3738,10 @@ body {
 #hugo-preview .hp-interest-product svg { flex: 0 0 15px; width: 15px; height: 15px; }
 #hugo-preview .hp-interest-chart .hp-chart-column small { color: #675a78; font-size: 11px; white-space: nowrap; }
 #hugo-preview .hp-interest-sources { margin-top: 18px; font-size: 14px; line-height: 1.5; }
+#hugo-preview .hp-tracking-links { margin: 16px 0 22px; padding: 18px 20px; border: 1px solid #e6dfef; border-radius: 15px; background: #f8f5fd; }
+#hugo-preview .hp-tracking-links strong { color: #30253b; font-size: 17px; }
+#hugo-preview .hp-tracking-links p { margin: 5px 0 13px; color: #665d70; font-size: 14px; line-height: 1.45; }
+#hugo-preview .hp-tracking-links > div { display: flex; flex-wrap: wrap; gap: 8px; }
 @media (max-width: 760px) {
   #hugo-preview .hp-featured-product { grid-template-columns: 1fr; }
   #hugo-preview .hp-featured-image { height: 220px; }

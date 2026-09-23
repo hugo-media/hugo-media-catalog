@@ -741,6 +741,8 @@ import {
     trustReturns: "Повернення й обмін",
     trustReturnsText: "Напиши нам перед купівлею — повідомимо чинні умови для конкретного товару.",
     purchasedModel: "Придбана модель",
+    trackingLinks: "Посилання з мітками для соцмереж",
+    trackingLinksHint: "Розмісти відповідне посилання в TikTok, Facebook і Telegram. Без мітки деякі вбудовані браузери не передають джерело переходу.",
     interestViews: "Перегляди",
     interestOrders: "Замовити",
     interestChannel: "Огляд у TG",
@@ -836,6 +838,8 @@ import {
     trustReturns: "Zwroty i wymiany",
     trustReturnsText: "Napisz przed zakupem — przedstawimy aktualne warunki dla konkretnego produktu.",
     purchasedModel: "Kupiony model",
+    trackingLinks: "Linki z oznaczeniem źródła",
+    trackingLinksHint: "Umieść odpowiedni link na TikToku, Facebooku i Telegramie. Bez oznaczenia niektóre przeglądarki aplikacji nie przekazują źródła ruchu.",
     interestViews: "Wyświetlenia",
     interestOrders: "Zamów",
     interestChannel: "Pokaz w TG",
@@ -1348,6 +1352,7 @@ import {
                 list(devices, (type) => t(type) || type),
               )}<section class="hp-stat-panel hp-stat-recent"><h3>${t("recentTransitions")}</h3><p class="hp-stat-panel-desc">${t("recentTransitionsDesc")}</p>${journeys}</section></div>${chartModal()}`
       }`;
+    q(".hp-stats-head").insertAdjacentHTML("afterend", `<section class="hp-tracking-links"><strong>${t("trackingLinks")}</strong><p>${t("trackingLinksHint")}</p><div>${["tiktok", "facebook", "telegram"].map((source) => `<button type="button" class="hp-button" data-landing-social="${source}">${icon("copy")}${t("share" + source[0].toUpperCase() + source.slice(1))}</button>`).join("")}</div></section>`);
     if (!statsLoading && !statsError) q("#hp-content").insertAdjacentHTML("beforeend", `<section class="hp-interest"><button type="button" class="hp-interest-title" data-stat-metric="productInterest"><span><strong>${t("productInterest")}</strong><small>${t("productInterestDesc")}</small></span>${icon("chart-no-axes-column-increasing")}</button><div class="hp-interest-scroll"><table><thead><tr><th>${t("name")}</th><th>${t("interestViews")}</th><th>${t("interestOrders")}</th><th>${t("interestChannel")}</th><th title="${esc(t("interestNoContactDesc"))}">${t("interestNoContact")}</th><th>${t("interestRate")}</th><th>${t("sourceBreakdown")}</th></tr></thead><tbody>${interest.length ? interest.map(({ id, views, orders, media, noContact, rate, sourceCounts }) => `<tr><th><button type="button" class="hp-interest-product" data-stat-metric="product:${id}">${esc(productTitle(products.find((p) => p.id === id) || { name: `HMG-${id}` }))}${icon("chart-no-axes-column-increasing")}</button></th><td>${views}</td><td>${orders}</td><td>${media}</td><td>${noContact}</td><td>${rate}%</td><td>${[...sourceCounts].map(([source, count]) => `${esc(source)} ${count}`).join(" · ") || "—"}</td></tr>`).join("") : `<tr><td colspan="7">${t("noAnalytics")}</td></tr>`}</tbody></table></div></section>`);
     refreshIcons();
   }
@@ -1816,6 +1821,12 @@ import {
   function socialUrl(id, source) {
     const url = new URL(location.origin);
     url.searchParams.set("product", id);
+    url.searchParams.set("utm_source", source);
+    url.searchParams.set("utm_medium", "social");
+    return url.toString();
+  }
+  function landingUrl(source) {
+    const url = new URL(source === "tiktok" ? "/start" : "/", location.origin);
     url.searchParams.set("utm_source", source);
     url.searchParams.set("utm_medium", "social");
     return url.toString();
@@ -2509,6 +2520,9 @@ import {
         URL.revokeObjectURL(reviewImage.url);
       reviewImage = "";
       renderReviewForm();
+    } else if (b.dataset.landingSocial) {
+      await navigator.clipboard.writeText(landingUrl(b.dataset.landingSocial));
+      notify(t("linkCopied"));
     } else if (b.dataset.social) {
       const text = socialUrl(Number(b.dataset.product), b.dataset.social);
       await navigator.clipboard.writeText(text);
