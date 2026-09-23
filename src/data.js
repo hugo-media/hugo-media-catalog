@@ -1,5 +1,6 @@
 import { TABLE, BUCKET, toRow, fromRow, publicConfigValid, warsawDate, validateDailyPicks } from "./core.js";
 let client;
+export let currentUserId = null;
 export const ready = publicConfigValid(window.HUGO_CONFIG || {});
 export const authCallback =
   /(?:[?#&]type=(?:invite|recovery)(?:&|$)|[?&]code=[^&]+)/.test(location.href);
@@ -61,6 +62,7 @@ export async function isAdmin() {
   const {
     data: { session },
   } = await c.auth.getSession();
+  currentUserId = session?.user?.id || null;
   if (!session) return false;
   const { data, error } = await c.rpc("hmg_catalog_is_admin");
   if (error) throw error;
@@ -166,8 +168,10 @@ export async function saveProduct(p, pictures) {
     let request = p.id
       ? c.from(TABLE).update(values).eq("id", p.id)
       : c.from(TABLE).insert(values);
-    const { data, error } = await request.select().single();
+    if (p.id && p.updated_at) request = request.eq("updated_at", p.updated_at);
+    const { data, error } = await request.select().maybeSingle();
     if (error) throw error;
+    if (!data) throw Error("editConflict");
     row = data;
   } catch (e) {
     if (staged.length && !writingRow)
@@ -219,7 +223,7 @@ export async function listAnalytics(days = 7) {
     const { data, error } = await c
       .from("hmg_catalog_events")
       .select(
-        "created_at,visitor_id,session_id,event_type,product_id,path,referrer_host,traffic_source,device_type,destination",
+        "created_at,visitor_id,session_id,event_type,product_id,path,referrer_host,traffic_source,device_type,destination,placement",
       )
       .gte("created_at", since)
       .order("created_at", { ascending: false })
@@ -306,3 +310,23 @@ export async function deleteReview(id) {
 }
 // Photos aren't deleted automatically: archive/duplicates may share a file.
 // The admin can explicitly clean unattached files via the storage dashboard.
+
+export async function readSettings() {
+ const c=await connect(); const {data,error}=await c.from('hmg_catalog_settings').select('*').eq('id',1).single();
+ if(error) throw error; return data;
+}
+export async function saveSettings(value) {
+ if(!(await isAdmin())) throw Error('notAdmin');
+ const c=await connect(); const {data,error}=await c.from('hmg_catalog_settings').update({links:value.links,trust:value.trust}).eq('id',1).eq('updated_at',value.updated_at).select().maybeSingle();
+ if(error) throw error; if(!data) throw Error('editConflict'); return data;
+}
+export async function listVersions(productId) {
+ if(!(await isAdmin())) throw Error('notAdmin');
+ const c=await connect(); const {data,error}=await c.from('hmg_catalog_versions').select('id,product_id,saved_at,snapshot').eq('product_id',productId).order('id',{ascending:false}).limit(50);
+ if(error) throw error; return data || [];
+}
+export async function restoreVersion(id,updatedAt) {
+ if(!(await isAdmin())) throw Error('notAdmin');
+ const c=await connect(); const {data,error}=await c.rpc('hmg_catalog_restore_version',{version_id:id,expected_updated_at:updatedAt});
+ if(error) throw error; return fromRow(data);
+}

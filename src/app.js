@@ -1,3 +1,4 @@
+import { createEnhancements } from "./enhancements.js";
 import * as db from "./data.js";
 import {
   orderText,
@@ -923,6 +924,7 @@ import {
     try {
       await fn();
     } catch (error) {
+      if (/editConflict/.test(error.message || "")) { notify(extra.message(error)); return; }
       notify(
         t(
           error.message === "notAdmin"
@@ -1020,7 +1022,7 @@ import {
     const width = Math.min(screen.width, window.innerWidth);
     return width < 700 ? "mobile" : width < 1024 ? "tablet" : "desktop";
   }
-  function recordEvent(event_type, product_id = null, destination = "") {
+  function recordEvent(event_type, product_id = null, destination = "", placement = "") {
     if (admin || !db.ready || analyticsConsent !== true) return Promise.resolve();
     return db.trackEvent({
       visitor_id: analyticsId(localStorage, "hmg-visitor-id"),
@@ -1033,6 +1035,7 @@ import {
       device_type: deviceType(),
       language: lang,
       destination: String(destination || "").slice(0, 80),
+      placement: String(placement || "").slice(0,40),
     }).catch(() => {});
   }
   function recordBeforeNavigation(event_type, product_id, destination) {
@@ -1101,7 +1104,7 @@ import {
       const after = row.after_data || {};
       const name = row.entity === "recommendation" ? (after.for_date || before.for_date) : after.name || before.name || after.customer_name || before.customer_name || `#${row.entity_id}`;
       const changes = Object.keys({ ...before, ...after }).filter((key) => !["created_at", "updated_at", "id"].includes(key) && JSON.stringify(before[key]) !== JSON.stringify(after[key]));
-      return `<article class="hp-audit-item"><div class="hp-audit-heading"><strong>${t(row.action === "INSERT" ? "activityNew" : row.action === "DELETE" ? "activityDelete" : "activityUpdate")} · ${t(row.entity === "product" ? "activityProduct" : row.entity === "recommendation" ? "activityRecommendation" : "activityReview")}: ${esc(name)}</strong><time datetime="${esc(row.created_at)}">${esc(new Intl.DateTimeFormat(lang === "uk" ? "uk-UA" : "pl-PL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.created_at)))}</time></div><div class="hp-muted hp-small">${esc(row.actor_email || t("activitySystem"))}${row.entity === "recommendation" ? "" : ` · #${row.entity_id}`}</div>${changes.length ? `<details><summary>${changes.map((key) => esc(labels[key] || key)).join(" · ")}</summary><div class="hp-audit-diff">${changes.map((key) => `<div><b>${esc(labels[key] || key)}</b><span>${t("activityOld")}: ${stringify(before[key], key)}</span><span>${t("activityNow")}: ${stringify(after[key], key)}</span></div>`).join("")}</div></details>` : ""}</article>`;
+      return `<article class="hp-audit-item"><div class="hp-audit-heading"><strong>${t(row.action === "INSERT" ? "activityNew" : row.action === "DELETE" ? "activityDelete" : "activityUpdate")} · ${t(row.entity === "product" ? "activityProduct" : row.entity === "recommendation" ? "activityRecommendation" : row.entity === "settings" ? "activitySettings" : "activityReview")}: ${esc(name)}</strong><time datetime="${esc(row.created_at)}">${esc(new Intl.DateTimeFormat(lang === "uk" ? "uk-UA" : "pl-PL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.created_at)))}</time></div><div class="hp-muted hp-small">${esc(row.actor_email || t("activitySystem"))}${row.entity === "recommendation" ? "" : ` · #${row.entity_id}`}</div>${changes.length ? `<details><summary>${changes.map((key) => esc(labels[key] || key)).join(" · ")}</summary><div class="hp-audit-diff">${changes.map((key) => `<div><b>${esc(labels[key] || key)}</b><span>${t("activityOld")}: ${stringify(before[key], key)}</span><span>${t("activityNow")}: ${stringify(after[key], key)}</span></div>`).join("")}</div></details>` : ""}</article>`;
     }).join("")}</div>` : `<p class="hp-empty">${t("activityEmpty")}</p>`}`;
   }
   function countBy(rows, key, filter = () => true) {
@@ -1889,7 +1892,7 @@ import {
     dailyPicksLimit: "Можна вибрати не більше двох товарів.", dailyPicksUnavailable: "Один із товарів уже недоступний. Перевір вибір.",
     activityRecommendation: "рекомендації дня", activityPickIds: "Рекомендовані товари", activityPickDate: "Дата",
     activityNew: "Додано", activityUpdate: "Змінено", activityDelete: "Видалено",
-    activityProduct: "товар", activityReview: "відгук", activityEmpty: "Змін поки немає.",
+    activitySettings: "налаштування", activityProduct: "товар", activityReview: "відгук", activityEmpty: "Змін поки немає.",
     activityError: "Не вдалося завантажити журнал.", activitySystem: "Система",
     activityOld: "Було", activityNow: "Стало", activityPhotos: "Фото", activityOther: "Характеристики",
   });
@@ -1903,7 +1906,7 @@ import {
     dailyPicksLimit: "Można wybrać maksymalnie dwa produkty.", dailyPicksUnavailable: "Jeden z produktów jest już niedostępny. Sprawdź wybór.",
     activityRecommendation: "rekomendacje dnia", activityPickIds: "Polecane produkty", activityPickDate: "Data",
     activityNew: "Dodano", activityUpdate: "Zmieniono", activityDelete: "Usunięto",
-    activityProduct: "produkt", activityReview: "opinię", activityEmpty: "Brak zmian.",
+    activitySettings: "ustawienia", activityProduct: "produkt", activityReview: "opinię", activityEmpty: "Brak zmian.",
     activityError: "Nie udało się pobrać historii.", activitySystem: "System",
     activityOld: "Było", activityNow: "Jest", activityPhotos: "Zdjęcia", activityOther: "Parametry",
   });
@@ -2061,7 +2064,7 @@ import {
       dock.id = "hp-compare-dock";
       root.append(dock);
     }
-    const hidden = ["admin", "edit", "stats", "reviews", "reviewEdit"].includes(
+    const hidden = ["admin", "edit", "stats", "reviews", "reviewEdit", "activity", "picks", "quality", "drafts", "settings", "versions"].includes(
       view,
     );
     dock.innerHTML =
@@ -2164,12 +2167,12 @@ import {
       adminReturn.className = "hp-admin-return";
       q("#hp-categories").after(adminReturn);
     }
-    adminReturn.hidden = !admin || ["admin", "edit", "stats", "reviews", "reviewEdit", "activity", "picks", "start"].includes(view);
+    adminReturn.hidden = !admin || ["admin", "edit", "stats", "reviews", "reviewEdit", "activity", "picks", "quality", "drafts", "settings", "versions", "start"].includes(view);
     adminReturn.innerHTML = adminReturn.hidden
       ? ""
       : `<button type="button" class="hp-button" data-view="admin">${t("backToAdmin")}</button>`;
     if (
-      ["admin", "edit", "stats", "reviews", "reviewEdit", "activity", "picks"].includes(view) &&
+      ["admin", "edit", "stats", "reviews", "reviewEdit", "activity", "picks", "quality", "drafts", "settings", "versions"].includes(view) &&
       !admin
     ) {
       renderCompareDock();
@@ -2196,7 +2199,7 @@ import {
       .join("");
     const content = q("#hp-content");
     if (
-      (view === "catalog" || view === "home") &&
+      (["catalog","home","finder","shared"].includes(view)) &&
       (loading || !db.ready || loadError)
     ) {
       content.innerHTML = `<div class="hp-empty"><p>${t(loading ? "loading" : !db.ready ? "unconfigured" : "loadError")}</p>${loadError ? `<button class="hp-button" id="hp-retry">${t("retry")}</button>` : ""}</div>`;
@@ -2398,6 +2401,7 @@ import {
       else { view = "admin"; history.replaceState(null, "", "?admin"); render(); return; }
     }
     if (view === "edit") renderForm();
+    extra.afterRender();
     refreshIcons();
     renderCompareDock();
   }
@@ -2453,6 +2457,7 @@ import {
     q('#hp-form select[name="warranty"]')?.closest(".hp-field")?.insertAdjacentHTML("afterend", `<label class="hp-field">${t("charger")}<select name="charger">${option("", t("chargerUnknown"), p.charger || "")}${["adapter", "cable", "none"].map((value) => option(value, chargerLabel(value), p.charger || "")).join("")}</select></label>`);
     formCategory(p.cat, p);
     showUploads();
+    extra.formReady(p);
   }
   function filterKeys(c) {
     return c === 0 || c === -1
@@ -2545,6 +2550,7 @@ import {
         view === "detail" ? selected : null,
         link.dataset.trackTarget ||
           (view === "detail" ? "telegram_product" : "telegram_contact"),
+        link.dataset.trackPlacement || "",
       );
     const b = e.target.closest("button");
     if (!b || busy) return;
@@ -2557,12 +2563,12 @@ import {
       renderConsent();
       return;
     }
-    if (
-      (view === "edit" || view === "reviewEdit") &&
-      (b.dataset.view || b.dataset.lang || b.dataset.cat) &&
-      !confirm(t("abandon"))
-    )
-      return;
+    if (view === "edit" && (b.dataset.view || b.dataset.lang || b.dataset.cat || b.classList.contains("hp-brand"))) {
+      await extra.beforeLeave();
+      if (extra.dirty && !confirm(lang === "uk" ? "Покинути редактор? Зміни ще не опубліковано. Статус локальної чернетки показано над формою." : "Opuścić edytor? Zmiany nie zostały opublikowane. Status lokalnego szkicu jest nad formularzem.")) return;
+    }
+    if (view === "reviewEdit" && (b.dataset.view || b.dataset.lang || b.dataset.cat) && !confirm(t("abandon"))) return;
+    if (await extra.handleClick(b)) return;
     if (b.classList.contains("hp-brand")) {
       view = "home";
       cat = -1;
@@ -2744,11 +2750,13 @@ import {
       const [pic] = formImages.splice(Number(b.dataset.removePhoto), 1);
       if (typeof pic !== "string") URL.revokeObjectURL(pic.url);
       showUploads();
+      extra.changed();
     } else if (b.dataset.mainPhoto !== undefined) {
       formImages.unshift(formImages.splice(Number(b.dataset.mainPhoto), 1)[0]);
       showUploads();
+      extra.changed();
     } else if (b.dataset.image !== undefined) {
-      q(".hp-detail .hp-photo img").src = pictureUrl(
+      q(".hp-gallery-panel .hp-photo img").src = pictureUrl(
         products.find((p) => p.id === selected).images[Number(b.dataset.image)],
       );
     } else if (b.id === "hp-remove-review-photo") {
@@ -2892,6 +2900,7 @@ import {
           }
           formImages.push(...converted);
           showUploads();
+          extra.changed();
         } catch (e) {
           converted.forEach((p) => URL.revokeObjectURL(p.url));
           throw e;
@@ -2904,6 +2913,7 @@ import {
   root.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (busy) return;
+    if (await extra.handleSubmit(e.target)) return;
     if (e.target.id === "hp-login") {
       const values = new FormData(e.target);
       await run(async () => {
@@ -2963,6 +2973,7 @@ import {
         p = {
           ...d,
           id: editId,
+          updated_at: extra.editorBase,
           cat: Number(d.cat),
           price: Number(d.price),
           status: Number(d.status),
@@ -2973,6 +2984,7 @@ import {
         };
       await run(async () => {
         await db.saveProduct(p, formImages);
+        await extra.afterSave();
         clearPictures();
         await refresh();
         view = "admin";
@@ -2990,7 +3002,7 @@ import {
         await db.connect();
         admin = await db.isAdmin();
         if (admin) owner = await db.isOwner();
-        await refresh();
+        await Promise.all([refresh(), extra.reloadSettings()]);
         if (view === "picks") draftPicks = [...dailyPicks];
         if (view === "activity" && owner) {
           auditRows = await db.listAudit();
@@ -3019,10 +3031,27 @@ import {
     }
   }
   window.addEventListener("beforeunload", (e) => {
-    if (view === "edit") {
+    if (view === "edit" && extra.dirty) {
+      extra.captureDraft();
       e.preventDefault();
       e.returnValue = "";
     }
   });
+  const extra = createEnhancements({
+    root, db, esc, readLocal, writeLocal, t, productCard, notify, run, refresh, render, adminNav, formCategory, showUploads,
+    get lang(){return lang;}, get view(){return view;}, get products(){return products;}, get reviews(){return reviews;},
+    get admin(){return admin;}, get selected(){return selected;}, get editId(){return editId;}, get images(){return formImages;},
+    get cart(){return cart;}, get analyticsEvents(){return analyticsEvents;}, get statsLoading(){return statsLoading;}, get statsError(){return statsError;},
+    setImages(images){clearPictures();formImages=images;},
+    setView(value){if(view === "edit" && value !== "edit") clearPictures();view=value;},
+    addSelection(ids){cart=[...new Set([...cart,...ids])];writeLocal("hmg-cart",cart);render();},
+    async openEditor(id){
+      if(id&&!products.some(p=>p.id===id)){notify(lang==='uk'?'Товар видалено. Чернетка залишається на пристрої.':'Produkt usunięty. Szkic pozostaje na urządzeniu.');return;}
+      clearPictures(); editId=id; formImages=id?[...products.find(p=>p.id===id).images]:[];view="edit";render();window.scrollTo(0,0);
+    }
+  });
+  if(adminRoute!==null && ["quality","drafts","settings"].includes(adminRoute))view=adminRoute;
+  if(adminRoute===null && initialParams.has("finder"))view="finder";
+  if(adminRoute===null && initialParams.has("selection"))view="shared";
   initialize();
 })();

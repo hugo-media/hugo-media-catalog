@@ -71,3 +71,14 @@ For local configured builds, export the public variables into the shell before `
 - https://supabase.com/docs/guides/database/postgres/row-level-security
 - https://supabase.com/docs/guides/storage/security/access-control
 - https://core.telegram.org/api/links#public-username-links
+
+## Catalog assistance and editor recovery (September 2026)
+- `/?finder`: three-step laptop selector. Uses available products, the discounted price, requested screen size, and declared purposes; no match stays a no-match rather than exceeding the budget.
+- `/?selection=ID,ID`: read-only shared selection (maximum 20 unique IDs). Opening it does not replace the recipient's own selection. Prices and stock are resolved from current public products.
+- Recently viewed products are functional browser-local history; the user can clear it. No browsing history is uploaded by this feature.
+- Admin `?admin=quality` lists incomplete active/draft product cards. `?admin=drafts` recovers device-local IndexedDB drafts including compressed uploaded images, scoped by the signed-in user ID. Drafts are not synchronized between devices and clearing browser storage removes them.
+- Product editor offers a preview, photo provenance (`actual`, `model`, `mixed`) and version history. Saving a stale edit fails with a conflict rather than overwriting another administrator's work.
+- Admin `?admin=settings` manages Telegram invite URLs per placement and bilingual customer-facing warranty/payment/delivery/inspection/return text. Empty fields keep existing public copy. Invite URLs must be Telegram channel invitations; use links created by the channel administrator. Real subscriber joins are viewed in Telegram, while the site records consented clicks per placement.
+- Apply `supabase/catalog_improvements.sql` once after `audit.sql` and `daily_picks.sql`. It creates the public display settings row and private, immutable product snapshots. Current products are snapshotted at installation, then after each edit. Version restore uses an invoker RPC, checks the current update timestamp, and creates a normal product edit/audit entry. No historical snapshots are fabricated.
+- Run `supabase/tests/catalog_improvements.sql` inside a transaction; it verifies public/admin/non-admin access, snapshot immutability, stale restore rejection, and restoration, then rolls back all test changes.
+- Genuine customer screenshots and actual service conditions must be supplied by the owner/admin; the application does not invent reviews or label unspecified images as real photos of the item.
