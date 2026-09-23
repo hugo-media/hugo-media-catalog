@@ -1,7 +1,7 @@
 export const TABLE = 'hmg_catalog_products';
 export const BUCKET = 'hmg-catalog-photos';
 export const MAX_IMAGES = 8;
-export const SPEC_KEYS = ['cpu','generation','ram','ssd','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','newArrival','bestseller','discount','telegramPost','quantity','purposes','benefits','bundles'];
+export const SPEC_KEYS = ['cpu','generation','ram','ssd','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','newArrival','bestseller','discount','telegramPost','quantity','purposes','benefits','bundles','charger'];
 export const DISCOUNTS = [0,5,10,15,20,25,30];
 export const TELEGRAM_CHANNEL = 'https://t.me/h_m_g_pl';
 export const PURPOSES = ['study','office','programming','editing','gaming','travel'];
@@ -31,6 +31,7 @@ export function validateProduct(p){
  if(!DISCOUNTS.includes(Number(p.discount||0)))throw Error('validation');
  if(!['','true'].includes(String(p.newArrival||'')))throw Error('validation');
  if(!['','true'].includes(String(p.bestseller||'')))throw Error('validation');
+ if(!['','adapter','cable','none'].includes(String(p.charger||'')))throw Error('validation');
  if(!validTelegramPost(p.telegramPost))throw Error('validation');
  const quantity=p.quantity===''||p.quantity==null?1:Number(p.quantity);if(!Number.isInteger(quantity)||quantity<0||quantity>99)throw Error('validation');
  if(csv(p.purposes).some(v=>!PURPOSES.includes(v))||csv(p.benefits).some(v=>!BENEFITS.includes(v))||csv(p.bundles).some(v=>!(v in BUNDLES)))throw Error('validation');

@@ -3790,3 +3790,6 @@ body {
   #hugo-preview .hp-privacy-actions { margin-top: 14px; }
   #hugo-preview .hp-privacy-actions .hp-button { flex: 1; padding: 10px; white-space: normal; }
 }
+#hugo-preview .hp-charger-note { display: flex; align-items: center; gap: 7px; margin: 10px 0 14px; color: #614288; font-size: 14px; font-weight: 700; }
+#hugo-preview .hp-charger-note svg { flex: 0 0 17px; }
+#hugo-preview .hp-charger-description { margin-top: 16px; }

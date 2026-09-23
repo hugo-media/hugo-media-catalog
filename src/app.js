@@ -860,6 +860,20 @@ import {
     privacyAccept: "Zezwól na analitykę",
     privacyDecline: "Bez analityki",
   });
+  Object.assign(dict.uk, {
+    charger: "Комплектація зарядки",
+    chargerUnknown: "Не вказано",
+    chargerAdapter: "Зарядний пристрій із блоком живлення",
+    chargerCable: "Лише кабель, без блока живлення",
+    chargerNone: "Без зарядного пристрою та кабелю",
+  });
+  Object.assign(dict.pl, {
+    charger: "Zestaw do ładowania",
+    chargerUnknown: "Nie podano",
+    chargerAdapter: "Ładowarka z zasilaczem",
+    chargerCable: "Tylko kabel, bez zasilacza",
+    chargerNone: "Bez ładowarki i kabla",
+  });
   function readLocal(k, f) {
     try {
       return JSON.parse(localStorage.getItem(k)) ?? f;
@@ -1854,6 +1868,11 @@ import {
   if (!bundleSelections || typeof bundleSelections !== "object")
     bundleSelections = {};
   const t = (k) => dict[lang][k];
+  const chargerLabel = (value) => ({
+    adapter: t("chargerAdapter"),
+    cable: t("chargerCable"),
+    none: t("chargerNone"),
+  })[value] || "";
   const esc = (x) =>
     String(x ?? "").replace(
       /[&<>"']/g,
@@ -2153,6 +2172,7 @@ import {
           ...filterKeys(p.cat).map(([key, label]) => [t(label), p[key]]),
           [t("condition"), p.condition || t("stateValue")],
           [t("warranty"), p.warranty || t("unknown")],
+          ...(p.charger ? [[t("charger"), chargerLabel(p.charger)]] : []),
         ].filter((x) => x[1]),
         qty = stockQty(p),
         purposeCodes = csv(p.purposes),
@@ -2171,6 +2191,13 @@ import {
           .sort((a, b) => Math.abs(effectivePrice(a) - effectivePrice(p)) - Math.abs(effectivePrice(b) - effectivePrice(p)))
           .slice(0, 3);
       content.innerHTML = `<div class="hp-detail-page"><button type="button" class="hp-back hp-detail-back" data-view="catalog">${icon("arrow-left")}${t("back")}</button><section class="hp-detail-hero"><div class="hp-gallery-panel"><div class="hp-gallery-head"><span>${icon("camera")}${t("productPhoto")}</span><span>HMG-${p.id.toString().padStart(3, "0")}</span></div>${photo(p)}${p.images.length > 1 ? `<div class="hp-toprow hp-thumbs">${p.images.map((src, i) => `<button type="button" class="hp-button" data-image="${i}"><img src="${esc(pictureUrl(src))}" alt="${i + 1}"></button>`).join("")}</div>` : ""}<a class="hp-gallery-link" href="${esc(telegramPostUrl(p.telegramPost))}" target="_blank" rel="noopener noreferrer">${icon("play-circle")}${t("seeTelegram")}${icon("arrow-right")}</a></div><div class="hp-buy-panel"><div class="hp-kicker">${esc(p.brand)} · ${t("verifiedLabel")}</div><h1>${esc(productTitle(p))}</h1><p class="hp-detail-config">${esc(p.cpu)}${p.ram ? ` · ${esc(p.ram)} GB RAM` : ""}${p.ssd ? ` · ${esc(p.ssd)} GB${p.cat === 0 ? " SSD" : ""}` : ""}${p.gpu ? ` · ${esc(p.gpu)}` : ""}</p><div class="hp-detail-badges"><span class="hp-demo-status">${t("statuses")[p.status]}</span>${p.newArrival === "true" ? `<span class="hp-badge-new">${t("newArrival")}</span>` : ""}${p.bestseller === "true" ? `<span class="hp-badge-best">${t("bestseller")}</span>` : ""}${discountPercent(p) ? `<span class="hp-badge-sale">-${discountPercent(p)}%</span>` : ""}</div><div class="hp-stock ${qty === 1 ? "hp-stock-low" : ""}">${qty === 1 ? t("onlyOne") : `${qty} ${t("unitsLeft")}`}</div>${priceBlock(p, true)}${purposeCodes.length ? `<div class="hp-purpose-tags">${purposeCodes.map((code) => `<span>${t(purposeKey(code))}</span>`).join("")}</div>` : ""}<div class="hp-buy-copy"><b>${t("buyPanelTitle")}</b><span>${t("buyPanelSub")}</span></div><div class="hp-detail-actions hp-detail-primary-actions"><button type="button" class="hp-button hp-primary" data-order-one="${p.id}" ${p.status !== 0 || qty < 1 ? "disabled" : ""}>${icon("send")}${t("orderNow")}</button><a class="hp-button hp-channel-button" href="${esc(telegramPostUrl(p.telegramPost))}" target="_blank" rel="noopener noreferrer">${icon("play-circle")}${t("telegramMedia")}</a></div><div class="hp-detail-secondary-actions"><button type="button" class="hp-button hp-choice-button" data-add="${p.id}" ${p.status !== 0 || qty < 1 ? "disabled" : ""}>${icon(cart.includes(p.id) ? "check" : "shopping-bag")}${cart.includes(p.id) ? t("added") : t("add")}</button><button type="button" class="hp-button" data-compare="${p.id}">${icon(compare.includes(p.id) ? "check" : "columns-2")}${t("compare")}</button><button type="button" class="hp-button" id="hp-share" aria-label="${t("share")}">${icon("share-2")}</button></div><div class="hp-detail-trust"><span>${icon("badge-check")}${t("secureDeal")}</span><span>${icon("shield-check")}${t("warrantyBenefit")}</span><span>${icon("message-circle")}${t("fastContact")}</span></div></div></section><section class="hp-detail-lower"><div class="hp-detail-info-card"><div class="hp-section-title"><div><div class="hp-kicker">${t("configuration")}</div><h2>${t("specTitle")}</h2></div></div><div class="hp-detailspec">${specs.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("")}</div></div>${benefitCodes.length || bundleCodes.length || description ? `<div class="hp-detail-extras">${benefitCodes.length ? `<section class="hp-sales-block"><h3>${t("advantages")}</h3><div class="hp-benefit-list">${benefitCodes.map((code) => `<span>${icon("check-circle-2")}${t(benefitKey(code))}</span>`).join("")}</div></section>` : ""}${bundleCodes.length ? `<section class="hp-sales-block"><h3>${t("bundles")}</h3><div class="hp-bundle-list">${bundleCodes.map((code) => `<label><input type="checkbox" data-bundle="${code}" data-product="${p.id}" ${chosenBundles.includes(code) ? "checked" : ""}><span>${t(bundleKey(code))}</span></label>`).join("")}</div></section>` : ""}${description ? `<section class="hp-sales-block"><h3>${t("aboutDevice")}</h3><p class="hp-description">${esc(description)}</p></section>` : ""}</div>` : ""}</section>${reviewsBlock(3)}${similar.length ? `<section class="hp-home-section hp-similar-section"><div class="hp-section-title"><h2>${t("similar")}</h2></div><div class="hp-grid">${similar.map(productCard).join("")}</div></section>` : ""}</div>`;
+      if (p.charger && chargerLabel(p.charger)) {
+        const note = `${t("charger")}: ${chargerLabel(p.charger)}`;
+        content.querySelector(".hp-detail-config").insertAdjacentHTML("afterend", `<p class="hp-charger-note">${icon("plug-zap")}${esc(note)}</p>`);
+        const descriptionBlock = content.querySelector(".hp-description");
+        if (descriptionBlock) descriptionBlock.insertAdjacentHTML("beforeend", `<br>${esc(note)}`);
+        else content.querySelector(".hp-detail-lower").insertAdjacentHTML("beforeend", `<section class="hp-sales-block hp-charger-description"><h3>${t("aboutDevice")}</h3><p>${esc(note)}</p></section>`);
+      }
       content
         .querySelectorAll(".hp-gallery-link,.hp-channel-button")
         .forEach((link) => (link.dataset.trackTarget = "telegram_product"));
@@ -2306,6 +2333,7 @@ import {
         .join(
           "",
         )}</select></label>${choiceField("condition", t("condition"), commonChoices.condition, p.condition, true)}${choiceField("warranty", t("warranty"), commonChoices.warranty, p.warranty, true)}<label class="hp-field">${t("markNewArrival")}<select name="newArrival">${option("", t("no"), p.newArrival || "")}${option("true", t("yes"), p.newArrival || "")}</select></label><label class="hp-field">${t("markBestseller")}<select name="bestseller">${option("", t("no"), p.bestseller || "")}${option("true", t("yes"), p.bestseller || "")}</select></label><label class="hp-field">${t("discount")}<select name="discount">${DISCOUNTS.map((value) => option(value, value ? `-${value}%` : t("noDiscount"), discountPercent(p))).join("")}</select></label>${checkGroup("purposes", t("purpose"), PURPOSES, p.purposes, purposeKey)}${checkGroup("benefits", t("advantages"), BENEFITS, p.benefits, benefitKey)}${checkGroup("bundles", t("bundles"), Object.keys(BUNDLES), p.bundles, bundleKey)}</div></section><section class="hp-form-section"><h3 class="hp-section-heading">${t("spec")}</h3><div class="hp-form-grid" id="hp-category-fields"></div></section><section class="hp-form-section"><h3 class="hp-section-heading">${t("mediaInfo")}</h3><div class="hp-form-grid"><label class="hp-field hp-wide">${t("telegramPost")}<input type="text" inputmode="url" name="telegramPost" value="${esc(p.telegramPost || "")}" placeholder="https://t.me/h_m_g_pl/123"><span class="hp-muted hp-small">${t("telegramPostHint")}</span></label><label class="hp-field hp-wide">${t("photos")}<input type="file" id="hp-upload" multiple accept="image/jpeg,image/png,image/webp"><span class="hp-muted hp-small">${t("photoHint")}</span><div id="hp-upload-previews" class="hp-toprow"></div></label><label class="hp-field">${t("descUk")}<textarea name="descUk">${esc(p.descUk)}</textarea></label><label class="hp-field">${t("descPl")}<textarea name="descPl">${esc(p.descPl)}</textarea></label></div></section>${shareButtons}<div role="alert" id="hp-form-error" class="hp-alert"></div><div class="hp-form-actions"><button type="button" class="hp-button" data-view="admin">${t("cancel")}</button><button type="submit" class="hp-button hp-primary">${t("save")}</button></div></form>`;
+    q('#hp-form select[name="warranty"]')?.closest(".hp-field")?.insertAdjacentHTML("afterend", `<label class="hp-field">${t("charger")}<select name="charger">${option("", t("chargerUnknown"), p.charger || "")}${["adapter", "cable", "none"].map((value) => option(value, chargerLabel(value), p.charger || "")).join("")}</select></label>`);
     formCategory(p.cat, p);
     showUploads();
   }
