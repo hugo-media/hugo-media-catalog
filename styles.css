@@ -1695,6 +1695,79 @@ body {
 #hugo-preview .hp-admin-tabs .hp-button {
   min-width: 140px;
 }
+#hugo-preview .hp-picks-admin {
+  padding: 22px;
+  border: 1px solid var(--hp-line);
+  border-radius: 16px;
+  background: #fff;
+}
+#hugo-preview .hp-picks-admin > p {
+  color: var(--hp-muted);
+}
+#hugo-preview .hp-picks-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+#hugo-preview .hp-picks-option {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--hp-line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+#hugo-preview .hp-picks-option:has(input:checked) {
+  border-color: var(--hp-purple);
+  background: var(--hp-soft);
+}
+#hugo-preview .hp-picks-option input {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  accent-color: var(--hp-purple);
+}
+#hugo-preview .hp-picks-option > span:last-child {
+  min-width: 0;
+}
+#hugo-preview .hp-picks-option b {
+  display: block;
+  overflow-wrap: anywhere;
+}
+#hugo-preview .hp-picks-option small {
+  display: block;
+  margin-top: 4px;
+  color: var(--hp-muted);
+}
+#hugo-preview .hp-picks-image {
+  display: grid;
+  width: 64px;
+  height: 54px;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f7f6fa;
+}
+#hugo-preview .hp-picks-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+#hugo-preview .hp-daily-picks {
+  padding: 25px;
+  border: 1px solid #e3d8fb;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #f6f0ff, #fff 50%);
+}
+@media (max-width: 650px) {
+  #hugo-preview .hp-picks-options { grid-template-columns: 1fr; }
+  #hugo-preview .hp-picks-admin { padding: 16px; }
+  #hugo-preview .hp-daily-picks { padding: 15px; }
+}
 #hugo-preview .hp-stats-head {
   align-items: center;
 }

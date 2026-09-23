@@ -7,6 +7,13 @@ export const TELEGRAM_CHANNEL = 'https://t.me/h_m_g_pl';
 export const PURPOSES = ['study','office','programming','editing','gaming','travel'];
 export const BENEFITS = ['tested','metal','battery','keyboard','touch','light','gradeA'];
 export const BUNDLES = {mouse:45,office:200,photoshop:200,software:0,setup:50,upgrade:0};
+export function warsawDate(date = new Date()) {
+ return new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Warsaw',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
+}
+export function validateDailyPicks(ids) {
+ if(!Array.isArray(ids)||ids.length>2||new Set(ids).size!==ids.length||ids.some(id=>!Number.isSafeInteger(id)||id<1))throw Error('validation');
+ return ids;
+}
 export function csv(value=''){
  let items=value;
  if(typeof value==='string'&&value.trim().startsWith('[')){

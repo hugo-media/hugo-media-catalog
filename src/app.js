@@ -13,6 +13,7 @@ import {
   BENEFITS,
   BUNDLES,
   bundleLabel,
+  warsawDate,
 } from "./core.js";
 
 (() => {
@@ -901,6 +902,9 @@ import {
     formImages = [];
   }
   async function refresh() {
+    const picks = await db.listDailyPicks();
+    dailyPicksDate = picks.date;
+    dailyPicks = picks.ids;
     [products, reviews] = await Promise.all([
       db.listProducts(),
       db.listReviews(),
@@ -925,8 +929,10 @@ import {
             ? "notAdmin"
             : error.message === "validation"
               ? "validation"
-              : error.message === "imageError"
+            : error.message === "imageError"
                 ? "imageError"
+                : error.message === "selectionUnavailable"
+                  ? "dailyPicksUnavailable"
                 : "error",
         ),
       );
@@ -1061,22 +1067,29 @@ import {
     }
   }
   function adminNav(active) {
-    return `<div class="hp-admin-tabs"><button type="button" class="hp-button ${active === "admin" ? "hp-primary" : ""}" data-view="admin">${icon("package")}${t("productsTab")}</button><button type="button" class="hp-button ${active === "reviews" ? "hp-primary" : ""}" data-view="reviews">${icon("star")}${t("reviewsTab")}</button><button type="button" class="hp-button ${active === "stats" ? "hp-primary" : ""}" data-view="stats">${icon("bar-chart-3")}${t("analytics")}</button>${owner ? `<button type="button" class="hp-button ${active === "activity" ? "hp-primary" : ""}" data-view="activity">${icon("history")}${t("activity")}</button>` : ""}</div>`;
+    return `<div class="hp-admin-tabs"><button type="button" class="hp-button ${active === "admin" ? "hp-primary" : ""}" data-view="admin">${icon("package")}${t("productsTab")}</button><button type="button" class="hp-button ${active === "picks" ? "hp-primary" : ""}" data-view="picks">${icon("sparkles")}${t("dailyPicks")}</button><button type="button" class="hp-button ${active === "reviews" ? "hp-primary" : ""}" data-view="reviews">${icon("star")}${t("reviewsTab")}</button><button type="button" class="hp-button ${active === "stats" ? "hp-primary" : ""}" data-view="stats">${icon("bar-chart-3")}${t("analytics")}</button>${owner ? `<button type="button" class="hp-button ${active === "activity" ? "hp-primary" : ""}" data-view="activity">${icon("history")}${t("activity")}</button>` : ""}</div>`;
+  }
+  function renderDailyPicksAdmin() {
+    const available = products.filter((p) => p.status === 0 && stockQty(p) > 0);
+    const eligibleIds = new Set(available.map((p) => p.id));
+    draftPicks = draftPicks.filter((id) => eligibleIds.has(id));
+    q("#hp-content").innerHTML = `${adminNav("picks")}<div class="hp-intro"><div><h1>${t("dailyPicks")}</h1><span class="hp-muted">${t("dailyPicksSub")}</span></div></div><section class="hp-picks-admin"><p>${t("dailyPicksHelp")}</p><strong>${t("dailyPicksCount")}: ${draftPicks.length}/2</strong><div class="hp-picks-options">${available.map((p) => `<label class="hp-picks-option"><input type="checkbox" data-pick="${p.id}" ${draftPicks.includes(p.id) ? "checked" : ""}><span class="hp-picks-image">${p.images.length ? `<img src="${esc(pictureUrl(p.images[0]))}" alt="">` : icon(icons[p.cat])}</span><span><b>${esc(p.name)}</b><small>HMG-${String(p.id).padStart(3, "0")} · ${money(effectivePrice(p))} zł</small></span></label>`).join("") || `<p>${t("empty")}</p>`}</div><button type="button" class="hp-button hp-primary" id="hp-save-picks">${t("dailyPicksSave")}</button></section>`;
   }
   function renderAudit() {
     const content = q("#hp-content");
-    const labels = { name: t("name"), brand: t("brand"), cat: t("category"), status: t("status"), price: t("price"), condition: t("condition"), warranty: t("warranty"), images: t("activityPhotos"), specs: t("activityOther"), text_uk: t("reviewUk"), text_pl: t("reviewPl"), customer_name: t("customerName"), purchased_model: t("purchasedModel"), rating: t("rating"), is_published: t("published") };
+    const labels = { name: t("name"), brand: t("brand"), cat: t("category"), status: t("status"), price: t("price"), condition: t("condition"), warranty: t("warranty"), images: t("activityPhotos"), specs: t("activityOther"), text_uk: t("reviewUk"), text_pl: t("reviewPl"), customer_name: t("customerName"), purchased_model: t("purchasedModel"), rating: t("rating"), is_published: t("published"), product_ids: t("activityPickIds"), for_date: t("activityPickDate") };
     const stringify = (value, key) => {
       if (key === "images") return String((value || []).length);
+      if (key === "product_ids") return esc((value || []).map((id) => products.find((p) => p.id === Number(id))?.name || `HMG-${id}`).join(", ") || "—");
       const raw = typeof value === "object" ? JSON.stringify(value || {}) : String(value ?? "—");
       return esc(raw.length > 160 ? `${raw.slice(0, 157)}…` : raw);
     };
     content.innerHTML = `${adminNav("activity")}<div class="hp-intro"><div><h1>${t("activity")}</h1><span class="hp-muted">${t("activitySub")}</span></div></div>${auditLoading ? `<p>${t("loading")}</p>` : auditError ? `<p role="alert">${t("activityError")}</p>` : auditRows.length ? `<div class="hp-audit-list">${auditRows.map((row) => {
       const before = row.before_data || {};
       const after = row.after_data || {};
-      const name = after.name || before.name || after.customer_name || before.customer_name || `#${row.entity_id}`;
+      const name = row.entity === "recommendation" ? (after.for_date || before.for_date) : after.name || before.name || after.customer_name || before.customer_name || `#${row.entity_id}`;
       const changes = Object.keys({ ...before, ...after }).filter((key) => !["created_at", "updated_at", "id"].includes(key) && JSON.stringify(before[key]) !== JSON.stringify(after[key]));
-      return `<article class="hp-audit-item"><div class="hp-audit-heading"><strong>${t(row.action === "INSERT" ? "activityNew" : row.action === "DELETE" ? "activityDelete" : "activityUpdate")} · ${t(row.entity === "product" ? "activityProduct" : "activityReview")}: ${esc(name)}</strong><time datetime="${esc(row.created_at)}">${esc(new Intl.DateTimeFormat(lang === "uk" ? "uk-UA" : "pl-PL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.created_at)))}</time></div><div class="hp-muted hp-small">${esc(row.actor_email || t("activitySystem"))} · #${row.entity_id}</div>${changes.length ? `<details><summary>${changes.map((key) => esc(labels[key] || key)).join(" · ")}</summary><div class="hp-audit-diff">${changes.map((key) => `<div><b>${esc(labels[key] || key)}</b><span>${t("activityOld")}: ${stringify(before[key], key)}</span><span>${t("activityNow")}: ${stringify(after[key], key)}</span></div>`).join("")}</div></details>` : ""}</article>`;
+      return `<article class="hp-audit-item"><div class="hp-audit-heading"><strong>${t(row.action === "INSERT" ? "activityNew" : row.action === "DELETE" ? "activityDelete" : "activityUpdate")} · ${t(row.entity === "product" ? "activityProduct" : row.entity === "recommendation" ? "activityRecommendation" : "activityReview")}: ${esc(name)}</strong><time datetime="${esc(row.created_at)}">${esc(new Intl.DateTimeFormat(lang === "uk" ? "uk-UA" : "pl-PL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.created_at)))}</time></div><div class="hp-muted hp-small">${esc(row.actor_email || t("activitySystem"))}${row.entity === "recommendation" ? "" : ` · #${row.entity_id}`}</div>${changes.length ? `<details><summary>${changes.map((key) => esc(labels[key] || key)).join(" · ")}</summary><div class="hp-audit-diff">${changes.map((key) => `<div><b>${esc(labels[key] || key)}</b><span>${t("activityOld")}: ${stringify(before[key], key)}</span><span>${t("activityNow")}: ${stringify(after[key], key)}</span></div>`).join("")}</div></details>` : ""}</article>`;
     }).join("")}</div>` : `<p class="hp-empty">${t("activityEmpty")}</p>`}`;
   }
   function countBy(rows, key, filter = () => true) {
@@ -1856,6 +1869,11 @@ import {
   ];
   Object.assign(dict.uk, {
     activity: "Журнал змін", activitySub: "Хто, коли й що змінив у товарах і відгуках. Видно тільки власнику.",
+    dailyPicks: "Рекомендуємо сьогодні", dailyPicksSub: "До 2 товарів на головній сторінці. Вибір діє до кінця дня за польським часом.",
+    dailyPicksHelp: "Вибери не більше двох товарів у наявності й натисни «Зберегти». Завтра можна вибрати нові.",
+    dailyPicksSave: "Зберегти рекомендації", dailyPicksCount: "Вибрано", dailyPicksEmpty: "Сьогодні рекомендації ще не вибрані.",
+    dailyPicksLimit: "Можна вибрати не більше двох товарів.", dailyPicksUnavailable: "Один із товарів уже недоступний. Перевір вибір.",
+    activityRecommendation: "рекомендації дня", activityPickIds: "Рекомендовані товари", activityPickDate: "Дата",
     activityNew: "Додано", activityUpdate: "Змінено", activityDelete: "Видалено",
     activityProduct: "товар", activityReview: "відгук", activityEmpty: "Змін поки немає.",
     activityError: "Не вдалося завантажити журнал.", activitySystem: "Система",
@@ -1863,6 +1881,11 @@ import {
   });
   Object.assign(dict.pl, {
     activity: "Historia zmian", activitySub: "Kto, kiedy i co zmienił w produktach i opiniach. Widoczne tylko dla właściciela.",
+    dailyPicks: "Polecamy dziś", dailyPicksSub: "Do 2 produktów na stronie głównej. Wybór obowiązuje do końca dnia według czasu polskiego.",
+    dailyPicksHelp: "Wybierz maksymalnie dwa dostępne produkty i kliknij «Zapisz». Jutro możesz wybrać inne.",
+    dailyPicksSave: "Zapisz rekomendacje", dailyPicksCount: "Wybrano", dailyPicksEmpty: "Na dziś nie wybrano jeszcze rekomendacji.",
+    dailyPicksLimit: "Można wybrać maksymalnie dwa produkty.", dailyPicksUnavailable: "Jeden z produktów jest już niedostępny. Sprawdź wybór.",
+    activityRecommendation: "rekomendacje dnia", activityPickIds: "Polecane produkty", activityPickDate: "Data",
     activityNew: "Dodano", activityUpdate: "Zmieniono", activityDelete: "Usunięto",
     activityProduct: "produkt", activityReview: "opinię", activityEmpty: "Brak zmian.",
     activityError: "Nie udało się pobrać historii.", activitySystem: "System",
@@ -1880,8 +1903,10 @@ import {
           ? "stats"
           : adminRoute === "reviews"
             ? "reviews"
-            : adminRoute === "activity"
+          : adminRoute === "activity"
               ? "activity"
+            : adminRoute === "picks"
+              ? "picks"
             : "admin"
         : initialParams.has("product")
           ? "detail"
@@ -1900,6 +1925,9 @@ import {
     formImages = [],
     editReviewId = null,
     reviewImage = null,
+    dailyPicks = [],
+    dailyPicksDate = "",
+    draftPicks = [],
     admin = false,
     owner = false,
     auditRows = [],
@@ -2120,12 +2148,12 @@ import {
       adminReturn.className = "hp-admin-return";
       q("#hp-categories").after(adminReturn);
     }
-    adminReturn.hidden = !admin || ["admin", "edit", "stats", "reviews", "reviewEdit", "activity", "start"].includes(view);
+    adminReturn.hidden = !admin || ["admin", "edit", "stats", "reviews", "reviewEdit", "activity", "picks", "start"].includes(view);
     adminReturn.innerHTML = adminReturn.hidden
       ? ""
       : `<button type="button" class="hp-button" data-view="admin">${t("backToAdmin")}</button>`;
     if (
-      ["admin", "edit", "stats", "reviews", "reviewEdit", "activity"].includes(view) &&
+      ["admin", "edit", "stats", "reviews", "reviewEdit", "activity", "picks"].includes(view) &&
       !admin
     ) {
       renderCompareDock();
@@ -2166,6 +2194,10 @@ import {
       const available = products.filter(
           (p) => p.status === 0 && stockQty(p) > 0,
         ),
+        todayList = dailyPicksDate === warsawDate()
+          ? dailyPicks.map((id) => available.find((p) => p.id === id)).filter(Boolean)
+          : [],
+        todayIds = new Set(todayList.map((p) => p.id)),
         featured =
           [...available]
             .sort((a, b) => b.id - a.id)
@@ -2173,14 +2205,14 @@ import {
           available.find((p) => p.images.length) ||
           available[0],
         bestsellers = available
-          .filter((p) => p.bestseller === "true")
+          .filter((p) => p.bestseller === "true" && !todayIds.has(p.id))
           .slice(0, 4),
-        featuredIds = new Set(bestsellers.map((p) => p.id)),
+        featuredIds = new Set([...todayIds, ...bestsellers.map((p) => p.id)]),
         offers = available
           .filter((p) => discountPercent(p) > 0 && !featuredIds.has(p.id))
           .sort((a, b) => discountPercent(b) - discountPercent(a))
           .slice(0, 4),
-        displayedIds = new Set([...bestsellers, ...offers].map((p) => p.id)),
+        displayedIds = new Set([...todayList, ...bestsellers, ...offers].map((p) => p.id)),
         latest = available
           .filter((p) => p.newArrival === "true" && !displayedIds.has(p.id))
           .sort((a, b) => b.id - a.id)
@@ -2190,6 +2222,7 @@ import {
           ? `<section class="hp-home-section hp-merch-section ${kind}"><div class="hp-section-title"><div><div class="hp-kicker">Hugo selection</div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ""}</div><button type="button" class="hp-home-link" data-cat="-1">${t("viewAll")}${icon("arrow-right")}</button></div><div class="hp-grid hp-home-products">${list.map(productCard).join("")}</div></section>`
           : "";
       content.innerHTML = `<section class="hp-home-hero"><div class="hp-home-copy"><div class="hp-kicker">${t("heroEyebrow")}</div><h1>${t("heroTitle")}</h1><p>${t("heroSub")}</p><div class="hp-home-actions"><button type="button" class="hp-button hp-primary" data-cat="0">${t("shopNow")}${icon("arrow-right")}</button><a class="hp-button hp-hero-secondary" href="https://t.me/HUGO_Media" target="_blank" rel="noopener noreferrer" data-track-target="telegram_contact">${icon("message-circle")}${t("ask")}</a></div><div class="hp-hero-proof"><span>${icon("badge-check")}${t("verifiedLabel")}</span><span>${icon("camera")}${t("realPhotos")}</span></div></div>${featured ? `<div class="hp-featured"><div class="hp-featured-label">${t("heroPick")}</div><button type="button" class="hp-featured-product" data-detail="${featured.id}"><div class="hp-featured-image">${featured.images.length ? `<img src="${esc(pictureUrl(featured.images[0]))}" alt="${esc(featured.name)}">` : icon("laptop")}</div><div class="hp-featured-info"><span>${esc(featured.brand)}</span><strong>${esc(productTitle(featured))}</strong><small>${esc(featured.cpu)} · ${esc(featured.ram)} GB RAM · ${esc(featured.ssd)} GB SSD</small><div>${t("heroFrom")} <b>${money(effectivePrice(featured))} zł</b> ${icon("arrow-right")}</div></div></button></div>` : ""}</section><section class="hp-benefits"><div>${icon("badge-check")}<span><b>${t("checkedTech")}</b><small>${t("checkedTechSub")}</small></span></div><div>${icon("shield-check")}<span><b>${t("warrantyBenefit")}</b><small>${t("warrantyBenefitSub")}</small></span></div><div>${icon("truck")}<span><b>${t("deliveryBenefit")}</b><small>${t("deliveryBenefitSub")}</small></span></div><div class="hp-stock-benefit">${icon("package-check")}<span><b>${available.length} ${t("inStockNow")}</b><small>${t("realPhotos")}</small></span></div></section>${productSection(t("bestChoice"), t("bestChoiceSub"), bestsellers, "hp-bestsellers")}${productSection(t("saleOffers"), t("saleOffersSub"), offers, "hp-offers")}${productSection(t("latestProducts"), t("newArrivalsSub"), latest, "hp-latest")}${reviewsBlock()}<section class="hp-telegram-band"><div><div class="hp-kicker">Hugo concierge</div><h2>${t("telegramHelp")}</h2><p>${t("telegramHelpSub")}</p></div><a class="hp-button hp-primary" href="https://t.me/HUGO_Media" target="_blank" rel="noopener noreferrer" data-track-target="telegram_contact">${icon("send")}${t("writeTelegram")}</a></section>`;
+      if (todayList.length) content.querySelector(".hp-benefits").insertAdjacentHTML("afterend", productSection(t("dailyPicks"), t("dailyPicksSub"), todayList, "hp-daily-picks"));
       content.insertAdjacentHTML("beforeend", `<section class="hp-home-section hp-order-guide"><div class="hp-section-title"><div><div class="hp-kicker">Hugo service</div><h2>${t("orderSteps")}</h2><p>${t("orderStepsSub")}</p></div></div><div class="hp-order-steps"><div><b>01</b><strong>${t("orderStepOne")}</strong><p>${t("orderStepOneSub")}</p></div><div><b>02</b><strong>${t("orderStepTwo")}</strong><p>${t("orderStepTwoSub")}</p></div><div><b>03</b><strong>${t("orderStepThree")}</strong><p>${t("orderStepThreeSub")}</p></div></div><div class="hp-order-guide-foot"><span>${icon("truck")}${t("deliveryNote")}</span><span><b>${t("trustQuestion")}</b> ${t("trustQuestionSub")}</span></div></section>`);
       content.querySelector(".hp-order-steps").insertAdjacentHTML("afterend", `<h3 class="hp-trust-heading">${t("trustDetails")}</h3><div class="hp-trust-grid">${[
         ["shield-check", "trustWarranty", "trustWarrantyText"],
@@ -2340,6 +2373,7 @@ import {
           "",
         )}</div><div class="hp-note">${t("adminNote")}</div><button type="button" class="hp-button" id="hp-signout">${t("signout")}</button>`;
     }
+    if (view === "picks") renderDailyPicksAdmin();
     if (view === "reviews") renderReviewsAdmin();
     if (view === "reviewEdit") renderReviewForm();
     if (view === "stats") renderAnalytics();
@@ -2524,6 +2558,17 @@ import {
     } else if (b.dataset.statsRange) {
       statsRange = Number(b.dataset.statsRange);
       await loadAnalytics();
+    } else if (b.id === "hp-save-picks") {
+      await run(async () => {
+        await refresh();
+        const eligibleIds = new Set(products.filter((p) => p.status === 0 && stockQty(p) > 0).map((p) => p.id));
+        if (draftPicks.some((id) => !eligibleIds.has(id))) throw Error("selectionUnavailable");
+        await db.saveDailyPicks(draftPicks);
+        await refresh();
+        draftPicks = [...dailyPicks];
+        render();
+        notify(t("saved"));
+      });
     } else if (b.dataset.statMetric) {
       statsMetric = b.dataset.statMetric;
       render();
@@ -2540,6 +2585,7 @@ import {
     } else if (b.dataset.view) {
       if (view === "edit") clearPictures();
       view = b.dataset.view;
+      if (view === "picks") draftPicks = dailyPicksDate === warsawDate() ? [...dailyPicks] : [];
       history.replaceState(
         null,
         "",
@@ -2551,6 +2597,8 @@ import {
               ? "?admin=reviews"
               : view === "activity"
                 ? "?admin=activity"
+              : view === "picks"
+                ? "?admin=picks"
               : "/",
       );
       if (view === "cart")
@@ -2768,7 +2816,17 @@ import {
   });
   root.addEventListener("change", async (e) => {
     const el = e.target;
-    if (el.matches("select[data-filter]")) {
+    if (el.matches("input[data-pick]")) {
+      const id = Number(el.dataset.pick);
+      if (el.checked && draftPicks.length >= 2) {
+        el.checked = false;
+        notify(t("dailyPicksLimit"));
+        return;
+      }
+      draftPicks = el.checked ? [...draftPicks, id] : draftPicks.filter((item) => item !== id);
+      renderDailyPicksAdmin();
+      refreshIcons();
+    } else if (el.matches("select[data-filter]")) {
       filters[el.dataset.filter] = el.value;
       cards();
     } else if (el.id === "hp-sort") {
@@ -2915,6 +2973,7 @@ import {
         admin = await db.isAdmin();
         if (admin) owner = await db.isOwner();
         await refresh();
+        if (view === "picks") draftPicks = [...dailyPicks];
         if (view === "activity" && owner) {
           auditRows = await db.listAudit();
         }

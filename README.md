@@ -38,6 +38,8 @@ The browser imports Supabase JS **2.57.4** from esm.sh and Lucide **0.453.0** fr
 4. Run `supabase/tests/access.sql`. It performs public/non-admin/owner checks inside a rolled-back transaction. A provisioned owner is required.
 5. Inspect database security advisors and verify Storage policies. This repository's tests cannot establish the safety of unrelated policies already present in the chosen project.
 
+For the daily recommendations feature, apply `supabase/daily_picks.sql` after `supabase/audit.sql`. The recommendations are selected in the admin tab «Рекомендуємо сьогодні» and expire at midnight in Warsaw. The database enforces a maximum of two distinct products per day; changes appear in the owner's activity log.
+
 Photo objects are public merchandise images, including uploaded photos that have not yet been published. Never upload private documents. Removing a photo or product does not immediately delete its Storage object because duplicate products may share the image. Review unattached photos in Storage periodically to control free-tier space.
 
 ## Vercel

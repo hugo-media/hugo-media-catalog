@@ -1,4 +1,4 @@
-import { TABLE, BUCKET, toRow, fromRow, publicConfigValid } from "./core.js";
+import { TABLE, BUCKET, toRow, fromRow, publicConfigValid, warsawDate, validateDailyPicks } from "./core.js";
 let client;
 export const ready = publicConfigValid(window.HUGO_CONFIG || {});
 export const authCallback =
@@ -37,6 +37,24 @@ export async function listProducts() {
     if (data.length < 500) break;
   }
   return products;
+}
+export async function listDailyPicks() {
+  const c = await connect();
+  const date = warsawDate();
+  const { data, error } = await c.from("hmg_catalog_daily_picks")
+    .select("product_ids").eq("for_date", date).maybeSingle();
+  if (error) throw error;
+  return { date, ids: (data?.product_ids || []).map(Number) };
+}
+export async function saveDailyPicks(ids) {
+  if (!(await isAdmin())) throw Error("notAdmin");
+  validateDailyPicks(ids);
+  const c = await connect();
+  const { data, error } = await c.from("hmg_catalog_daily_picks")
+    .upsert({ for_date: warsawDate(), product_ids: ids }, { onConflict: "for_date" })
+    .select("for_date,product_ids").single();
+  if (error) throw error;
+  return data;
 }
 export async function isAdmin() {
   const c = await connect();
