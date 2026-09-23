@@ -82,3 +82,12 @@ For local configured builds, export the public variables into the shell before `
 - Apply `supabase/catalog_improvements.sql` once after `audit.sql` and `daily_picks.sql`. It creates the public display settings row and private, immutable product snapshots. Current products are snapshotted at installation, then after each edit. Version restore uses an invoker RPC, checks the current update timestamp, and creates a normal product edit/audit entry. No historical snapshots are fabricated.
 - Run `supabase/tests/catalog_improvements.sql` inside a transaction; it verifies public/admin/non-admin access, snapshot immutability, stale restore rejection, and restoration, then rolls back all test changes.
 - Genuine customer screenshots and actual service conditions must be supplied by the owner/admin; the application does not invent reviews or label unspecified images as real photos of the item.
+
+
+## Storefront refresh — 2026-09-23
+
+Public presentation is in `src/storefront.js` and scoped `storefront.css`; product management, authentication and analytics retain their existing modules. Home shows at most two daily picks, a single New/Best/Sale collection and Telegram delivery benefit. The finder, catalog and order actions retain existing event tracking and consent behavior.
+
+Numeric filters normalize existing RAM/storage/screen formats for display and matching; this does not rewrite database specifications. Product detail navigation records public browser history and restores catalog scroll/filter state. Photo captions distinguish model illustrations from actual-item photos; unknown provenance is never claimed to be an actual-item photo.
+
+Data cleanup, guarded against concurrent edits: product 23 SSD corrected from 256 to 512 GB based on the owner's original supplied specification and bilingual descriptions; product 28 typo corrected to Apple iPhone 13 Pro Max 256 GB; product 30 expanded from Pro3 to Apple AirPods Pro 3 using its existing descriptions. Prices, images and other specifications unchanged. Existing database triggers record versions/audit.

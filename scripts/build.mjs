@@ -5,6 +5,6 @@ const supabaseUrl=process.env.SUPABASE_URL||fallback.supabaseUrl||'';
 const supabaseKey=process.env.SUPABASE_PUBLISHABLE_KEY||process.env.SUPABASE_ANON_KEY||fallback.supabaseKey||'';
 if((supabaseUrl||supabaseKey)&&!publicConfigValid({supabaseUrl,supabaseKey}))throw Error('Provide a valid Supabase HTTPS URL and publishable/anon key. Secret and service-role keys are forbidden.');
 await rm('dist',{recursive:true,force:true});await mkdir('dist/src',{recursive:true});
-for(const f of ['index.html','styles.css','src/app.js','src/core.js','src/data.js','src/enhancements.js','src/enhancement-core.js','src/drafts.js'])await copyFile(f,`dist/${f}`);
+for(const f of ['index.html','styles.css','storefront.css','src/storefront.js','src/app.js','src/core.js','src/data.js','src/enhancements.js','src/enhancement-core.js','src/drafts.js'])await copyFile(f,`dist/${f}`);
 await writeFile('dist/config.js','window.HUGO_CONFIG = '+JSON.stringify({supabaseUrl,supabaseKey})+';\n');
 console.log(supabaseUrl?'Build ready with public Supabase configuration.':'Build ready. Supabase not configured; site will show an honest setup state.');
