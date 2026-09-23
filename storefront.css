@@ -204,8 +204,8 @@
 #hugo-preview.hp-storefront .hp-detail-back{margin:12px 0 16px}
 #hugo-preview.hp-storefront .hm-compact-detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"gallery heading" "gallery overview" "gallery checkout";column-gap:32px;row-gap:12px;align-items:start}
 #hugo-preview.hp-storefront .hm-detail-heading{grid-area:heading;min-width:0}
-#hugo-preview.hp-storefront .hm-detail-heading h1{font-size:30px;line-height:1.15;letter-spacing:-.7px;margin:6px 0 9px}
-#hugo-preview.hp-storefront .hm-detail-heading .hp-detail-config{margin:0;font-size:13px}
+#hugo-preview.hp-storefront .hm-detail-heading h1{font-size:32px;line-height:1.2;letter-spacing:-.7px;margin:6px 0 9px}
+#hugo-preview.hp-storefront .hm-detail-heading .hp-detail-config{margin:0;font-size:15px}
 #hugo-preview.hp-storefront .hm-detail-media{grid-area:gallery;min-width:0}
 #hugo-preview.hp-storefront .hm-detail-media>.hm-spec-details{margin-top:12px}
 #hugo-preview.hp-storefront .hm-compact-detail .hp-gallery-panel{position:static;padding:16px}
@@ -216,58 +216,81 @@
 #hugo-preview.hp-storefront .hm-compact-detail .hp-thumbs img{width:48px;height:42px;object-fit:contain}
 #hugo-preview.hp-storefront .hm-product-overview{grid-area:overview;min-width:0;padding:0}
 #hugo-preview.hp-storefront .hm-product-overview .hp-detail-badges{display:inline-flex;margin:0 8px 0 0}
-#hugo-preview.hp-storefront .hm-product-overview .hp-stock{display:inline-block;margin:0;font-size:11px}
+#hugo-preview.hp-storefront .hm-product-overview .hp-stock{display:inline-block;margin:0;font-size:14px}
 #hugo-preview.hp-storefront .hm-product-overview .hp-detail-price{margin:10px 0;display:flex;flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:10px}
 #hugo-preview.hp-storefront .hm-product-overview .hp-sale-price{font-size:29px}
 #hugo-preview.hp-storefront .hm-product-overview .hm-buy-facts{padding:8px 0;margin:0 0 10px;gap:8px}
 #hugo-preview.hp-storefront .hm-product-overview .hp-purpose-tags{margin:8px 0}
 #hugo-preview.hp-storefront .hm-product-description{margin:10px 0}
-#hugo-preview.hp-storefront .hm-description-intro{font-size:14px;line-height:1.55;color:#4e4659;margin:0}
+#hugo-preview.hp-storefront .hm-description-intro{font-size:16px;line-height:1.6;color:#393342;margin:0}
 #hugo-preview.hp-storefront .hm-product-description details{margin-top:6px}
-#hugo-preview.hp-storefront .hm-product-description summary{font-size:12px;color:#674395;cursor:pointer;padding:10px 0;min-height:40px}
-#hugo-preview.hp-storefront .hm-product-description .hp-description{white-space:pre-line;line-height:1.6;font-size:14px;color:#4e4659;margin:10px 0}
+#hugo-preview.hp-storefront .hm-product-description summary{font-size:14px;color:#674395;cursor:pointer;padding:10px 0;min-height:40px}
+#hugo-preview.hp-storefront .hm-product-description .hp-description{white-space:pre-line;line-height:1.6;font-size:16px;color:#393342;margin:10px 0}
 #hugo-preview.hp-storefront .hm-product-overview .hp-benefit-list{display:flex;flex-wrap:wrap;gap:6px}
-#hugo-preview.hp-storefront .hm-product-overview .hp-benefit-list span{font-size:11px;gap:4px;padding:0;background:none}
+#hugo-preview.hp-storefront .hm-product-overview .hp-benefit-list span{font-size:14px;gap:4px;padding:0;background:none}
 #hugo-preview.hp-storefront .hm-product-overview .hp-benefit-list svg{width:13px;height:13px}
 #hugo-preview.hp-storefront .hm-product-review{margin:12px 0 0;padding:0}
-#hugo-preview.hp-storefront .hm-product-review .hp-channel-button{width:100%;justify-content:center;white-space:normal;min-height:46px;font-size:13px;padding:11px 14px;background:#eee7f8;border:1px solid #dfd2f0;color:#593386;border-radius:10px}
+#hugo-preview.hp-storefront .hm-product-review .hp-channel-button{width:100%;justify-content:center;white-space:normal;min-height:56px;font-size:17px;font-weight:700;padding:14px 16px;background:#086da5;border:2px solid #086da5;color:#fff;border-radius:10px;box-shadow:0 4px 12px #086da522}
 #hugo-preview.hp-storefront .hm-product-checkout{grid-area:checkout;min-width:0;width:100%;max-width:none;margin:0;padding:16px;border:1px solid #e3dbea;border-radius:14px;background:#fff;scroll-margin-top:14px}
-#hugo-preview.hp-storefront .hm-checkout-heading h2{font-size:17px;margin:0 0 10px;letter-spacing:0}
+#hugo-preview.hp-storefront .hm-checkout-heading h2{font-size:21px;margin:0 0 10px;letter-spacing:0}
 #hugo-preview.hp-storefront .hm-product-checkout .hm-configurator{margin:0;padding:0;background:none;border:0;border-radius:0}
 #hugo-preview.hp-storefront .hm-product-checkout .hm-configurator h3{display:none}
 #hugo-preview.hp-storefront .hm-config-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-#hugo-preview.hp-storefront .hm-config-options .hp-field{margin:0;font-size:12px;min-width:0}
-#hugo-preview.hp-storefront .hm-config-options select{font-size:13px;padding:10px 8px;min-height:44px}
-#hugo-preview.hp-storefront .hm-product-checkout .hm-configurator>p{font-size:11px;margin:7px 0;line-height:1.5}
+#hugo-preview.hp-storefront .hm-config-options .hp-field{margin:0;font-size:14px;min-width:0}
+#hugo-preview.hp-storefront .hm-config-options select{font-size:16px;padding:10px 8px;min-height:44px}
+#hugo-preview.hp-storefront .hm-product-checkout .hm-configurator>p{font-size:14px;margin:7px 0;line-height:1.5}
 #hugo-preview.hp-storefront .hm-config-extras{border:1px solid #e7e1ed;border-radius:8px;margin:8px 0}
-#hugo-preview.hp-storefront .hm-config-extras .hm-extras-heading{padding:11px 12px;font-size:13px;font-weight:600;min-height:44px}
-#hugo-preview.hp-storefront .hm-config-extras .hm-extras-heading>span{float:right;color:#765998;font-size:11px}
+#hugo-preview.hp-storefront .hm-config-extras .hm-extras-heading{padding:11px 12px;font-size:15px;font-weight:600;min-height:44px}
+#hugo-preview.hp-storefront .hm-config-extras .hm-extras-heading>span{float:right;color:#765998;font-size:14px}
 #hugo-preview.hp-storefront .hm-configurator .hm-config-extras .hp-bundle-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0;padding:0 10px 10px}
-#hugo-preview.hp-storefront .hm-config-extras .hp-bundle-list label{border:1px solid #eee8f3;border-radius:7px;padding:8px;min-height:44px;font-size:12px;line-height:1.4}
-#hugo-preview.hp-storefront .hm-config-breakdown>div{font-size:12px;margin:6px 0}
+#hugo-preview.hp-storefront .hm-config-extras .hp-bundle-list label{border:1px solid #eee8f3;border-radius:7px;padding:8px;min-height:48px;font-size:15px;line-height:1.45;color:#30283b;background:#fff}
+#hugo-preview.hp-storefront .hm-config-breakdown>div{font-size:14px;margin:6px 0}
 #hugo-preview.hp-storefront .hm-config-breakdown .hm-config-total{margin:9px 0;padding-top:9px;font-size:19px}
 #hugo-preview.hp-storefront .hm-config-total strong{font-size:27px}
 #hugo-preview.hp-storefront .hm-checkout-actions .hp-detail-primary-actions{grid-template-columns:1fr;margin:8px 0}
-#hugo-preview.hp-storefront .hm-checkout-actions .hp-primary{min-height:48px;font-size:15px}
+#hugo-preview.hp-storefront .hm-checkout-actions .hp-primary{width:100%;min-height:58px;font-size:18px;font-weight:700;background:#6225bc;border:2px solid #6225bc;color:#fff;box-shadow:0 5px 14px #6225bc28}
 #hugo-preview.hp-storefront .hm-checkout-actions .hp-detail-secondary-actions{margin:0;gap:3px;justify-content:space-between}
-#hugo-preview.hp-storefront .hm-checkout-actions .hp-detail-secondary-actions .hp-button{padding:6px;min-height:40px;font-size:12px}
-#hugo-preview.hp-storefront .hm-checkout-actions>p{font-size:12px;line-height:1.4;margin:6px 0 0}
-#hugo-preview.hp-storefront .hm-product-checkout .hp-product-subscribe{padding:8px 10px;margin-top:10px;font-size:12px}
+#hugo-preview.hp-storefront .hm-checkout-actions .hp-detail-secondary-actions .hp-button{padding:9px;min-height:44px;font-size:14px;color:#4a335f}
+#hugo-preview.hp-storefront .hm-checkout-actions>p{font-size:14px;line-height:1.4;margin:6px 0 0}
+#hugo-preview.hp-storefront .hm-product-checkout .hp-product-subscribe{padding:8px 10px;margin-top:10px;font-size:14px}
 #hugo-preview.hp-storefront .hm-checkout-base{display:flex;align-items:center;justify-content:space-between;margin:10px 0;font-size:14px}
 #hugo-preview.hp-storefront .hm-checkout-base strong{font-size:25px}
 #hugo-preview.hp-storefront .hp-detail-lower{display:block;margin:20px 0 0}
 #hugo-preview.hp-storefront .hm-spec-details{padding:14px 18px}
-#hugo-preview.hp-storefront .hm-spec-details summary{cursor:pointer;font-size:15px;font-weight:600;min-height:26px}
-#hugo-preview.hp-storefront .hm-spec-details[open] summary{margin-bottom:14px}
+#hugo-preview.hp-storefront .hm-spec-details h2{font-size:21px;line-height:1.3;margin:0 0 12px;color:#282130}
+#hugo-preview.hp-storefront .hm-spec-details .hp-detailspec{display:block}
+#hugo-preview.hp-storefront .hm-spec-details .hp-detailspec>div{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:14px;min-height:0;padding:11px 0;border:0;border-bottom:1px solid #e7e2ed;text-align:left}
+#hugo-preview.hp-storefront .hm-spec-details .hp-detailspec>div:last-child{border-bottom:0}
+#hugo-preview.hp-storefront .hm-spec-details .hp-detailspec span{font-size:14px;font-weight:400;color:#584f62;line-height:1.5}
+#hugo-preview.hp-storefront .hm-spec-details .hp-detailspec b{font-size:15px;font-weight:600;color:#282130;line-height:1.5;overflow-wrap:anywhere}
 @media(max-width:760px){
  #hugo-preview.hp-storefront .hm-compact-detail{grid-template-columns:minmax(0,1fr);grid-template-areas:"heading" "gallery" "overview" "checkout";gap:12px}
- #hugo-preview.hp-storefront .hm-detail-heading h1{font-size:25px;margin:5px 0 7px}
+ #hugo-preview.hp-storefront .hm-detail-heading h1{font-size:28px;margin:5px 0 7px}
  #hugo-preview.hp-storefront .hm-compact-detail .hp-gallery-panel{position:static;padding:12px}
  #hugo-preview.hp-storefront .hm-compact-detail .hp-gallery-panel .hp-photo{height:200px;padding:4px}
  #hugo-preview.hp-storefront .hm-product-overview .hp-sale-price{font-size:27px}
  #hugo-preview.hp-storefront .hm-product-checkout{padding:14px}
- #hugo-preview.hp-storefront .hm-config-extras .hp-bundle-list label{font-size:12px}
+ #hugo-preview.hp-storefront .hm-config-extras .hp-bundle-list label{font-size:15px}
  #hugo-preview.hp-storefront .hp-detail-back{margin:10px 0 12px}
- #hugo-preview.hp-storefront .hm-product-overview .hm-buy-facts small{font-size:11px}
+ #hugo-preview.hp-storefront .hm-product-overview .hm-buy-facts small{font-size:14px}
 }
 @media(max-width:380px){#hugo-preview.hp-storefront .hm-config-options{grid-template-columns:1fr}#hugo-preview.hp-storefront .hm-configurator .hm-config-extras .hp-bundle-list{grid-template-columns:1fr}}
+
+/* Readable product information and distinct primary actions. */
+#hugo-preview.hp-storefront .hp-detail-page{font-size:16px;color:#282130}
+#hugo-preview.hp-storefront .hm-detail-heading .hp-kicker,#hugo-preview.hp-storefront .hm-detail-heading .hp-charger-note{font-size:14px;color:#584f62}
+#hugo-preview.hp-storefront .hm-detail-heading .hp-detail-config{color:#51485c}
+#hugo-preview.hp-storefront .hm-product-overview .hm-buy-facts small{font-size:14px;color:#584f62}
+#hugo-preview.hp-storefront .hm-product-overview .hm-buy-facts b{font-size:16px;color:#282130}
+#hugo-preview.hp-storefront .hm-product-overview .hp-purpose-tags span{font-size:14px;color:#4a335f}
+#hugo-preview.hp-storefront .hm-product-overview .hp-detail-badges span{font-size:13px}
+#hugo-preview.hp-storefront .hm-product-overview .hp-benefit-list span{color:#51445f}
+#hugo-preview.hp-storefront .hm-product-review .hp-channel-button:hover{background:#075985;border-color:#075985}
+#hugo-preview.hp-storefront .hm-checkout-actions .hp-primary:hover{background:#4d189c;border-color:#4d189c}
+#hugo-preview.hp-storefront .hm-checkout-actions .hp-primary:disabled{background:#6f687a;border-color:#6f687a;box-shadow:none;opacity:.6}
+#hugo-preview.hp-storefront .hm-product-review .hp-channel-button svg,#hugo-preview.hp-storefront .hm-checkout-actions .hp-primary svg{width:21px;height:21px;flex-shrink:0}
+#hugo-preview.hp-storefront .hm-config-extras .hp-bundle-list label:has(input:checked){border-color:#8152c5;background:#f1e9fc;color:#3c1c66}
+#hugo-preview.hp-storefront .hm-product-checkout .hp-product-subscribe{color:#514060;line-height:1.5}
+#hugo-preview.hp-storefront .hm-product-checkout .hp-product-subscribe a{color:#51278b;font-weight:700}
+#hugo-preview.hp-storefront .hp-detail-page .hp-muted{color:#584f62}
+@media(max-width:760px){#hugo-preview.hp-storefront .hp-mobile-order-bar .hp-button{font-size:15px;font-weight:700;background:#6225bc}#hugo-preview.hp-storefront .hp-mobile-order-bar>a{font-size:13px;color:#086da5}}
