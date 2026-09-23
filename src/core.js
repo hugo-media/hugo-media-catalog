@@ -1,7 +1,8 @@
+export const UPGRADES = {ram16:{group:'ram',target:16},ram32:{group:'ram',target:32},ssd512:{group:'ssd',target:512},ssd1024:{group:'ssd',target:1024}};
 export const TABLE = 'hmg_catalog_products';
 export const BUCKET = 'hmg-catalog-photos';
 export const MAX_IMAGES = 8;
-export const SPEC_KEYS = ['cpu','generation','ram','ssd','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','newArrival','bestseller','discount','telegramPost','quantity','purposes','benefits','bundles','charger','photoKind'];
+export const SPEC_KEYS = ['cpu','generation','ram','ssd','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','newArrival','bestseller','discount','telegramPost','quantity','purposes','benefits','bundles','charger','photoKind',...Object.keys(UPGRADES).flatMap(k=>[k+'Enabled',k+'Price'])];
 export const DISCOUNTS = [0,5,10,15,20,25,30];
 export const TELEGRAM_CHANNEL = 'https://t.me/h_m_g_pl';
 export const PURPOSES = ['study','office','programming','editing','gaming','travel'];
@@ -43,18 +44,37 @@ export function validateProduct(p){
  if(!validTelegramPost(p.telegramPost))throw Error('validation');
  const quantity=p.quantity===''||p.quantity==null?1:Number(p.quantity);if(!Number.isInteger(quantity)||quantity<0||quantity>99)throw Error('validation');
  if(csv(p.purposes).some(v=>!PURPOSES.includes(v))||csv(p.benefits).some(v=>!BENEFITS.includes(v))||csv(p.bundles).some(v=>!(v in BUNDLES)))throw Error('validation');
+ for(const key of Object.keys(UPGRADES)){if(!['','true'].includes(String(p[key+'Enabled']||'')))throw Error('validation');if(p[key+'Enabled']==='true'&&(Number(p.cat)!==0||!upgradeOptions(p).some(o=>o.key===key)))throw Error('validation');}
  if((p.images||[]).length>MAX_IMAGES)throw Error('validation');
  for(const k of ['descUk','descPl'])if(String(p[k]||'').length>10000)throw Error('validation');
 }
 export function toRow(p){validateProduct(p);return {name:p.name.trim(),brand:p.brand.trim(),cat:Number(p.cat),status:Number(p.status),price:Math.round(Number(p.price)*100)/100,condition:String(p.condition||''),warranty:String(p.warranty||''),desc_uk:String(p.descUk||''),desc_pl:String(p.descPl||''),images:p.images||[],specs:Object.fromEntries(SPEC_KEYS.map(k=>[k,k==='telegramPost'?normalizeTelegramPost(p[k]):String(p[k]||'').trim()]))};}
 export function fromRow(r){return {...r,...r.specs,price:Number(r.price),descUk:r.desc_uk||'',descPl:r.desc_pl||'',images:Array.isArray(r.images)?r.images:[]};}
 export function reconcileCart(ids,products){return [...new Set(ids)].filter(id=>products.some(p=>p.id===id&&p.status===0&&(p.quantity===''||p.quantity==null||Number(p.quantity)>0)));}
-export function orderText(items,lang='uk',origin='',bundleSelections={}){
- const lines=[lang==='pl'?'Dzień dobry! Interesują mnie te produkty:':'Вітаю! Цікавлять ці товари:'];
- for(const p of items){lines.push(`• ${p.name} / HMG-${String(p.id).padStart(3,'0')} — ${effectivePrice(p).toFixed(2)} zł${discountPercent(p)?` (-${discountPercent(p)}%)`:''}`);const extras=csv(bundleSelections[p.id]).filter(k=>k in BUNDLES);for(const key of extras)lines.push(`  + ${bundleLabel(key,lang)}${BUNDLES[key]?` — ${BUNDLES[key]} zł`:''}`);if(origin)lines.push(`${origin}/?product=${p.id}`);}
- const total=Math.round(items.reduce((s,p)=>s+Math.round(effectivePrice(p)*100)+csv(bundleSelections[p.id]).reduce((x,k)=>x+(BUNDLES[k]||0)*100,0),0));
- lines.push(`${lang==='pl'?'Razem':'Разом'}: ${(total/100).toFixed(2)} zł`);
- lines.push(lang==='pl'?'Proszę o potwierdzenie dostępności.':'Прошу підтвердити наявність.');return lines.join('\n');
+export function capacityGB(value){const text=String(value||'').replace(',','.');const n=parseFloat(text);return /tb|тб/i.test(text)?n*1024:n;}
+export function upgradeOptions(p){
+ if(Number(p.cat)!==0)return [];
+ return Object.entries(UPGRADES).flatMap(([key,o])=>{const raw=p[key+'Price'];const price=Number(raw);return p[key+'Enabled']==='true'&&raw!==''&&raw!=null&&Number.isFinite(price)&&price>=0&&price<=10000&&o.target>capacityGB(p[o.group])?[{key,...o,price}]:[];});
+}
+export function configuration(p,bundleSelection='',upgradeSelection={},lang='uk'){
+ const allowed=csv(p.bundles).filter(k=>Object.hasOwn(BUNDLES,k));
+ const opts=upgradeOptions(p),upgrades={},lines=[];
+ for(const group of ['ram','ssd']){const o=opts.find(o=>o.group===group&&o.key===upgradeSelection?.[group]);if(o){upgrades[group]=o.key;lines.push({label:(group==='ram'?'RAM': 'SSD')+' → '+(o.target===1024?'1 TB':o.target+' GB'),price:o.price,pending:false});}}
+ const bundles=csv(bundleSelection).filter(k=>allowed.includes(k)&&!(k==='upgrade'&&opts.length));
+ for(const key of bundles)lines.push({label:bundleLabel(key,lang),price:BUNDLES[key],pending:['software','upgrade'].includes(key)});
+ const cents=Math.round(effectivePrice(p)*100)+lines.reduce((sum,l)=>sum+Math.round(l.price*100),0);
+ return {upgrades,bundles,lines,total:cents/100,pending:lines.some(l=>l.pending)};
+}
+export function orderText(items,lang='uk',origin='',bundleSelections={},upgradeSelections={}){
+ const lines=[lang==='pl'?'Dzień dobry! Interesują mnie te produkty:':'Вітаю! Цікавлять ці товари:'];let cents=0,pending=false;
+ for(const p of items){const c=configuration(p,bundleSelections[p.id],upgradeSelections[p.id],lang);cents+=Math.round(c.total*100);pending||=c.pending;
+ lines.push(`• ${p.name} / HMG-${String(p.id).padStart(3,'0')} — ${effectivePrice(p).toFixed(2)} zł${discountPercent(p)?` (-${discountPercent(p)}%)`:''}`);
+ for(const l of c.lines)lines.push(`  + ${l.label}${l.pending?'':` — ${l.price} zł`}`);
+ lines.push(`  ${lang==='pl'?'Razem za zestaw':'Разом за комплект'}: ${c.total.toFixed(2)} zł`);
+ if(origin)lines.push(`${origin}/?product=${p.id}`);}
+ lines.push(`${lang==='pl'?'Razem':'Разом'}: ${(cents/100).toFixed(2)} zł`);
+ if(pending)lines.push(lang==='pl'?'Usługi na zapytanie nie są wliczone w sumę.':'Послуги за запитом не включені в суму.');
+ lines.push(lang==='pl'?'Proszę o potwierdzenie konfiguracji i dostępności.':'Прошу підтвердити конфігурацію та наявність.');return lines.join('\n');
 }
 export function bundleLabel(key,lang='uk'){const labels={uk:{mouse:'Мишка',office:'Встановлення Microsoft Office',photoshop:'Встановлення Adobe Photoshop',software:'Інші програми — за запитом',setup:'Налаштування Windows',upgrade:'Апгрейд RAM/SSD — узгодити'},pl:{mouse:'Mysz',office:'Instalacja Microsoft Office',photoshop:'Instalacja Adobe Photoshop',software:'Inne programy — na zapytanie',setup:'Konfiguracja Windows',upgrade:'Rozbudowa RAM/SSD — do ustalenia'}};return labels[lang]?.[key]||key;}
 export function telegramLink(text){return `https://t.me/HUGO_Media?text=${encodeURIComponent(text)}`;}

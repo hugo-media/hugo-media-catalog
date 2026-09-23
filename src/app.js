@@ -1,3 +1,5 @@
+import { adminUpgrades, configPanel } from './configurator.js';
+import { configuration } from './core.js';
 import { safeSearch } from './insights-core.js';
 import { createStorefront, normalizedSpec, specLabel, filterValues } from "./storefront.js";
 import { createEnhancements } from "./enhancements.js";
@@ -1953,6 +1955,7 @@ import {
     cart = readLocal("hmg-cart", []),
     compare = readLocal("hmg-compare", []),
     bundleSelections = readLocal("hmg-bundles", {}),
+    upgradeSelections = readLocal("hmg-upgrades", {}),
     selected = Number(initialParams.get("product")) || 1,
     editId = null,
     formImages = [],
@@ -1978,6 +1981,7 @@ import {
   if (!["uk", "pl"].includes(lang)) lang = "uk";
   if (!Array.isArray(cart)) cart = [];
   if (!Array.isArray(compare)) compare = [];
+  if (!upgradeSelections || typeof upgradeSelections !== "object" || Array.isArray(upgradeSelections)) upgradeSelections={};
   if (!bundleSelections || typeof bundleSelections !== "object")
     bundleSelections = {};
   const t = (k) => dict[lang][k];
@@ -2024,12 +2028,8 @@ import {
     url.searchParams.set("utm_medium", "social");
     return url.toString();
   }
-  function bundleExtra(id) {
-    return csv(bundleSelections[id]).reduce(
-      (sum, key) => sum + (BUNDLES[key] || 0),
-      0,
-    );
-  }
+  function selectedConfig(p){return configuration(p,bundleSelections[p.id],upgradeSelections[p.id],lang);}
+  function bundleExtra(id) {const p=products.find(p=>p.id===id);return p?Math.round((selectedConfig(p).total-effectivePrice(p))*100)/100:0;}
   function stockQty(p) {
     const value = Number(p.quantity);
     return Number.isFinite(value) && p.quantity !== "" ? value : 1;
@@ -2262,7 +2262,7 @@ import {
           )
           .sort((a, b) => Math.abs(effectivePrice(a) - effectivePrice(p)) - Math.abs(effectivePrice(b) - effectivePrice(p)))
           .slice(0, 3);
-      content.innerHTML = `<div class="hp-detail-page"><button type="button" class="hp-back hp-detail-back" data-view="catalog">${icon("arrow-left")}${t("back")}</button><section class="hp-detail-hero"><div class="hp-gallery-panel"><div class="hp-gallery-head"><span>${icon("camera")}${p.photoKind === "actual" ? t("productPhoto") : p.photoKind === "model" ? (lang === "uk" ? "Ілюстрація моделі" : "Zdjęcie modelu") : (lang === "uk" ? "Зображення товару" : "Zdjęcia produktu")}</span><span>HMG-${p.id.toString().padStart(3, "0")}</span></div>${photo(p)}${p.images.length > 1 ? `<div class="hp-toprow hp-thumbs">${p.images.map((src, i) => `<button type="button" class="hp-button" data-image="${i}"><img src="${esc(pictureUrl(src))}" alt="${i + 1}"></button>`).join("")}</div>` : ""}<a class="hp-gallery-link" href="${esc(telegramPostUrl(p.telegramPost))}" target="_blank" rel="noopener noreferrer">${icon("play-circle")}${t("seeTelegram")}${icon("arrow-right")}</a></div><div class="hp-buy-panel"><div class="hp-kicker">${esc(p.brand)} · ${t("verifiedLabel")}</div><h1>${esc(productTitle(p))}</h1><p class="hp-detail-config">${esc(storefront.specSummary(p))}</p><div class="hp-detail-badges"><span class="hp-demo-status">${t("statuses")[p.status]}</span>${p.newArrival === "true" ? `<span class="hp-badge-new">${t("newArrival")}</span>` : ""}${p.bestseller === "true" ? `<span class="hp-badge-best">${t("bestseller")}</span>` : ""}${discountPercent(p) ? `<span class="hp-badge-sale">-${discountPercent(p)}%</span>` : ""}</div><div class="hp-stock ${qty === 1 ? "hp-stock-low" : ""}">${qty === 1 ? t("onlyOne") : `${qty} ${t("unitsLeft")}`}</div>${priceBlock(p, true)}<div class="hm-buy-facts">${p.condition ? `<span><small>${t("conditionShort")}</small><b>${esc(localizedValue(p.condition))}</b></span>` : ""}${p.warranty ? `<span><small>${t("warrantyShort")}</small><b>${esc(localizedValue(p.warranty))}</b></span>` : ""}</div>${purposeCodes.length ? `<div class="hp-purpose-tags">${purposeCodes.map((code) => `<span>${t(purposeKey(code))}</span>`).join("")}</div>` : ""}<div class="hp-buy-copy"><b>${t("buyPanelTitle")}</b><span>${t("buyPanelSub")}</span></div><div class="hp-detail-actions hp-detail-primary-actions"><button type="button" class="hp-button hp-primary" data-order-one="${p.id}" ${p.status !== 0 || qty < 1 ? "disabled" : ""}>${icon("send")}${lang === "uk" ? "Замовити в Telegram" : "Zamów w Telegramie"}</button><a class="hp-button hp-channel-button" href="${esc(telegramPostUrl(p.telegramPost))}" target="_blank" rel="noopener noreferrer">${icon("play-circle")}${t("telegramMedia")}</a></div><div class="hp-detail-secondary-actions"><button type="button" class="hp-button hp-choice-button" data-add="${p.id}" ${p.status !== 0 || qty < 1 ? "disabled" : ""}>${icon(cart.includes(p.id) ? "check" : "shopping-bag")}${cart.includes(p.id) ? t("added") : t("add")}</button><button type="button" class="hp-button" data-compare="${p.id}">${icon(compare.includes(p.id) ? "check" : "columns-2")}${t("compare")}</button><button type="button" class="hp-button" id="hp-share" aria-label="${t("share")}">${icon("share-2")}</button></div><div class="hp-detail-trust"><span>${icon("badge-check")}${t("secureDeal")}</span><span>${icon("shield-check")}${t("warrantyBenefit")}</span><span>${icon("message-circle")}${t("fastContact")}</span></div></div></section><section class="hp-detail-lower"><div class="hp-detail-info-card"><div class="hp-section-title"><div><div class="hp-kicker">${t("configuration")}</div><h2>${t("specTitle")}</h2></div></div><div class="hp-detailspec">${specs.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("")}</div></div>${benefitCodes.length || bundleCodes.length || description ? `<div class="hp-detail-extras">${benefitCodes.length ? `<section class="hp-sales-block"><h3>${t("advantages")}</h3><div class="hp-benefit-list">${benefitCodes.map((code) => `<span>${icon("check-circle-2")}${t(benefitKey(code))}</span>`).join("")}</div></section>` : ""}${bundleCodes.length ? `<section class="hp-sales-block"><h3>${t("bundles")}</h3><div class="hp-bundle-list">${bundleCodes.map((code) => `<label><input type="checkbox" data-bundle="${code}" data-product="${p.id}" ${chosenBundles.includes(code) ? "checked" : ""}><span>${t(bundleKey(code))}</span></label>`).join("")}</div></section>` : ""}${description ? `<section class="hp-sales-block"><h3>${t("aboutDevice")}</h3><p class="hp-description">${esc(description)}</p></section>` : ""}</div>` : ""}</section>${reviewsBlock(3)}${similar.length ? `<section class="hp-home-section hp-similar-section"><div class="hp-section-title"><h2>${t("similar")}</h2></div><div class="hp-grid">${similar.map(productCard).join("")}</div></section>` : ""}</div>`;
+      content.innerHTML = `<div class="hp-detail-page"><button type="button" class="hp-back hp-detail-back" data-view="catalog">${icon("arrow-left")}${t("back")}</button><section class="hp-detail-hero"><div class="hp-gallery-panel"><div class="hp-gallery-head"><span>${icon("camera")}${p.photoKind === "actual" ? t("productPhoto") : p.photoKind === "model" ? (lang === "uk" ? "Ілюстрація моделі" : "Zdjęcie modelu") : (lang === "uk" ? "Зображення товару" : "Zdjęcia produktu")}</span><span>HMG-${p.id.toString().padStart(3, "0")}</span></div>${photo(p)}${p.images.length > 1 ? `<div class="hp-toprow hp-thumbs">${p.images.map((src, i) => `<button type="button" class="hp-button" data-image="${i}"><img src="${esc(pictureUrl(src))}" alt="${i + 1}"></button>`).join("")}</div>` : ""}<a class="hp-gallery-link" href="${esc(telegramPostUrl(p.telegramPost))}" target="_blank" rel="noopener noreferrer">${icon("play-circle")}${t("seeTelegram")}${icon("arrow-right")}</a></div><div class="hp-buy-panel"><div class="hp-kicker">${esc(p.brand)} · ${t("verifiedLabel")}</div><h1>${esc(productTitle(p))}</h1><p class="hp-detail-config">${esc(storefront.specSummary(p))}</p><div class="hp-detail-badges"><span class="hp-demo-status">${t("statuses")[p.status]}</span>${p.newArrival === "true" ? `<span class="hp-badge-new">${t("newArrival")}</span>` : ""}${p.bestseller === "true" ? `<span class="hp-badge-best">${t("bestseller")}</span>` : ""}${discountPercent(p) ? `<span class="hp-badge-sale">-${discountPercent(p)}%</span>` : ""}</div><div class="hp-stock ${qty === 1 ? "hp-stock-low" : ""}">${qty === 1 ? t("onlyOne") : `${qty} ${t("unitsLeft")}`}</div>${priceBlock(p, true)}${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)}<div class="hm-buy-facts">${p.condition ? `<span><small>${t("conditionShort")}</small><b>${esc(localizedValue(p.condition))}</b></span>` : ""}${p.warranty ? `<span><small>${t("warrantyShort")}</small><b>${esc(localizedValue(p.warranty))}</b></span>` : ""}</div>${purposeCodes.length ? `<div class="hp-purpose-tags">${purposeCodes.map((code) => `<span>${t(purposeKey(code))}</span>`).join("")}</div>` : ""}<div class="hp-buy-copy"><b>${t("buyPanelTitle")}</b><span>${t("buyPanelSub")}</span></div><div class="hp-detail-actions hp-detail-primary-actions"><button type="button" class="hp-button hp-primary" data-order-one="${p.id}" ${p.status !== 0 || qty < 1 ? "disabled" : ""}>${icon("send")}${lang === "uk" ? "Замовити в Telegram" : "Zamów w Telegramie"}</button><a class="hp-button hp-channel-button" href="${esc(telegramPostUrl(p.telegramPost))}" target="_blank" rel="noopener noreferrer">${icon("play-circle")}${t("telegramMedia")}</a></div><div class="hp-detail-secondary-actions"><button type="button" class="hp-button hp-choice-button" data-add="${p.id}" ${p.status !== 0 || qty < 1 ? "disabled" : ""}>${icon(cart.includes(p.id) ? "check" : "shopping-bag")}${cart.includes(p.id) ? t("added") : t("add")}</button><button type="button" class="hp-button" data-compare="${p.id}">${icon(compare.includes(p.id) ? "check" : "columns-2")}${t("compare")}</button><button type="button" class="hp-button" id="hp-share" aria-label="${t("share")}">${icon("share-2")}</button></div><div class="hp-detail-trust"><span>${icon("badge-check")}${t("secureDeal")}</span><span>${icon("shield-check")}${t("warrantyBenefit")}</span><span>${icon("message-circle")}${t("fastContact")}</span></div></div></section><section class="hp-detail-lower"><div class="hp-detail-info-card"><div class="hp-section-title"><div><div class="hp-kicker">${t("configuration")}</div><h2>${t("specTitle")}</h2></div></div><div class="hp-detailspec">${specs.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("")}</div></div>${benefitCodes.length || bundleCodes.length || description ? `<div class="hp-detail-extras">${benefitCodes.length ? `<section class="hp-sales-block"><h3>${t("advantages")}</h3><div class="hp-benefit-list">${benefitCodes.map((code) => `<span>${icon("check-circle-2")}${t(benefitKey(code))}</span>`).join("")}</div></section>` : ""}${description ? `<section class="hp-sales-block"><h3>${t("aboutDevice")}</h3><p class="hp-description">${esc(description)}</p></section>` : ""}</div>` : ""}</section>${reviewsBlock(3)}${similar.length ? `<section class="hp-home-section hp-similar-section"><div class="hp-section-title"><h2>${t("similar")}</h2></div><div class="hp-grid">${similar.map(productCard).join("")}</div></section>` : ""}</div>`;
       if (p.charger && chargerLabel(p.charger)) {
         const note = `${t("charger")}: ${chargerLabel(p.charger)}`;
         content.querySelector(".hp-detail-config").insertAdjacentHTML("afterend", `<p class="hp-charger-note">${icon("plug-zap")}${esc(note)}</p>`);
@@ -2294,7 +2294,7 @@ import {
         pick(t("underBudget"), [...candidates].filter((item) => effectivePrice(item) <= 1500).sort((a, b) => Number(b.ram) - Number(a.ram) || Number(b.ssd) - Number(a.ssd) || effectivePrice(a) - effectivePrice(b)));
         if (chosen.length) related.innerHTML = `<div class="hp-section-title"><h2>${t("similar")}</h2></div><div class="hp-grid">${chosen.map(({ label, item }) => `<div class="hp-recommendation"><span>${esc(label)}</span>${productCard(item)}</div>`).join("")}</div>`;
       }
-      content.insertAdjacentHTML("beforeend", `<div class="hp-mobile-order-bar"><div><small>${esc(productTitle(p))}</small><strong>${money(effectivePrice(p))} zł</strong></div><button type="button" class="hp-button hp-primary" data-order-one="${p.id}" ${p.status !== 0 || qty < 1 ? "disabled" : ""}>${t("orderNow")}</button><a href="${esc(telegramPostUrl(p.telegramPost))}" target="_blank" rel="noopener noreferrer" data-track-target="telegram_product" aria-label="${t("telegramMedia")}">${icon("send")}<span>Telegram</span></a></div>`);
+      content.insertAdjacentHTML("beforeend", `<div class="hp-mobile-order-bar"><div><small>${esc(productTitle(p))}</small><strong>${money(selectedConfig(p).total)} zł</strong></div><button type="button" class="hp-button hp-primary" data-order-one="${p.id}" ${p.status !== 0 || qty < 1 ? "disabled" : ""}>${t("orderNow")}</button><a href="${esc(telegramPostUrl(p.telegramPost))}" target="_blank" rel="noopener noreferrer" data-track-target="telegram_product" aria-label="${t("telegramMedia")}">${icon("send")}<span>Telegram</span></a></div>`);
     }
     if (view === "compare") {
       const items = products.filter((p) => compare.includes(p.id));
@@ -2317,18 +2317,14 @@ import {
         (s, p) => s + effectivePrice(p) + bundleExtra(p.id),
         0,
       );
-      const message = orderText(items, lang, location.origin, bundleSelections);
+      const message = orderText(items, lang, location.origin, bundleSelections, upgradeSelections);
       content.innerHTML = `<button type="button" class="hp-back" data-view="catalog">${icon("arrow-left")}${t("back")}</button><div class="hp-intro"><div><h1>${t("cartTitle")}</h1><span class="hp-muted">${t("cartSub")}</span></div></div>${
         items.length
           ? `<div class="hp-cart-layout"><div>${items
               .map(
                 (p) =>
                   `<div class="hp-cart-item">${photo(p)}<div class="hp-cart-text"><b>${esc(p.name)}</b><div class="hp-muted hp-small">HMG-${String(p.id).padStart(3, "0")}</div><strong>${money(effectivePrice(p) + bundleExtra(p.id))} zł${discountPercent(p) ? ` · -${discountPercent(p)}%` : ""}</strong>${
-                    csv(bundleSelections[p.id]).length
-                      ? `<small>${csv(bundleSelections[p.id])
-                          .map((k) => t(bundleKey(k)))
-                          .join(" · ")}</small>`
-                      : ""
+                    `<small>${selectedConfig(p).lines.map(l=>esc(l.label)+(l.pending?'':` +${money(l.price)} zł`)).join(' · ')}</small><button type="button" class="hp-button" data-detail="${p.id}">${lang==='uk'?'Змінити комплектацію':'Zmień konfigurację'}</button>`
                   }</div><button type="button" data-remove="${p.id}" aria-label="${t("remove")}: ${esc(p.name)}">${icon("x")}</button></div>`,
               )
               .join(
@@ -2414,7 +2410,7 @@ import {
         .map((s, i) => option(i, s, p.status))
         .join(
           "",
-        )}</select></label>${choiceField("condition", t("condition"), commonChoices.condition, p.condition, true)}${choiceField("warranty", t("warranty"), commonChoices.warranty, p.warranty, true)}<label class="hp-field">${t("markNewArrival")}<select name="newArrival">${option("", t("no"), p.newArrival || "")}${option("true", t("yes"), p.newArrival || "")}</select></label><label class="hp-field">${t("markBestseller")}<select name="bestseller">${option("", t("no"), p.bestseller || "")}${option("true", t("yes"), p.bestseller || "")}</select></label><label class="hp-field">${t("discount")}<select name="discount">${DISCOUNTS.map((value) => option(value, value ? `-${value}%` : t("noDiscount"), discountPercent(p))).join("")}</select></label>${checkGroup("purposes", t("purpose"), PURPOSES, p.purposes, purposeKey)}${checkGroup("benefits", t("advantages"), BENEFITS, p.benefits, benefitKey)}${checkGroup("bundles", t("bundles"), Object.keys(BUNDLES), p.bundles, bundleKey)}</div></section><section class="hp-form-section"><h3 class="hp-section-heading">${t("spec")}</h3><div class="hp-form-grid" id="hp-category-fields"></div></section><section class="hp-form-section"><h3 class="hp-section-heading">${t("mediaInfo")}</h3><div class="hp-form-grid"><label class="hp-field hp-wide">${t("telegramPost")}<input type="text" inputmode="url" name="telegramPost" value="${esc(p.telegramPost || "")}" placeholder="https://t.me/h_m_g_pl/123"><span class="hp-muted hp-small">${t("telegramPostHint")}</span></label><label class="hp-field hp-wide">${t("photos")}<input type="file" id="hp-upload" multiple accept="image/jpeg,image/png,image/webp"><span class="hp-muted hp-small">${t("photoHint")}</span><div id="hp-upload-previews" class="hp-toprow"></div></label><label class="hp-field">${t("descUk")}<textarea name="descUk">${esc(p.descUk)}</textarea></label><label class="hp-field">${t("descPl")}<textarea name="descPl">${esc(p.descPl)}</textarea></label></div></section>${shareButtons}<div role="alert" id="hp-form-error" class="hp-alert"></div><div class="hp-form-actions"><button type="button" class="hp-button" data-view="admin">${t("cancel")}</button><button type="submit" class="hp-button hp-primary">${t("save")}</button></div></form>`;
+        )}</select></label>${choiceField("condition", t("condition"), commonChoices.condition, p.condition, true)}${choiceField("warranty", t("warranty"), commonChoices.warranty, p.warranty, true)}<label class="hp-field">${t("markNewArrival")}<select name="newArrival">${option("", t("no"), p.newArrival || "")}${option("true", t("yes"), p.newArrival || "")}</select></label><label class="hp-field">${t("markBestseller")}<select name="bestseller">${option("", t("no"), p.bestseller || "")}${option("true", t("yes"), p.bestseller || "")}</select></label><label class="hp-field">${t("discount")}<select name="discount">${DISCOUNTS.map((value) => option(value, value ? `-${value}%` : t("noDiscount"), discountPercent(p))).join("")}</select></label>${checkGroup("purposes", t("purpose"), PURPOSES, p.purposes, purposeKey)}${checkGroup("benefits", t("advantages"), BENEFITS, p.benefits, benefitKey)}${checkGroup("bundles", t("bundles"), Object.keys(BUNDLES), p.bundles, bundleKey)}</div></section>${adminUpgrades(p,lang,esc)}<section class="hp-form-section"><h3 class="hp-section-heading">${t("spec")}</h3><div class="hp-form-grid" id="hp-category-fields"></div></section><section class="hp-form-section"><h3 class="hp-section-heading">${t("mediaInfo")}</h3><div class="hp-form-grid"><label class="hp-field hp-wide">${t("telegramPost")}<input type="text" inputmode="url" name="telegramPost" value="${esc(p.telegramPost || "")}" placeholder="https://t.me/h_m_g_pl/123"><span class="hp-muted hp-small">${t("telegramPostHint")}</span></label><label class="hp-field hp-wide">${t("photos")}<input type="file" id="hp-upload" multiple accept="image/jpeg,image/png,image/webp"><span class="hp-muted hp-small">${t("photoHint")}</span><div id="hp-upload-previews" class="hp-toprow"></div></label><label class="hp-field">${t("descUk")}<textarea name="descUk">${esc(p.descUk)}</textarea></label><label class="hp-field">${t("descPl")}<textarea name="descPl">${esc(p.descPl)}</textarea></label></div></section>${shareButtons}<div role="alert" id="hp-form-error" class="hp-alert"></div><div class="hp-form-actions"><button type="button" class="hp-button" data-view="admin">${t("cancel")}</button><button type="submit" class="hp-button hp-primary">${t("save")}</button></div></form>`;
     q('#hp-form select[name="warranty"]')?.closest(".hp-field")?.insertAdjacentHTML("afterend", `<label class="hp-field">${t("charger")}<select name="charger">${option("", t("chargerUnknown"), p.charger || "")}${["adapter", "cable", "none"].map((value) => option(value, chargerLabel(value), p.charger || "")).join("")}</select></label>`);
     formCategory(p.cat, p);
     showUploads();
@@ -2639,7 +2635,7 @@ import {
       if (!p || p.status !== 0 || stockQty(p) < 1) return;
       await recordBeforeNavigation("telegram_click", p.id, "telegram_order");
       location.href = telegramLink(
-        orderText([p], lang, location.origin, bundleSelections),
+        orderText([p], lang, location.origin, bundleSelections, upgradeSelections),
       );
     } else if (b.dataset.add) {
       const id = Number(b.dataset.add);
@@ -2801,7 +2797,7 @@ import {
           render();
           return;
         }
-        const text = orderText(items, lang, location.origin, bundleSelections);
+        const text = orderText(items, lang, location.origin, bundleSelections, upgradeSelections);
         await recordBeforeNavigation("telegram_click", null, "telegram_cart_order");
         location.href = telegramLink(text);
       });
@@ -2840,6 +2836,13 @@ import {
     } else if (el.id === "hp-sort") {
       sort = el.value;
       cards();
+    } else if (el.dataset.upgrade) {
+      const id=Number(el.dataset.product),group=el.dataset.upgrade;
+      if(!['ram','ssd'].includes(group))return;
+      upgradeSelections[id]={...(upgradeSelections[id]||{}),[group]:el.value};
+      writeLocal('hmg-upgrades',upgradeSelections);
+      if(el.value)recordEvent('bundle_select',id);
+      render();q(`[data-upgrade="${group}"]`)?.focus({preventScroll:true});
     } else if (el.dataset.bundle) {
       const id = Number(el.dataset.product),
         chosen = new Set(csv(bundleSelections[id]));

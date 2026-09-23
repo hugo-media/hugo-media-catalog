@@ -3934,3 +3934,17 @@ body {
 #hugo-preview .hp-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(max-width:800px){#hugo-preview .hp-finder-results{grid-template-columns:repeat(2,minmax(0,1fr))}#hugo-preview .hp-finder-cta{padding:20px;gap:16px}#hugo-preview .hp-finder-cta strong{font-size:18px}}
 @media(max-width:580px){#hugo-preview .hp-finder-cta{align-items:stretch;flex-direction:column}#hugo-preview .hp-quiz{padding:20px;margin:20px 0}#hugo-preview .hp-quiz h2{font-size:23px}#hugo-preview .hp-choice-grid,#hugo-preview .hp-finder-results,#hugo-preview .hp-preview-layout{grid-template-columns:1fr}#hugo-preview .hp-finder-results .hp-product{height:auto}#hugo-preview .hp-match-reason{min-height:0}#hugo-preview .hp-quality-list article,#hugo-preview .hp-draft-row,#hugo-preview .hp-version-row{flex-wrap:wrap;padding:18px}#hugo-preview .hp-product-terms{padding:20px}#hugo-preview .hp-preview-dialog{padding:18px}#hugo-preview .hp-placements{padding:16px}#hugo-preview .hp-recent .hp-section-title{flex-wrap:wrap;gap:12px}#hugo-preview .hp-draft-tools .hp-button{width:100%;justify-content:center}}
+
+/* Per-product configuration, shared by desktop and mobile. */
+#hugo-preview .hm-configurator{margin:18px 0;padding:18px;border:1px solid #ded5ed;border-radius:14px;background:#faf8fd;min-width:0}
+#hugo-preview .hm-configurator h3{margin:0 0 14px;font-size:18px}
+#hugo-preview .hm-configurator .hp-field{margin:12px 0;display:flex;flex-direction:column;gap:7px}
+#hugo-preview .hm-configurator select{width:100%;min-width:0;padding:12px;background:white;border:1px solid #d5cce3;border-radius:8px;color:#272332;font:inherit}
+#hugo-preview .hm-configurator .hp-bundle-list{display:grid;grid-template-columns:1fr;gap:10px;margin:16px 0}
+#hugo-preview .hm-configurator .hp-bundle-list label{display:flex;align-items:center;gap:10px;justify-content:flex-start}
+#hugo-preview .hm-configurator input[type=checkbox]{width:18px;height:18px;flex:0 0 18px;min-height:0;accent-color:#743ce8}
+#hugo-preview .hm-config-breakdown>div{display:flex;justify-content:space-between;gap:14px;margin:9px 0;font-size:14px}
+#hugo-preview .hm-config-breakdown b{white-space:nowrap}
+#hugo-preview .hm-config-breakdown .hm-config-total{border-top:1px solid #ded5ed;padding-top:14px;font-size:20px;color:#493071}
+#hugo-preview .hm-upgrade-admin{min-width:0;border:1px solid #ded5ed;border-radius:10px;padding:16px}
+#hugo-preview .hm-upgrade-admin legend{font-weight:700}
