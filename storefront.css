@@ -199,3 +199,42 @@
 #hugo-preview.hp-storefront .hm-top-banner>a:hover .hm-banner-cta{background:#eee5fc}
 #hugo-preview.hp-storefront .hm-top-banner>a:focus-visible{outline:3px solid #fff;outline-offset:-4px}
 @media(max-width:600px){#hugo-preview.hp-storefront .hm-top-banner>a{gap:10px;padding:11px 16px;justify-content:space-between}#hugo-preview.hp-storefront .hm-banner-icon{display:none}#hugo-preview.hp-storefront .hm-banner-copy strong{font-size:12px}#hugo-preview.hp-storefront .hm-banner-copy>span{font-size:10px}#hugo-preview.hp-storefront .hm-banner-cta{margin-left:0;padding:9px 10px;min-height:42px;font-size:11px;max-width:100px;text-align:center}}
+
+/* Product flow: learn about the device, see the review, configure, then contact. */
+#hugo-preview.hp-storefront .hm-product-overview{min-width:0;padding:6px 0}
+#hugo-preview.hp-storefront .hm-product-overview h1{font-size:34px;line-height:1.15;letter-spacing:-.8px;margin:12px 0}
+#hugo-preview.hp-storefront .hm-product-description{margin:24px 0 18px}
+#hugo-preview.hp-storefront .hm-product-description h2{font-size:19px;margin:0 0 10px}
+#hugo-preview.hp-storefront .hm-product-description .hp-description{font-size:15px;line-height:1.75;color:#494151;white-space:pre-line;margin:0}
+#hugo-preview.hp-storefront .hp-detail-hero .hp-gallery-panel{position:sticky;top:24px}
+#hugo-preview.hp-storefront .hp-detail-lower{display:block;margin:24px 0}
+#hugo-preview.hp-storefront .hm-spec-details{padding:18px 22px}
+#hugo-preview.hp-storefront .hm-spec-details summary{cursor:pointer;font-size:16px;font-weight:650;min-height:24px}
+#hugo-preview.hp-storefront .hm-spec-details[open] summary{margin-bottom:16px}
+#hugo-preview.hp-storefront .hm-product-review{display:flex;align-items:center;justify-content:space-between;gap:28px;background:#eee8f8;border:1px solid #e1d6f1;border-radius:16px;padding:26px 30px;margin:24px 0 32px}
+#hugo-preview.hp-storefront .hm-product-review h2{font-size:24px;line-height:1.2;margin:8px 0}
+#hugo-preview.hp-storefront .hm-product-review p{margin:0;font-size:14px;color:#695977;line-height:1.6}
+#hugo-preview.hp-storefront .hm-product-review .hp-channel-button{flex-shrink:0;background:#fff;min-height:48px;color:#533785;font-weight:650}
+#hugo-preview.hp-storefront .hm-product-checkout{max-width:820px;margin:0 auto 32px;padding:28px;border:1px solid #e3dbea;border-radius:18px;background:#fff;scroll-margin-top:24px}
+#hugo-preview.hp-storefront .hm-checkout-heading h2{font-size:27px;line-height:1.2;margin:8px 0}
+#hugo-preview.hp-storefront .hm-checkout-heading p{font-size:14px;line-height:1.6;color:#71667c;margin:0 0 20px}
+#hugo-preview.hp-storefront .hm-product-checkout .hm-configurator{margin:0 0 18px;background:#faf8fd;padding:20px}
+#hugo-preview.hp-storefront .hm-product-checkout .hm-configurator h3{display:none}
+#hugo-preview.hp-storefront .hm-checkout-actions .hp-detail-primary-actions{grid-template-columns:1fr}
+#hugo-preview.hp-storefront .hm-checkout-actions .hp-primary{min-height:54px;font-size:16px}
+#hugo-preview.hp-storefront .hm-checkout-actions>p{line-height:1.6;margin:12px 0 0}
+#hugo-preview.hp-storefront .hm-checkout-base{display:flex;align-items:center;justify-content:space-between;margin:18px 0;font-size:18px}
+#hugo-preview.hp-storefront .hm-checkout-base strong{font-size:28px}
+@media(max-width:760px){
+ #hugo-preview.hp-storefront .hp-detail-hero .hp-gallery-panel{position:static}
+ #hugo-preview.hp-storefront .hm-product-overview h1{font-size:28px}
+ #hugo-preview.hp-storefront .hm-product-description{margin-top:20px}
+ #hugo-preview.hp-storefront .hm-product-description .hp-description{font-size:14px}
+ #hugo-preview.hp-storefront .hm-product-review{display:flex;flex-direction:column;align-items:stretch;gap:18px;padding:20px;margin:20px 0 24px}
+ #hugo-preview.hp-storefront .hm-product-review h2{font-size:23px}
+ #hugo-preview.hp-storefront .hm-product-review .hp-channel-button{width:100%;white-space:normal}
+ #hugo-preview.hp-storefront .hm-product-checkout{padding:18px;margin-bottom:24px;scroll-margin-top:12px}
+ #hugo-preview.hp-storefront .hm-checkout-heading h2{font-size:24px}
+ #hugo-preview.hp-storefront .hm-product-checkout .hm-configurator{padding:14px}
+ #hugo-preview.hp-storefront .hm-checkout-actions .hp-detail-secondary-actions{gap:6px;justify-content:flex-start}
+}
