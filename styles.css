@@ -1704,6 +1704,18 @@ body {
 #hugo-preview .hp-picks-admin > p {
   color: var(--hp-muted);
 }
+#hugo-preview .hp-picks-published {
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border: 1px solid #c7e6d8;
+  border-radius: 12px;
+  background: #effaf4;
+  color: #18583b;
+}
+#hugo-preview .hp-picks-published p {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
 #hugo-preview .hp-picks-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

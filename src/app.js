@@ -376,7 +376,7 @@ import {
     heroTitle: "Надійний ноутбук без переплати.",
     heroSub:
       "Живі фото, чесні характеристики та гарантія. Обирай сам або напиши — підберемо найкращий варіант під бюджет.",
-    heroPick: "Рекомендуємо сьогодні",
+    heroPick: "Вибір HUGO",
     heroFrom: "від",
     heroView: "Дивитися модель",
     shopNow: "Обрати ноутбук",
@@ -397,7 +397,7 @@ import {
     heroTitle: "Pewny laptop bez przepłacania.",
     heroSub:
       "Realne zdjęcia, uczciwa specyfikacja i gwarancja. Wybierz sam lub napisz — dobierzemy najlepszy model do budżetu.",
-    heroPick: "Polecamy dzisiaj",
+    heroPick: "Wybór HUGO",
     heroFrom: "od",
     heroView: "Zobacz model",
     shopNow: "Wybierz laptop",
@@ -933,6 +933,8 @@ import {
                 ? "imageError"
                 : error.message === "selectionUnavailable"
                   ? "dailyPicksUnavailable"
+                  : error.message === "saveUnconfirmed"
+                    ? "dailyPicksSaveError"
                 : "error",
         ),
       );
@@ -1073,7 +1075,17 @@ import {
     const available = products.filter((p) => p.status === 0 && stockQty(p) > 0);
     const eligibleIds = new Set(available.map((p) => p.id));
     draftPicks = draftPicks.filter((id) => eligibleIds.has(id));
-    q("#hp-content").innerHTML = `${adminNav("picks")}<div class="hp-intro"><div><h1>${t("dailyPicks")}</h1><span class="hp-muted">${t("dailyPicksSub")}</span></div></div><section class="hp-picks-admin"><p>${t("dailyPicksHelp")}</p><strong>${t("dailyPicksCount")}: ${draftPicks.length}/2</strong><div class="hp-picks-options">${available.map((p) => `<label class="hp-picks-option"><input type="checkbox" data-pick="${p.id}" ${draftPicks.includes(p.id) ? "checked" : ""}><span class="hp-picks-image">${p.images.length ? `<img src="${esc(pictureUrl(p.images[0]))}" alt="">` : icon(icons[p.cat])}</span><span><b>${esc(p.name)}</b><small>HMG-${String(p.id).padStart(3, "0")} · ${money(effectivePrice(p))} zł</small></span></label>`).join("") || `<p>${t("empty")}</p>`}</div><button type="button" class="hp-button hp-primary" id="hp-save-picks">${t("dailyPicksSave")}</button></section>`;
+    const published = dailyPicksDate === warsawDate() ? dailyPicks : [];
+    const unchanged = draftPicks.length === published.length && draftPicks.every((id, i) => id === published[i]);
+    const publishedNames = published.map((id) => products.find((p) => p.id === id)?.name || `HMG-${id}`);
+    q("#hp-content").innerHTML = `${adminNav("picks")}
+      <div class="hp-intro"><div><h1>${t("dailyPicks")}</h1><span class="hp-muted">${t("dailyPicksSub")}</span></div></div>
+      <section class="hp-picks-admin">
+        <div class="hp-picks-published" role="status"><strong>${t("dailyPicksPublished")}</strong><p>${publishedNames.length ? publishedNames.map((name) => esc(name)).join(" · ") : t("dailyPicksNothingPublished")}</p></div>
+        <p>${t("dailyPicksHelp")}</p><strong>${t("dailyPicksCount")}: ${draftPicks.length}/2</strong>
+        <div class="hp-picks-options">${available.map((p) => `<label class="hp-picks-option"><input type="checkbox" data-pick="${p.id}" ${draftPicks.includes(p.id) ? "checked" : ""}><span class="hp-picks-image">${p.images.length ? `<img src="${esc(pictureUrl(p.images[0]))}" alt="">` : icon(icons[p.cat])}</span><span><b>${esc(p.name)}</b><small>HMG-${String(p.id).padStart(3, "0")} · ${money(effectivePrice(p))} zł</small></span></label>`).join("") || `<p>${t("empty")}</p>`}</div>
+        <button type="button" class="hp-button hp-primary" id="hp-save-picks" ${unchanged ? "disabled" : ""}>${t(unchanged ? "dailyPicksSaved" : "dailyPicksSave")}</button>
+      </section>`;
   }
   function renderAudit() {
     const content = q("#hp-content");
@@ -1870,6 +1882,8 @@ import {
   Object.assign(dict.uk, {
     activity: "Журнал змін", activitySub: "Хто, коли й що змінив у товарах і відгуках. Видно тільки власнику.",
     dailyPicks: "Рекомендуємо сьогодні", dailyPicksSub: "До 2 товарів на головній сторінці. Вибір діє до кінця дня за польським часом.",
+    dailyPicksPublicSub: "Ці моделі ми радимо подивитися першими.", dailyPicksPublished: "Зараз опубліковано на сайті", dailyPicksNothingPublished: "Наразі на головній немає рекомендацій.",
+    dailyPicksConfirmed: "Збережено й перевірено на сайті.", dailyPicksSaved: "Збережено ✓", dailyPicksSaveError: "Не вдалося підтвердити збереження. Онови сторінку й перевір вибір.",
     dailyPicksHelp: "Вибери не більше двох товарів у наявності й натисни «Зберегти». Завтра можна вибрати нові.",
     dailyPicksSave: "Зберегти рекомендації", dailyPicksCount: "Вибрано", dailyPicksEmpty: "Сьогодні рекомендації ще не вибрані.",
     dailyPicksLimit: "Можна вибрати не більше двох товарів.", dailyPicksUnavailable: "Один із товарів уже недоступний. Перевір вибір.",
@@ -1882,6 +1896,8 @@ import {
   Object.assign(dict.pl, {
     activity: "Historia zmian", activitySub: "Kto, kiedy i co zmienił w produktach i opiniach. Widoczne tylko dla właściciela.",
     dailyPicks: "Polecamy dziś", dailyPicksSub: "Do 2 produktów na stronie głównej. Wybór obowiązuje do końca dnia według czasu polskiego.",
+    dailyPicksPublicSub: "Te modele warto zobaczyć w pierwszej kolejności.", dailyPicksPublished: "Teraz opublikowane na stronie", dailyPicksNothingPublished: "Obecnie na stronie głównej nie ma polecanych produktów.",
+    dailyPicksConfirmed: "Zapisano i potwierdzono na stronie.", dailyPicksSaved: "Zapisano ✓", dailyPicksSaveError: "Nie udało się potwierdzić zapisu. Odśwież stronę i sprawdź wybór.",
     dailyPicksHelp: "Wybierz maksymalnie dwa dostępne produkty i kliknij «Zapisz». Jutro możesz wybrać inne.",
     dailyPicksSave: "Zapisz rekomendacje", dailyPicksCount: "Wybrano", dailyPicksEmpty: "Na dziś nie wybrano jeszcze rekomendacji.",
     dailyPicksLimit: "Można wybrać maksymalnie dwa produkty.", dailyPicksUnavailable: "Jeden z produktów jest już niedostępny. Sprawdź wybór.",
@@ -2222,7 +2238,7 @@ import {
           ? `<section class="hp-home-section hp-merch-section ${kind}"><div class="hp-section-title"><div><div class="hp-kicker">Hugo selection</div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ""}</div><button type="button" class="hp-home-link" data-cat="-1">${t("viewAll")}${icon("arrow-right")}</button></div><div class="hp-grid hp-home-products">${list.map(productCard).join("")}</div></section>`
           : "";
       content.innerHTML = `<section class="hp-home-hero"><div class="hp-home-copy"><div class="hp-kicker">${t("heroEyebrow")}</div><h1>${t("heroTitle")}</h1><p>${t("heroSub")}</p><div class="hp-home-actions"><button type="button" class="hp-button hp-primary" data-cat="0">${t("shopNow")}${icon("arrow-right")}</button><a class="hp-button hp-hero-secondary" href="https://t.me/HUGO_Media" target="_blank" rel="noopener noreferrer" data-track-target="telegram_contact">${icon("message-circle")}${t("ask")}</a></div><div class="hp-hero-proof"><span>${icon("badge-check")}${t("verifiedLabel")}</span><span>${icon("camera")}${t("realPhotos")}</span></div></div>${featured ? `<div class="hp-featured"><div class="hp-featured-label">${t("heroPick")}</div><button type="button" class="hp-featured-product" data-detail="${featured.id}"><div class="hp-featured-image">${featured.images.length ? `<img src="${esc(pictureUrl(featured.images[0]))}" alt="${esc(featured.name)}">` : icon("laptop")}</div><div class="hp-featured-info"><span>${esc(featured.brand)}</span><strong>${esc(productTitle(featured))}</strong><small>${esc(featured.cpu)} · ${esc(featured.ram)} GB RAM · ${esc(featured.ssd)} GB SSD</small><div>${t("heroFrom")} <b>${money(effectivePrice(featured))} zł</b> ${icon("arrow-right")}</div></div></button></div>` : ""}</section><section class="hp-benefits"><div>${icon("badge-check")}<span><b>${t("checkedTech")}</b><small>${t("checkedTechSub")}</small></span></div><div>${icon("shield-check")}<span><b>${t("warrantyBenefit")}</b><small>${t("warrantyBenefitSub")}</small></span></div><div>${icon("truck")}<span><b>${t("deliveryBenefit")}</b><small>${t("deliveryBenefitSub")}</small></span></div><div class="hp-stock-benefit">${icon("package-check")}<span><b>${available.length} ${t("inStockNow")}</b><small>${t("realPhotos")}</small></span></div></section>${productSection(t("bestChoice"), t("bestChoiceSub"), bestsellers, "hp-bestsellers")}${productSection(t("saleOffers"), t("saleOffersSub"), offers, "hp-offers")}${productSection(t("latestProducts"), t("newArrivalsSub"), latest, "hp-latest")}${reviewsBlock()}<section class="hp-telegram-band"><div><div class="hp-kicker">Hugo concierge</div><h2>${t("telegramHelp")}</h2><p>${t("telegramHelpSub")}</p></div><a class="hp-button hp-primary" href="https://t.me/HUGO_Media" target="_blank" rel="noopener noreferrer" data-track-target="telegram_contact">${icon("send")}${t("writeTelegram")}</a></section>`;
-      if (todayList.length) content.querySelector(".hp-benefits").insertAdjacentHTML("afterend", productSection(t("dailyPicks"), t("dailyPicksSub"), todayList, "hp-daily-picks"));
+      if (todayList.length) content.querySelector(".hp-benefits").insertAdjacentHTML("afterend", productSection(t("dailyPicks"), t("dailyPicksPublicSub"), todayList, "hp-daily-picks"));
       content.insertAdjacentHTML("beforeend", `<section class="hp-home-section hp-order-guide"><div class="hp-section-title"><div><div class="hp-kicker">Hugo service</div><h2>${t("orderSteps")}</h2><p>${t("orderStepsSub")}</p></div></div><div class="hp-order-steps"><div><b>01</b><strong>${t("orderStepOne")}</strong><p>${t("orderStepOneSub")}</p></div><div><b>02</b><strong>${t("orderStepTwo")}</strong><p>${t("orderStepTwoSub")}</p></div><div><b>03</b><strong>${t("orderStepThree")}</strong><p>${t("orderStepThreeSub")}</p></div></div><div class="hp-order-guide-foot"><span>${icon("truck")}${t("deliveryNote")}</span><span><b>${t("trustQuestion")}</b> ${t("trustQuestionSub")}</span></div></section>`);
       content.querySelector(".hp-order-steps").insertAdjacentHTML("afterend", `<h3 class="hp-trust-heading">${t("trustDetails")}</h3><div class="hp-trust-grid">${[
         ["shield-check", "trustWarranty", "trustWarrantyText"],
@@ -2560,14 +2576,16 @@ import {
       await loadAnalytics();
     } else if (b.id === "hp-save-picks") {
       await run(async () => {
+        const expected = [...draftPicks];
         await refresh();
         const eligibleIds = new Set(products.filter((p) => p.status === 0 && stockQty(p) > 0).map((p) => p.id));
-        if (draftPicks.some((id) => !eligibleIds.has(id))) throw Error("selectionUnavailable");
-        await db.saveDailyPicks(draftPicks);
+        if (expected.some((id) => !eligibleIds.has(id))) throw Error("selectionUnavailable");
+        await db.saveDailyPicks(expected);
         await refresh();
+        if (dailyPicksDate !== warsawDate() || expected.length !== dailyPicks.length || expected.some((id, i) => id !== dailyPicks[i])) throw Error("saveUnconfirmed");
         draftPicks = [...dailyPicks];
         render();
-        notify(t("saved"));
+        notify(t("dailyPicksConfirmed"));
       });
     } else if (b.dataset.statMetric) {
       statsMetric = b.dataset.statMetric;
