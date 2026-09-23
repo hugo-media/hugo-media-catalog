@@ -1,3 +1,4 @@
+import { safeSearch } from './insights-core.js';
 import { createStorefront, normalizedSpec, specLabel, filterValues } from "./storefront.js";
 import { createEnhancements } from "./enhancements.js";
 import * as db from "./data.js";
@@ -854,14 +855,14 @@ import {
   Object.assign(dict.uk, {
     privacySettings: "Налаштування аналітики",
     privacyTitle: "Аналітика сайту",
-    privacyDescription: "З вашого дозволу ми зберігаємо випадковий ідентифікатор у браузері та передаємо до Supabase перегляди товарів, кліки, джерело переходу й тип пристрою. Це допомагає покращувати каталог. Без згоди сайт і вибрані товари працюють як завжди. Згоду можна змінити будь-коли внизу сторінки.",
+    privacyDescription: "З вашого дозволу ми зберігаємо випадковий ідентифікатор у браузері та передаємо до Supabase перегляди товарів, кліки, пошукові запити без результатів, джерело переходу й тип пристрою. Це допомагає покращувати каталог. Без згоди сайт і вибрані товари працюють як завжди. Згоду можна змінити будь-коли внизу сторінки.",
     privacyAccept: "Дозволити аналітику",
     privacyDecline: "Без аналітики",
   });
   Object.assign(dict.pl, {
     privacySettings: "Ustawienia analityki",
     privacyTitle: "Analityka strony",
-    privacyDescription: "Za Twoją zgodą zapisujemy losowy identyfikator w przeglądarce i przesyłamy do Supabase odsłony produktów, kliknięcia, źródło wizyty i typ urządzenia. Pomaga nam to ulepszać katalog. Bez zgody strona i lista wybranych produktów działają normalnie. Zgodę można zmienić w dowolnym momencie w stopce.",
+    privacyDescription: "Za Twoją zgodą zapisujemy losowy identyfikator w przeglądarce i przesyłamy do Supabase odsłony produktów, kliknięcia, zapytania bez wyników, źródło wizyty i typ urządzenia. Pomaga nam to ulepszać katalog. Bez zgody strona i lista wybranych produktów działają normalnie. Zgodę można zmienić w dowolnym momencie w stopce.",
     privacyAccept: "Zezwól na analitykę",
     privacyDecline: "Bez analityki",
   });
@@ -1022,6 +1023,16 @@ import {
   function deviceType() {
     const width = Math.min(screen.width, window.innerWidth);
     return width < 700 ? "mobile" : width < 1024 ? "tablet" : "desktop";
+  }
+  let searchAnalyticsTimer, lastSearchAnalytics="";
+  function scheduleSearchAnalytics(){
+    clearTimeout(searchAnalyticsTimer);
+    searchAnalyticsTimer=setTimeout(()=>{
+      const term=safeSearch(search);
+      if(view!=="catalog"||admin||analyticsConsent!==true||!db.ready||!term||visible().length)return;
+      const key=JSON.stringify([term,cat,filters]);if(key===lastSearchAnalytics)return;
+      lastSearchAnalytics=key;recordEvent("search_no_results",null,term,cat>=0||Object.values(filters).some(Boolean)?"filtered":"all");
+    },1200);
   }
   function recordEvent(event_type, product_id = null, destination = "", placement = "") {
     if (admin || !db.ready || analyticsConsent !== true) return Promise.resolve();
@@ -2800,6 +2811,8 @@ import {
     if (e.target.id === "hp-search") {
       if (view === "edit") return;
       search = e.target.value;
+      lastSearchAnalytics="";
+      scheduleSearchAnalytics();
       if (view !== "catalog") {
         view = "catalog";
         render();

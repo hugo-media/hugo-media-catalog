@@ -1,3 +1,4 @@
+import { consistencyIssues } from './insights-core.js';
 import { csv, effectivePrice } from './core.js';
 export const LINK_SLOTS = ['start','catalog','product','footer','floating'];
 export const TRUST_SECTIONS = ['warranty','payment','delivery','inspection','returns'];
@@ -34,7 +35,7 @@ export function rankLaptops(products, { budget, purpose, size }) {
  }).filter(x=>x.eligible).sort((a,b)=>b.score-a.score || effectivePrice(a.product)-effectivePrice(b.product)).slice(0,3);
 }
 export function productIssues(p, now=Date.now()) {
- const issues=[];
+ const issues=consistencyIssues(p);
  if (!p.images?.length) issues.push('photos');
  if (!/^https:\/\/t\.me\/h_m_g_pl\/\d+$/.test(p.telegramPost||'')) issues.push('post');
  if (!p.warranty) issues.push('warranty');
