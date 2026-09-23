@@ -202,7 +202,7 @@
 
 /* Compact purchase workspace; secondary information expands on demand. */
 #hugo-preview.hp-storefront .hp-detail-back{margin:12px 0 16px}
-#hugo-preview.hp-storefront .hm-compact-detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"gallery heading" "gallery overview" "gallery review" "gallery checkout";column-gap:32px;row-gap:12px;align-items:start}
+#hugo-preview.hp-storefront .hm-compact-detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"gallery heading" "gallery overview" "gallery checkout";column-gap:32px;row-gap:12px;align-items:start}
 #hugo-preview.hp-storefront .hm-detail-heading{grid-area:heading;min-width:0}
 #hugo-preview.hp-storefront .hm-detail-heading h1{font-size:30px;line-height:1.15;letter-spacing:-.7px;margin:6px 0 9px}
 #hugo-preview.hp-storefront .hm-detail-heading .hp-detail-config{margin:0;font-size:13px}
@@ -229,7 +229,7 @@
 #hugo-preview.hp-storefront .hm-product-overview .hp-benefit-list{display:flex;flex-wrap:wrap;gap:6px}
 #hugo-preview.hp-storefront .hm-product-overview .hp-benefit-list span{font-size:11px;gap:4px;padding:0;background:none}
 #hugo-preview.hp-storefront .hm-product-overview .hp-benefit-list svg{width:13px;height:13px}
-#hugo-preview.hp-storefront .hm-product-review{grid-area:review;margin:0;padding:0}
+#hugo-preview.hp-storefront .hm-product-review{margin:12px 0 0;padding:0}
 #hugo-preview.hp-storefront .hm-product-review .hp-channel-button{width:100%;justify-content:center;white-space:normal;min-height:46px;font-size:13px;padding:11px 14px;background:#eee7f8;border:1px solid #dfd2f0;color:#593386;border-radius:10px}
 #hugo-preview.hp-storefront .hm-product-checkout{grid-area:checkout;min-width:0;width:100%;max-width:none;margin:0;padding:16px;border:1px solid #e3dbea;border-radius:14px;background:#fff;scroll-margin-top:14px}
 #hugo-preview.hp-storefront .hm-checkout-heading h2{font-size:17px;margin:0 0 10px;letter-spacing:0}
@@ -240,8 +240,8 @@
 #hugo-preview.hp-storefront .hm-config-options select{font-size:13px;padding:10px 8px;min-height:44px}
 #hugo-preview.hp-storefront .hm-product-checkout .hm-configurator>p{font-size:11px;margin:7px 0;line-height:1.5}
 #hugo-preview.hp-storefront .hm-config-extras{border:1px solid #e7e1ed;border-radius:8px;margin:8px 0}
-#hugo-preview.hp-storefront .hm-config-extras summary{cursor:pointer;padding:11px 12px;font-size:13px;font-weight:600;min-height:44px}
-#hugo-preview.hp-storefront .hm-config-extras summary>span{float:right;color:#765998;font-size:11px}
+#hugo-preview.hp-storefront .hm-config-extras .hm-extras-heading{padding:11px 12px;font-size:13px;font-weight:600;min-height:44px}
+#hugo-preview.hp-storefront .hm-config-extras .hm-extras-heading>span{float:right;color:#765998;font-size:11px}
 #hugo-preview.hp-storefront .hm-configurator .hm-config-extras .hp-bundle-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0;padding:0 10px 10px}
 #hugo-preview.hp-storefront .hm-config-extras .hp-bundle-list label{border:1px solid #eee8f3;border-radius:7px;padding:8px;min-height:44px;font-size:12px;line-height:1.4}
 #hugo-preview.hp-storefront .hm-config-breakdown>div{font-size:12px;margin:6px 0}
@@ -260,7 +260,7 @@
 #hugo-preview.hp-storefront .hm-spec-details summary{cursor:pointer;font-size:15px;font-weight:600;min-height:26px}
 #hugo-preview.hp-storefront .hm-spec-details[open] summary{margin-bottom:14px}
 @media(max-width:760px){
- #hugo-preview.hp-storefront .hm-compact-detail{grid-template-columns:minmax(0,1fr);grid-template-areas:"heading" "gallery" "overview" "review" "checkout";gap:12px}
+ #hugo-preview.hp-storefront .hm-compact-detail{grid-template-columns:minmax(0,1fr);grid-template-areas:"heading" "gallery" "overview" "checkout";gap:12px}
  #hugo-preview.hp-storefront .hm-detail-heading h1{font-size:25px;margin:5px 0 7px}
  #hugo-preview.hp-storefront .hm-compact-detail .hp-gallery-panel{position:static;padding:12px}
  #hugo-preview.hp-storefront .hm-compact-detail .hp-gallery-panel .hp-photo{height:200px;padding:4px}
