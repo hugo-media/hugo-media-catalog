@@ -48,6 +48,21 @@ export async function isAdmin() {
   if (error) throw error;
   return data === true;
 }
+export async function isOwner() {
+  const c = await connect();
+  const { data, error } = await c.rpc("hmg_catalog_is_owner");
+  if (error) throw error;
+  return data === true;
+}
+export async function listAudit() {
+  if (!(await isOwner())) throw Error("notOwner");
+  const c = await connect();
+  const { data, error } = await c.from("hmg_catalog_audit")
+    .select("id,created_at,actor_email,entity,entity_id,action,before_data,after_data")
+    .order("id", { ascending: false }).limit(200);
+  if (error) throw error;
+  return data || [];
+}
 export async function signIn(email, password) {
   const c = await connect();
   const { error } = await c.auth.signInWithPassword({ email, password });

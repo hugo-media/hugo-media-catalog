@@ -1044,8 +1044,38 @@ import {
       render();
     }
   }
+  async function loadAudit() {
+    if (!owner) return;
+    auditLoading = true;
+    auditError = false;
+    render();
+    try {
+      auditRows = await db.listAudit();
+    } catch {
+      auditError = true;
+    } finally {
+      auditLoading = false;
+      render();
+    }
+  }
   function adminNav(active) {
-    return `<div class="hp-admin-tabs"><button type="button" class="hp-button ${active === "admin" ? "hp-primary" : ""}" data-view="admin">${icon("package")}${t("productsTab")}</button><button type="button" class="hp-button ${active === "reviews" ? "hp-primary" : ""}" data-view="reviews">${icon("star")}${t("reviewsTab")}</button><button type="button" class="hp-button ${active === "stats" ? "hp-primary" : ""}" data-view="stats">${icon("bar-chart-3")}${t("analytics")}</button></div>`;
+    return `<div class="hp-admin-tabs"><button type="button" class="hp-button ${active === "admin" ? "hp-primary" : ""}" data-view="admin">${icon("package")}${t("productsTab")}</button><button type="button" class="hp-button ${active === "reviews" ? "hp-primary" : ""}" data-view="reviews">${icon("star")}${t("reviewsTab")}</button><button type="button" class="hp-button ${active === "stats" ? "hp-primary" : ""}" data-view="stats">${icon("bar-chart-3")}${t("analytics")}</button>${owner ? `<button type="button" class="hp-button ${active === "activity" ? "hp-primary" : ""}" data-view="activity">${icon("history")}${t("activity")}</button>` : ""}</div>`;
+  }
+  function renderAudit() {
+    const content = q("#hp-content");
+    const labels = { name: t("name"), brand: t("brand"), cat: t("category"), status: t("status"), price: t("price"), condition: t("condition"), warranty: t("warranty"), images: t("activityPhotos"), specs: t("activityOther"), text_uk: t("reviewUk"), text_pl: t("reviewPl"), customer_name: t("customerName"), purchased_model: t("purchasedModel"), rating: t("rating"), is_published: t("published") };
+    const stringify = (value, key) => {
+      if (key === "images") return String((value || []).length);
+      const raw = typeof value === "object" ? JSON.stringify(value || {}) : String(value ?? "—");
+      return esc(raw.length > 160 ? `${raw.slice(0, 157)}…` : raw);
+    };
+    content.innerHTML = `${adminNav("activity")}<div class="hp-intro"><div><h1>${t("activity")}</h1><span class="hp-muted">${t("activitySub")}</span></div></div>${auditLoading ? `<p>${t("loading")}</p>` : auditError ? `<p role="alert">${t("activityError")}</p>` : auditRows.length ? `<div class="hp-audit-list">${auditRows.map((row) => {
+      const before = row.before_data || {};
+      const after = row.after_data || {};
+      const name = after.name || before.name || after.customer_name || before.customer_name || `#${row.entity_id}`;
+      const changes = Object.keys({ ...before, ...after }).filter((key) => !["created_at", "updated_at", "id"].includes(key) && JSON.stringify(before[key]) !== JSON.stringify(after[key]));
+      return `<article class="hp-audit-item"><div class="hp-audit-heading"><strong>${t(row.action === "INSERT" ? "activityNew" : row.action === "DELETE" ? "activityDelete" : "activityUpdate")} · ${t(row.entity === "product" ? "activityProduct" : "activityReview")}: ${esc(name)}</strong><time datetime="${esc(row.created_at)}">${esc(new Intl.DateTimeFormat(lang === "uk" ? "uk-UA" : "pl-PL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.created_at)))}</time></div><div class="hp-muted hp-small">${esc(row.actor_email || t("activitySystem"))} · #${row.entity_id}</div>${changes.length ? `<details><summary>${changes.map((key) => esc(labels[key] || key)).join(" · ")}</summary><div class="hp-audit-diff">${changes.map((key) => `<div><b>${esc(labels[key] || key)}</b><span>${t("activityOld")}: ${stringify(before[key], key)}</span><span>${t("activityNow")}: ${stringify(after[key], key)}</span></div>`).join("")}</div></details>` : ""}</article>`;
+    }).join("")}</div>` : `<p class="hp-empty">${t("activityEmpty")}</p>`}`;
   }
   function countBy(rows, key, filter = () => true) {
     const counts = new Map();
@@ -1822,6 +1852,20 @@ import {
       hz: ["60", "75", "100", "120", "144", "165", "180", "240", "360", "480"],
     },
   ];
+  Object.assign(dict.uk, {
+    activity: "Журнал змін", activitySub: "Хто, коли й що змінив у товарах і відгуках. Видно тільки власнику.",
+    activityNew: "Додано", activityUpdate: "Змінено", activityDelete: "Видалено",
+    activityProduct: "товар", activityReview: "відгук", activityEmpty: "Змін поки немає.",
+    activityError: "Не вдалося завантажити журнал.", activitySystem: "Система",
+    activityOld: "Було", activityNow: "Стало", activityPhotos: "Фото", activityOther: "Характеристики",
+  });
+  Object.assign(dict.pl, {
+    activity: "Historia zmian", activitySub: "Kto, kiedy i co zmienił w produktach i opiniach. Widoczne tylko dla właściciela.",
+    activityNew: "Dodano", activityUpdate: "Zmieniono", activityDelete: "Usunięto",
+    activityProduct: "produkt", activityReview: "opinię", activityEmpty: "Brak zmian.",
+    activityError: "Nie udało się pobrać historii.", activitySystem: "System",
+    activityOld: "Było", activityNow: "Jest", activityPhotos: "Zdjęcia", activityOther: "Parametry",
+  });
   const initialParams = new URLSearchParams(location.search),
     adminRoute = initialParams.get("admin"),
     startRoute = /^\/start\/?$/.test(location.pathname);
@@ -1834,6 +1878,8 @@ import {
           ? "stats"
           : adminRoute === "reviews"
             ? "reviews"
+            : adminRoute === "activity"
+              ? "activity"
             : "admin"
         : initialParams.has("product")
           ? "detail"
@@ -1853,6 +1899,10 @@ import {
     editReviewId = null,
     reviewImage = null,
     admin = false,
+    owner = false,
+    auditRows = [],
+    auditLoading = false,
+    auditError = false,
     busy = false,
     loading = true,
     loadError = false,
@@ -2062,7 +2112,7 @@ import {
     root.classList.toggle("hp-start-mode", view === "start");
     root.classList.toggle("hp-detail-mode", view === "detail");
     if (
-      ["admin", "edit", "stats", "reviews", "reviewEdit"].includes(view) &&
+      ["admin", "edit", "stats", "reviews", "reviewEdit", "activity"].includes(view) &&
       !admin
     ) {
       renderCompareDock();
@@ -2280,6 +2330,10 @@ import {
     if (view === "reviews") renderReviewsAdmin();
     if (view === "reviewEdit") renderReviewForm();
     if (view === "stats") renderAnalytics();
+    if (view === "activity") {
+      if (owner) renderAudit();
+      else { view = "admin"; history.replaceState(null, "", "?admin"); render(); return; }
+    }
     if (view === "edit") renderForm();
     refreshIcons();
     renderCompareDock();
@@ -2482,6 +2536,8 @@ import {
             ? "?admin=stats"
             : view === "reviews"
               ? "?admin=reviews"
+              : view === "activity"
+                ? "?admin=activity"
               : "/",
       );
       if (view === "cart")
@@ -2490,6 +2546,7 @@ import {
           render();
         });
       else if (view === "stats") await loadAnalytics();
+      else if (view === "activity") await loadAudit();
       else render();
     } else if (b.dataset.lang) {
       if (view === "edit") {
@@ -2656,6 +2713,7 @@ import {
       await run(async () => {
         await db.signOut();
         admin = false;
+        owner = false;
         view = "home";
         await refresh();
         render();
@@ -2769,6 +2827,7 @@ import {
           return;
         }
         admin = true;
+        owner = await db.isOwner();
         await refresh();
         view = "admin";
         render();
@@ -2841,7 +2900,11 @@ import {
       if (db.ready) {
         await db.connect();
         admin = await db.isAdmin();
+        if (admin) owner = await db.isOwner();
         await refresh();
+        if (view === "activity" && owner) {
+          auditRows = await db.listAudit();
+        }
         if (initialParams.has("product")) view = "detail";
         if (view === "stats" && admin) {
           statsLoading = true;

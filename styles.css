@@ -1677,6 +1677,15 @@ body {
 }
 
 /* Private administrator analytics. */
+#hugo-preview .hp-audit-list { display: grid; gap: 12px; margin: 24px 0; }
+#hugo-preview .hp-audit-item { padding: 18px 20px; background: #fff; border: 1px solid #e8e3f2; border-radius: 14px; overflow-wrap: anywhere; }
+#hugo-preview .hp-audit-heading { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+#hugo-preview .hp-audit-heading time { color: #746c87; font-size: 14px; }
+#hugo-preview .hp-audit-item details { margin-top: 10px; }
+#hugo-preview .hp-audit-item summary { cursor: pointer; color: #6d42c5; }
+#hugo-preview .hp-audit-diff { display: grid; gap: 8px; margin-top: 12px; }
+#hugo-preview .hp-audit-diff > div { display: grid; grid-template-columns: minmax(100px, 1fr) repeat(2, minmax(0, 2fr)); gap: 10px; padding: 8px 0; border-top: 1px solid #f0edf5; }
+@media (max-width: 650px) { #hugo-preview .hp-audit-diff > div { display: flex; flex-direction: column; gap: 3px; } }
 #hugo-preview .hp-admin-tabs {
   display: flex;
   gap: 9px;
