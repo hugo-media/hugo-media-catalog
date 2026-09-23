@@ -7,7 +7,13 @@ export const TELEGRAM_CHANNEL = 'https://t.me/h_m_g_pl';
 export const PURPOSES = ['study','office','programming','editing','gaming','travel'];
 export const BENEFITS = ['tested','metal','battery','keyboard','touch','light','gradeA'];
 export const BUNDLES = {mouse:45,office:200,photoshop:200,software:0,setup:50,upgrade:0};
-export function csv(value=''){return [...new Set(String(value||'').split(',').map(v=>v.trim()).filter(Boolean))];}
+export function csv(value=''){
+ let items=value;
+ if(typeof value==='string'&&value.trim().startsWith('[')){
+  try{const parsed=JSON.parse(value);if(Array.isArray(parsed))items=parsed;}catch{}
+ }
+ return [...new Set((Array.isArray(items)?items:String(items||'').split(',')).map(v=>String(v).trim()).filter(Boolean))];
+}
 export function discountPercent(p){const value=Number(p?.discount||0);return DISCOUNTS.includes(value)?value:0;}
 export function effectivePrice(p){return Math.round(Number(p.price)*(100-discountPercent(p)))/100;}
 export function normalizeTelegramPost(value=''){

@@ -733,6 +733,94 @@
   }
 }
 
+/* Catalog conversion refinements. Product photos retain their actual contents. */
+#hugo-preview .hp-featured-image {
+  height: 330px;
+  overflow: hidden;
+  background: #f3f3f6;
+}
+#hugo-preview .hp-featured-image img {
+  padding: 10px;
+  transform: scale(1.14);
+}
+#hugo-preview .hp-photo,
+#hugo-preview .hp-home-products .hp-photo {
+  background: #f3f3f6;
+  overflow: hidden;
+}
+#hugo-preview .hp-photo img {
+  padding: 9px;
+  filter: drop-shadow(0 11px 15px #1a182015);
+}
+#hugo-preview .hp-card-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 12px;
+}
+#hugo-preview .hp-card-highlights span {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 8px;
+  border: 1px solid #e6e0f4;
+  border-radius: 7px;
+  background: #f9f7ff;
+  color: #514267;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+#hugo-preview .hp-review-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 17px; }
+#hugo-preview .hp-review { gap: 10px; padding: 14px; overflow: hidden; }
+#hugo-preview .hp-review-image { display: block; margin: -4px -4px 5px; border-radius: 12px; overflow: hidden; background: #f3f3f6; }
+#hugo-preview .hp-review-image img { display: block; width: 100%; max-height: 310px; object-fit: contain; }
+#hugo-preview .hp-review p { margin: 0; font-size: 15px; }
+#hugo-preview .hp-order-guide { padding: 28px; border: 1px solid #e5e1ed; border-radius: 20px; background: #fff; }
+#hugo-preview .hp-order-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+#hugo-preview .hp-order-steps > div { display: grid; align-content: start; gap: 7px; padding: 20px; border: 1px solid #eeebf2; border-radius: 14px; background: #faf9fc; }
+#hugo-preview .hp-order-steps b { color: #7252d7; font-size: 15px; }
+#hugo-preview .hp-order-steps strong { font-size: 17px; }
+#hugo-preview .hp-order-steps p { margin: 0; color: #625e6a; line-height: 1.5; }
+#hugo-preview .hp-order-guide-foot { display: flex; gap: 14px; justify-content: space-between; margin-top: 17px; color: #575165; font-size: 14px; }
+#hugo-preview .hp-order-guide-foot span { display: flex; align-items: center; gap: 8px; max-width: 48%; }
+#hugo-preview .hp-order-guide-foot svg { flex: 0 0 19px; color: #7252d7; }
+#hugo-preview .hp-recommendation > span { display: inline-block; margin: 0 0 8px 4px; color: #5739a8; font-size: 13px; font-weight: 800; }
+#hugo-preview .hp-mobile-order-bar { display: none; }
+#hugo-preview .hp-interest { margin-top: 22px; border: 1px solid #e3e0e9; border-radius: 16px; background: #fff; overflow: hidden; }
+#hugo-preview .hp-interest-title { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 20px; border: 0; background: #f7f5fc; color: #25202d; text-align: left; cursor: pointer; }
+#hugo-preview .hp-interest-title span { display: grid; gap: 5px; }
+#hugo-preview .hp-interest-title strong { font-size: 19px; }
+#hugo-preview .hp-interest-title small { color: #675f73; font-size: 13px; line-height: 1.4; }
+#hugo-preview .hp-interest-scroll { max-height: 510px; overflow: auto; }
+#hugo-preview .hp-interest table { width: 100%; border-collapse: collapse; text-align: left; }
+#hugo-preview .hp-interest th,
+#hugo-preview .hp-interest td { padding: 11px 14px; border-bottom: 1px solid #eeebf2; font-size: 13px; white-space: nowrap; }
+#hugo-preview .hp-interest thead th { position: sticky; top: 0; background: #fff; color: #655b70; }
+#hugo-preview .hp-interest tbody th { max-width: 270px; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 760px) {
+  #hugo-preview .hp-featured-image { height: 170px; }
+  #hugo-preview .hp-featured-image img { padding: 3px; transform: scale(1.1); }
+  #hugo-preview .hp-review-grid { grid-template-columns: 1fr; }
+  #hugo-preview .hp-order-guide { padding: 19px; }
+  #hugo-preview .hp-order-steps { grid-template-columns: 1fr; }
+  #hugo-preview .hp-order-guide-foot { display: grid; }
+  #hugo-preview .hp-order-guide-foot span { max-width: none; }
+  #hugo-preview.hp-detail-mode .hp-mobile-telegram { display: none; }
+  #hugo-preview.hp-detail-mode .hp-main { padding-bottom: 88px; }
+  #hugo-preview.hp-detail-mode .hp-compare-dock.hp-show { bottom: 84px; }
+  #hugo-preview .hp-mobile-order-bar {
+    position: fixed; z-index: 30; right: 0; bottom: 0; left: 0;
+    display: flex; align-items: center; gap: 9px;
+    padding: 10px max(12px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    border-top: 1px solid #e5e1ea; background: #fff; box-shadow: 0 -10px 30px #17151f13;
+  }
+  #hugo-preview .hp-mobile-order-bar > div { display: grid; min-width: 0; flex: 1; gap: 2px; }
+  #hugo-preview .hp-mobile-order-bar small { overflow: hidden; color: #77717e; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+  #hugo-preview .hp-mobile-order-bar strong { color: #17151f; font-size: 18px; white-space: nowrap; }
+  #hugo-preview .hp-mobile-order-bar .hp-button { min-height: 44px; padding: 10px 14px; font-size: 14px; }
+  #hugo-preview .hp-mobile-order-bar a { display: grid; width: 44px; height: 44px; flex: 0 0 44px; place-items: center; border: 1px solid #e0d7f1; border-radius: 10px; color: #6c3ee8; }
+}
+
 body {
   margin: 0;
   background: #faf9fc;
@@ -3577,4 +3665,16 @@ body {
     min-height: 75px;
     padding: 13px 10px;
   }
+}
+
+/* Keep image sizing consistent with the final storefront overrides. */
+#hugo-preview .hp-featured-image { height: 330px; background: #f3f3f6; overflow: hidden; }
+#hugo-preview .hp-featured-image img { padding: 10px; transform: scale(1.14); }
+#hugo-preview .hp-photo,
+#hugo-preview .hp-home-products .hp-photo { background: #f3f3f6; overflow: hidden; }
+#hugo-preview .hp-photo img { padding: 9px; filter: drop-shadow(0 11px 15px #1a182015); }
+#hugo-preview .hp-image-fallback { display: grid; width: 100%; height: 100%; place-items: center; color: #665d70; font-size: 14px; }
+@media (max-width: 760px) {
+  #hugo-preview .hp-featured-image { height: 170px; }
+  #hugo-preview .hp-featured-image img { padding: 3px; transform: scale(1.1); }
 }

@@ -705,6 +705,29 @@ import {
     compareAdds: "Додавання до порівняння",
     bundleAdds: "Вибір комплектів",
     similar: "Схожі товари",
+    conditionShort: "Стан",
+    warrantyShort: "Гарантія",
+    orderSteps: "Як замовити",
+    orderStepsSub: "Підтверджуємо наявність та деталі особисто перед відправленням.",
+    orderStepOne: "Обери техніку",
+    orderStepOneSub: "Порівняй характеристики й відкрий живі фото у Telegram.",
+    orderStepTwo: "Напиши нам",
+    orderStepTwoSub: "Кнопка замовлення підставить назву та ціну товару в повідомлення.",
+    orderStepThree: "Узгодь доставку й оплату",
+    orderStepThreeSub: "Уточнимо спосіб оплати, доставку та умови гарантії до підтвердження замовлення.",
+    deliveryNote: "Підписникам Telegram-каналу — безкоштовна доставка та спеціальні пропозиції.",
+    trustQuestion: "Питання про повернення або гарантію?",
+    trustQuestionSub: "Напиши нам до замовлення — розкажемо умови для конкретного товару.",
+    moreRam: "Більше RAM",
+    lowerPrice: "Дешевше",
+    underBudget: "До 1500 zł",
+    productInterest: "Інтерес до товарів",
+    productInterestDesc: "Перегляди, натискання «Замовити» та переходи до огляду в Telegram по кожній моделі. CTR — частка сеансів із переглядом, у яких натиснули «Замовити». Це не підтверджені продажі.",
+    interestViews: "Перегляди",
+    interestOrders: "Замовити",
+    interestChannel: "Огляд у TG",
+    interestRate: "CTR",
+    noPhoto: "Фото додається",
   });
   Object.assign(dict.pl, {
     reviewsTab: "Opinie",
@@ -759,6 +782,29 @@ import {
     compareAdds: "Dodania do porównania",
     bundleAdds: "Wybrane dodatki",
     similar: "Podobne produkty",
+    conditionShort: "Stan",
+    warrantyShort: "Gwarancja",
+    orderSteps: "Jak zamówić",
+    orderStepsSub: "Przed wysyłką osobiście potwierdzamy dostępność i szczegóły.",
+    orderStepOne: "Wybierz sprzęt",
+    orderStepOneSub: "Porównaj parametry i zobacz zdjęcia w Telegramie.",
+    orderStepTwo: "Napisz do nas",
+    orderStepTwoSub: "Przycisk zamówienia doda model i cenę do wiadomości.",
+    orderStepThree: "Ustal dostawę i płatność",
+    orderStepThreeSub: "Przed potwierdzeniem ustalimy sposób płatności, dostawę i warunki gwarancji.",
+    deliveryNote: "Obserwujący kanał Telegram otrzymują darmową dostawę i specjalne oferty.",
+    trustQuestion: "Pytania o zwrot lub gwarancję?",
+    trustQuestionSub: "Napisz przed zakupem — przedstawimy warunki dla konkretnego produktu.",
+    moreRam: "Więcej RAM",
+    lowerPrice: "Taniej",
+    underBudget: "Do 1500 zł",
+    productInterest: "Zainteresowanie produktami",
+    productInterestDesc: "Wyświetlenia, kliknięcia „Zamów” i przejścia do prezentacji w Telegramie według modelu. CTR to udział sesji z wyświetleniem, w których kliknięto „Zamów”. Nie są to potwierdzone transakcje.",
+    interestViews: "Wyświetlenia",
+    interestOrders: "Zamów",
+    interestChannel: "Pokaz w TG",
+    interestRate: "CTR",
+    noPhoto: "Zdjęcie wkrótce",
   });
   function readLocal(k, f) {
     try {
@@ -850,8 +896,8 @@ import {
     return width < 700 ? "mobile" : width < 1024 ? "tablet" : "desktop";
   }
   function recordEvent(event_type, product_id = null, destination = "") {
-    if (admin || !db.ready) return;
-    db.trackEvent({
+    if (admin || !db.ready) return Promise.resolve();
+    return db.trackEvent({
       visitor_id: visitorId,
       session_id: sessionId,
       event_type,
@@ -863,6 +909,12 @@ import {
       language: lang,
       destination: String(destination || "").slice(0, 80),
     }).catch(() => {});
+  }
+  function recordBeforeNavigation(event_type, product_id, destination) {
+    return Promise.race([
+      recordEvent(event_type, product_id, destination),
+      new Promise((resolve) => setTimeout(resolve, 600)),
+    ]);
   }
   async function loadAnalytics() {
     statsLoading = true;
@@ -926,6 +978,19 @@ import {
         (a, b) => new Date(b.created_at) - new Date(a.created_at),
       ),
       destinations = countBy(transitions, "destination");
+    const interest = [...new Set([...productViews, ...telegram].map((event) => Number(event.product_id)).filter(Boolean))]
+      .map((id) => {
+        const views = productViews.filter((event) => Number(event.product_id) === id).length;
+        const orders = telegram.filter((event) => Number(event.product_id) === id && event.destination === "telegram_order").length;
+        const media = telegram.filter((event) => Number(event.product_id) === id && event.destination === "telegram_product").length;
+        const source = countBy(productViews.filter((event) => Number(event.product_id) === id), "traffic_source")[0]?.[0] || t("directTraffic");
+        const viewSessions = new Set(productViews.filter((event) => Number(event.product_id) === id).map((event) => event.session_id));
+        const orderSessions = new Set(telegram.filter((event) => Number(event.product_id) === id && event.destination === "telegram_order").map((event) => event.session_id));
+        const converted = [...viewSessions].filter((session) => orderSessions.has(session)).length;
+        return { id, views, orders, media, source, rate: viewSessions.size ? Math.round(converted / viewSessions.size * 100) : 0 };
+      })
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 20);
     const destinationLabel = (value) =>
       ({
         telegram_channel: t("destChannel"),
@@ -1121,6 +1186,11 @@ import {
           value,
         ]),
       },
+      productInterest: {
+        label: t("productInterest"),
+        description: t("productInterestDesc"),
+        items: interest.map(({ id, views }) => [products.find((p) => p.id === id)?.name || `HMG-${String(id).padStart(3, "0")}`, views]),
+      },
       trafficSources: {
         label: t("trafficSources"),
         description: t("metricSourcesDesc"),
@@ -1214,6 +1284,7 @@ import {
                 list(devices, (type) => t(type) || type),
               )}<section class="hp-stat-panel hp-stat-recent"><h3>${t("recentTransitions")}</h3><p class="hp-stat-panel-desc">${t("recentTransitionsDesc")}</p>${journeys}</section></div>${chartModal()}`
       }`;
+    if (!statsLoading && !statsError) q("#hp-content").insertAdjacentHTML("beforeend", `<section class="hp-interest"><button type="button" class="hp-interest-title" data-stat-metric="productInterest"><span><strong>${t("productInterest")}</strong><small>${t("productInterestDesc")}</small></span>${icon("chart-no-axes-column-increasing")}</button><div class="hp-interest-scroll"><table><thead><tr><th>${t("name")}</th><th>${t("interestViews")}</th><th>${t("interestOrders")}</th><th>${t("interestChannel")}</th><th>${t("interestRate")}</th><th>${t("trafficSources")}</th></tr></thead><tbody>${interest.length ? interest.map(({ id, views, orders, media, rate, source }) => `<tr><th>${esc(productTitle(products.find((p) => p.id === id) || { name: `HMG-${id}` }))}</th><td>${views}</td><td>${orders}</td><td>${media}</td><td>${rate}%</td><td>${esc(source)}</td></tr>`).join("") : `<tr><td colspan="6">${t("noAnalytics")}</td></tr>`}</tbody></table></div></section>`);
     refreshIcons();
   }
   const icons = [
@@ -1705,10 +1776,24 @@ import {
       .trim();
     return title || p.name;
   }
+  function localizedValue(value) {
+    const parts = String(value || "").split(/\s*\/\s*/);
+    return parts[lang === "pl" && parts.length > 1 ? 1 : 0] || "";
+  }
+  function productHighlights(p) {
+    const highlights = [];
+    if (p.condition) highlights.push(`${t("conditionShort")}: ${localizedValue(p.condition)}`);
+    if (p.warranty) highlights.push(`${t("warrantyShort")}: ${localizedValue(p.warranty)}`);
+    const benefits = csv(p.benefits);
+    if (benefits.includes("touch")) highlights.push(t("benefitTouch"));
+    if (benefits.includes("keyboard")) highlights.push(t("benefitKeyboard"));
+    if (p.purposes) highlights.push(...csv(p.purposes).slice(0, 2).map((code) => t(purposeKey(code))));
+    return highlights.filter(Boolean).slice(0, 4);
+  }
   function reviewsBlock(limit = 3) {
     const list = reviews.filter((r) => r.is_published).slice(0, limit);
     if (!list.length) return "";
-    return `<section class="hp-home-section"><div class="hp-section-title"><h2>${t("customerReviews")}</h2></div><div class="hp-review-grid">${list.map((r) => `<article class="hp-review"><div class="hp-stars">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</div><p>${esc((lang === "uk" ? r.text_uk : r.text_pl) || r.text_uk || r.text_pl)}</p><b>${esc(r.customer_name)}</b>${r.image_path ? `<a href="${esc(db.photoUrl(r.image_path))}" target="_blank" rel="noopener noreferrer">${icon("image")}${t("reviewPhoto")}</a>` : ""}</article>`).join("")}</div></section>`;
+    return `<section class="hp-home-section"><div class="hp-section-title"><h2>${t("customerReviews")}</h2></div><div class="hp-review-grid">${list.map((r) => `<article class="hp-review">${r.image_path ? `<a class="hp-review-image" href="${esc(db.photoUrl(r.image_path))}" target="_blank" rel="noopener noreferrer" aria-label="${esc(t("reviewPhoto"))}: ${esc(r.customer_name)}"><img src="${esc(db.photoUrl(r.image_path))}" alt="${esc(t("reviewPhoto"))}: ${esc(r.customer_name)}" loading="lazy"></a>` : ""}<div class="hp-stars" aria-label="${r.rating}/5">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</div>${(lang === "uk" ? r.text_uk : r.text_pl) || r.text_uk || r.text_pl ? `<p>${esc((lang === "uk" ? r.text_uk : r.text_pl) || r.text_uk || r.text_pl)}</p>` : ""}<b>${esc(r.customer_name)}</b></article>`).join("")}</div></section>`;
   }
   function renderCompareDock() {
     let dock = q("#hp-compare-dock");
@@ -1791,8 +1876,9 @@ import {
   }
   function productCard(p) {
     const discount = discountPercent(p),
-      qty = stockQty(p);
-    return `<article class="hp-product"><button class="hp-product-open" type="button" data-detail="${p.id}" aria-label="${t("detail")}: ${esc(p.name)}"><div class="hp-card-badges">${p.newArrival === "true" ? `<span class="hp-badge-new">${t("newArrival")}</span>` : ""}${p.bestseller === "true" ? `<span class="hp-badge-best">${t("bestseller")}</span>` : ""}${discount ? `<span class="hp-badge-sale">-${discount}%</span>` : ""}</div>${photo(p)}<div class="hp-product-body"><div class="hp-product-meta"><span>${esc(p.brand)}</span><span>${icon("badge-check")}${t("verifiedLabel")}</span></div><div class="hp-product-name">${esc(productTitle(p))}</div><div class="hp-specs"><span>${esc(p.cpu)}${p.ram ? ` · ${esc(p.ram)} GB RAM` : ""}</span><span>${p.ssd ? `${esc(p.ssd)} GB${p.cat === 0 ? " SSD" : ""}` : ""}${p.gpu ? ` · ${esc(p.gpu)}` : ""}</span></div><div class="hp-card-stock ${qty === 1 ? "hp-card-stock-low" : ""}">${qty === 1 ? t("onlyOne") : `${qty} ${t("unitsLeft")}`}</div></div></button><div class="hp-product-foot"><div class="hp-price-row">${priceBlock(p)}<button type="button" class="hp-compare-add" data-compare="${p.id}" aria-label="${t("compare")}: ${esc(p.name)}" aria-pressed="${compare.includes(p.id)}">${icon(compare.includes(p.id) ? "check" : "columns-2")}</button></div><div class="hp-card-cta"><button type="button" class="hp-button hp-card-details" data-detail="${p.id}">${t("cardDetails")}</button><button type="button" class="hp-button hp-primary hp-card-order" data-order-one="${p.id}">${icon("send")}${t("cardOrder")}</button></div></div></article>`;
+      qty = stockQty(p),
+      highlights = productHighlights(p);
+    return `<article class="hp-product"><button class="hp-product-open" type="button" data-detail="${p.id}" aria-label="${t("detail")}: ${esc(p.name)}"><div class="hp-card-badges">${p.newArrival === "true" ? `<span class="hp-badge-new">${t("newArrival")}</span>` : ""}${p.bestseller === "true" ? `<span class="hp-badge-best">${t("bestseller")}</span>` : ""}${discount ? `<span class="hp-badge-sale">-${discount}%</span>` : ""}</div>${photo(p)}<div class="hp-product-body"><div class="hp-product-meta"><span>${esc(p.brand)}</span><span>${icon("badge-check")}${t("verifiedLabel")}</span></div><div class="hp-product-name">${esc(productTitle(p))}</div><div class="hp-specs"><span>${esc(p.cpu)}${p.ram ? ` · ${esc(p.ram)} GB RAM` : ""}</span><span>${p.ssd ? `${esc(p.ssd)} GB${p.cat === 0 ? " SSD" : ""}` : ""}${p.gpu ? ` · ${esc(p.gpu)}` : ""}</span></div>${highlights.length ? `<div class="hp-card-highlights">${highlights.map((label) => `<span>${esc(label)}</span>`).join("")}</div>` : ""}<div class="hp-card-stock ${qty === 1 ? "hp-card-stock-low" : ""}">${qty === 1 ? t("onlyOne") : `${qty} ${t("unitsLeft")}`}</div></div></button><div class="hp-product-foot"><div class="hp-price-row">${priceBlock(p)}<button type="button" class="hp-compare-add" data-compare="${p.id}" aria-label="${t("compare")}: ${esc(p.name)}" aria-pressed="${compare.includes(p.id)}">${icon(compare.includes(p.id) ? "check" : "columns-2")}</button></div><div class="hp-card-cta"><button type="button" class="hp-button hp-card-details" data-detail="${p.id}">${t("cardDetails")}</button><button type="button" class="hp-button hp-primary hp-card-order" data-order-one="${p.id}">${icon("send")}${t("cardOrder")}</button></div></div></article>`;
   }
   function cards() {
     const list = visible();
@@ -1809,6 +1895,7 @@ import {
   function render() {
     document.documentElement.lang = lang;
     root.classList.toggle("hp-start-mode", view === "start");
+    root.classList.toggle("hp-detail-mode", view === "detail");
     if (
       ["admin", "edit", "stats", "reviews", "reviewEdit"].includes(view) &&
       !admin
@@ -1860,12 +1947,14 @@ import {
         bestsellers = available
           .filter((p) => p.bestseller === "true")
           .slice(0, 4),
+        featuredIds = new Set(bestsellers.map((p) => p.id)),
         offers = available
-          .filter((p) => discountPercent(p) > 0)
+          .filter((p) => discountPercent(p) > 0 && !featuredIds.has(p.id))
           .sort((a, b) => discountPercent(b) - discountPercent(a))
           .slice(0, 4),
+        displayedIds = new Set([...bestsellers, ...offers].map((p) => p.id)),
         latest = available
-          .filter((p) => p.newArrival === "true")
+          .filter((p) => p.newArrival === "true" && !displayedIds.has(p.id))
           .sort((a, b) => b.id - a.id)
           .slice(0, 4);
       const productSection = (title, sub, list, kind = "") =>
@@ -1873,6 +1962,7 @@ import {
           ? `<section class="hp-home-section hp-merch-section ${kind}"><div class="hp-section-title"><div><div class="hp-kicker">Hugo selection</div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ""}</div><button type="button" class="hp-home-link" data-cat="-1">${t("viewAll")}${icon("arrow-right")}</button></div><div class="hp-grid hp-home-products">${list.map(productCard).join("")}</div></section>`
           : "";
       content.innerHTML = `<section class="hp-home-hero"><div class="hp-home-copy"><div class="hp-kicker">${t("heroEyebrow")}</div><h1>${t("heroTitle")}</h1><p>${t("heroSub")}</p><div class="hp-home-actions"><button type="button" class="hp-button hp-primary" data-cat="0">${t("shopNow")}${icon("arrow-right")}</button><a class="hp-button hp-hero-secondary" href="https://t.me/HUGO_Media" target="_blank" rel="noopener noreferrer" data-track-target="telegram_contact">${icon("message-circle")}${t("ask")}</a></div><div class="hp-hero-proof"><span>${icon("badge-check")}${t("verifiedLabel")}</span><span>${icon("camera")}${t("realPhotos")}</span></div></div>${featured ? `<div class="hp-featured"><div class="hp-featured-label">${t("heroPick")}</div><button type="button" class="hp-featured-product" data-detail="${featured.id}"><div class="hp-featured-image">${featured.images.length ? `<img src="${esc(pictureUrl(featured.images[0]))}" alt="${esc(featured.name)}">` : icon("laptop")}</div><div class="hp-featured-info"><span>${esc(featured.brand)}</span><strong>${esc(productTitle(featured))}</strong><small>${esc(featured.cpu)} · ${esc(featured.ram)} GB RAM · ${esc(featured.ssd)} GB SSD</small><div>${t("heroFrom")} <b>${money(effectivePrice(featured))} zł</b> ${icon("arrow-right")}</div></div></button></div>` : ""}</section><section class="hp-benefits"><div>${icon("badge-check")}<span><b>${t("checkedTech")}</b><small>${t("checkedTechSub")}</small></span></div><div>${icon("shield-check")}<span><b>${t("warrantyBenefit")}</b><small>${t("warrantyBenefitSub")}</small></span></div><div>${icon("truck")}<span><b>${t("deliveryBenefit")}</b><small>${t("deliveryBenefitSub")}</small></span></div><div class="hp-stock-benefit">${icon("package-check")}<span><b>${available.length} ${t("inStockNow")}</b><small>${t("realPhotos")}</small></span></div></section>${productSection(t("bestChoice"), t("bestChoiceSub"), bestsellers, "hp-bestsellers")}${productSection(t("saleOffers"), t("saleOffersSub"), offers, "hp-offers")}${productSection(t("latestProducts"), t("newArrivalsSub"), latest, "hp-latest")}${reviewsBlock()}<section class="hp-telegram-band"><div><div class="hp-kicker">Hugo concierge</div><h2>${t("telegramHelp")}</h2><p>${t("telegramHelpSub")}</p></div><a class="hp-button hp-primary" href="https://t.me/HUGO_Media" target="_blank" rel="noopener noreferrer" data-track-target="telegram_contact">${icon("send")}${t("writeTelegram")}</a></section>`;
+      content.insertAdjacentHTML("beforeend", `<section class="hp-home-section hp-order-guide"><div class="hp-section-title"><div><div class="hp-kicker">Hugo service</div><h2>${t("orderSteps")}</h2><p>${t("orderStepsSub")}</p></div></div><div class="hp-order-steps"><div><b>01</b><strong>${t("orderStepOne")}</strong><p>${t("orderStepOneSub")}</p></div><div><b>02</b><strong>${t("orderStepTwo")}</strong><p>${t("orderStepTwoSub")}</p></div><div><b>03</b><strong>${t("orderStepThree")}</strong><p>${t("orderStepThreeSub")}</p></div></div><div class="hp-order-guide-foot"><span>${icon("truck")}${t("deliveryNote")}</span><span><b>${t("trustQuestion")}</b> ${t("trustQuestionSub")}</span></div></section>`);
       const strip = document.createElement("aside");
       strip.className = "hp-channel-strip";
       strip.innerHTML = `<span>${icon("send")}${t("channelStrip")}</span><a href="https://t.me/h_m_g_pl" target="_blank" rel="noopener noreferrer" data-track-target="telegram_channel">${t("subscribe")}${icon("arrow-up-right")}</a>`;
@@ -1922,11 +2012,26 @@ import {
               x.status === 0 &&
               stockQty(x) > 0,
           )
+          .sort((a, b) => Math.abs(effectivePrice(a) - effectivePrice(p)) - Math.abs(effectivePrice(b) - effectivePrice(p)))
           .slice(0, 3);
       content.innerHTML = `<div class="hp-detail-page"><button type="button" class="hp-back hp-detail-back" data-view="catalog">${icon("arrow-left")}${t("back")}</button><section class="hp-detail-hero"><div class="hp-gallery-panel"><div class="hp-gallery-head"><span>${icon("camera")}${t("productPhoto")}</span><span>HMG-${p.id.toString().padStart(3, "0")}</span></div>${photo(p)}${p.images.length > 1 ? `<div class="hp-toprow hp-thumbs">${p.images.map((src, i) => `<button type="button" class="hp-button" data-image="${i}"><img src="${esc(pictureUrl(src))}" alt="${i + 1}"></button>`).join("")}</div>` : ""}<a class="hp-gallery-link" href="${esc(telegramPostUrl(p.telegramPost))}" target="_blank" rel="noopener noreferrer">${icon("play-circle")}${t("seeTelegram")}${icon("arrow-right")}</a></div><div class="hp-buy-panel"><div class="hp-kicker">${esc(p.brand)} · ${t("verifiedLabel")}</div><h1>${esc(productTitle(p))}</h1><p class="hp-detail-config">${esc(p.cpu)}${p.ram ? ` · ${esc(p.ram)} GB RAM` : ""}${p.ssd ? ` · ${esc(p.ssd)} GB${p.cat === 0 ? " SSD" : ""}` : ""}${p.gpu ? ` · ${esc(p.gpu)}` : ""}</p><div class="hp-detail-badges"><span class="hp-demo-status">${t("statuses")[p.status]}</span>${p.newArrival === "true" ? `<span class="hp-badge-new">${t("newArrival")}</span>` : ""}${p.bestseller === "true" ? `<span class="hp-badge-best">${t("bestseller")}</span>` : ""}${discountPercent(p) ? `<span class="hp-badge-sale">-${discountPercent(p)}%</span>` : ""}</div><div class="hp-stock ${qty === 1 ? "hp-stock-low" : ""}">${qty === 1 ? t("onlyOne") : `${qty} ${t("unitsLeft")}`}</div>${priceBlock(p, true)}${purposeCodes.length ? `<div class="hp-purpose-tags">${purposeCodes.map((code) => `<span>${t(purposeKey(code))}</span>`).join("")}</div>` : ""}<div class="hp-buy-copy"><b>${t("buyPanelTitle")}</b><span>${t("buyPanelSub")}</span></div><div class="hp-detail-actions hp-detail-primary-actions"><button type="button" class="hp-button hp-primary" data-order-one="${p.id}" ${p.status !== 0 || qty < 1 ? "disabled" : ""}>${icon("send")}${t("orderNow")}</button><a class="hp-button hp-channel-button" href="${esc(telegramPostUrl(p.telegramPost))}" target="_blank" rel="noopener noreferrer">${icon("play-circle")}${t("telegramMedia")}</a></div><div class="hp-detail-secondary-actions"><button type="button" class="hp-button hp-choice-button" data-add="${p.id}" ${p.status !== 0 || qty < 1 ? "disabled" : ""}>${icon(cart.includes(p.id) ? "check" : "shopping-bag")}${cart.includes(p.id) ? t("added") : t("add")}</button><button type="button" class="hp-button" data-compare="${p.id}">${icon(compare.includes(p.id) ? "check" : "columns-2")}${t("compare")}</button><button type="button" class="hp-button" id="hp-share" aria-label="${t("share")}">${icon("share-2")}</button></div><div class="hp-detail-trust"><span>${icon("badge-check")}${t("secureDeal")}</span><span>${icon("shield-check")}${t("warrantyBenefit")}</span><span>${icon("message-circle")}${t("fastContact")}</span></div></div></section><section class="hp-detail-lower"><div class="hp-detail-info-card"><div class="hp-section-title"><div><div class="hp-kicker">${t("configuration")}</div><h2>${t("specTitle")}</h2></div></div><div class="hp-detailspec">${specs.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("")}</div></div>${benefitCodes.length || bundleCodes.length || description ? `<div class="hp-detail-extras">${benefitCodes.length ? `<section class="hp-sales-block"><h3>${t("advantages")}</h3><div class="hp-benefit-list">${benefitCodes.map((code) => `<span>${icon("check-circle-2")}${t(benefitKey(code))}</span>`).join("")}</div></section>` : ""}${bundleCodes.length ? `<section class="hp-sales-block"><h3>${t("bundles")}</h3><div class="hp-bundle-list">${bundleCodes.map((code) => `<label><input type="checkbox" data-bundle="${code}" data-product="${p.id}" ${chosenBundles.includes(code) ? "checked" : ""}><span>${t(bundleKey(code))}</span></label>`).join("")}</div></section>` : ""}${description ? `<section class="hp-sales-block"><h3>${t("aboutDevice")}</h3><p class="hp-description">${esc(description)}</p></section>` : ""}</div>` : ""}</section>${reviewsBlock(3)}${similar.length ? `<section class="hp-home-section hp-similar-section"><div class="hp-section-title"><h2>${t("similar")}</h2></div><div class="hp-grid">${similar.map(productCard).join("")}</div></section>` : ""}</div>`;
       content
         .querySelectorAll(".hp-gallery-link,.hp-channel-button")
         .forEach((link) => (link.dataset.trackTarget = "telegram_product"));
+      const related = content.querySelector(".hp-similar-section");
+      if (related) {
+        const candidates = products.filter((item) => item.id !== p.id && item.cat === p.cat && item.status === 0 && stockQty(item) > 0);
+        const chosen = [], used = new Set();
+        const pick = (label, items) => {
+          const item = items.find((candidate) => !used.has(candidate.id));
+          if (item) { chosen.push({ label, item }); used.add(item.id); }
+        };
+        pick(t("lowerPrice"), [...candidates].filter((item) => effectivePrice(item) < effectivePrice(p)).sort((a, b) => effectivePrice(b) - effectivePrice(a)));
+        pick(t("moreRam"), [...candidates].filter((item) => Number(item.ram) > Number(p.ram)).sort((a, b) => Math.abs(effectivePrice(a) - effectivePrice(p)) - Math.abs(effectivePrice(b) - effectivePrice(p))));
+        pick(t("underBudget"), [...candidates].filter((item) => effectivePrice(item) <= 1500).sort((a, b) => b.id - a.id));
+        if (chosen.length) related.innerHTML = `<div class="hp-section-title"><h2>${t("similar")}</h2></div><div class="hp-grid">${chosen.map(({ label, item }) => `<div class="hp-recommendation"><span>${esc(label)}</span>${productCard(item)}</div>`).join("")}</div>`;
+      }
+      content.insertAdjacentHTML("beforeend", `<div class="hp-mobile-order-bar"><div><small>${esc(productTitle(p))}</small><strong>${money(effectivePrice(p))} zł</strong></div><button type="button" class="hp-button hp-primary" data-order-one="${p.id}" ${p.status !== 0 || qty < 1 ? "disabled" : ""}>${t("orderNow")}</button><a href="${esc(telegramPostUrl(p.telegramPost))}" target="_blank" rel="noopener noreferrer" data-track-target="telegram_product" aria-label="${t("telegramMedia")}">${icon("send")}</a></div>`);
     }
     if (view === "compare") {
       const items = products.filter((p) => compare.includes(p.id));
@@ -2119,6 +2224,14 @@ import {
     q("#hp-content").innerHTML =
       `<form id="hp-login" class="hp-form hp-login"><h2>${t("login")}</h2>${!db.ready ? `<p>${t("unconfigured")}</p>` : `<label class="hp-field">${t("email")}<input name="email" type="email" required autocomplete="username"></label><label class="hp-field">${t("password")}<input name="password" type="password" required autocomplete="current-password" minlength="6"></label><p id="hp-login-error" role="alert"></p><button type="submit" class="hp-button hp-primary">${t("signin")}</button>`}</form>`;
   }
+  root.addEventListener("error", (event) => {
+    const img = event.target;
+    if (!(img instanceof HTMLImageElement) || !img.closest(".hp-photo,.hp-featured-image")) return;
+    const placeholder = document.createElement("span");
+    placeholder.className = "hp-image-fallback";
+    placeholder.textContent = t("noPhoto");
+    img.replaceWith(placeholder);
+  }, true);
   root.addEventListener("click", async (e) => {
     const link = e.target.closest("a");
     if (link?.href?.includes("t.me"))
@@ -2204,7 +2317,7 @@ import {
     } else if (b.dataset.orderOne) {
       const p = products.find((p) => p.id === Number(b.dataset.orderOne));
       if (!p || p.status !== 0 || stockQty(p) < 1) return;
-      recordEvent("telegram_click", p.id, "telegram_order");
+      await recordBeforeNavigation("telegram_click", p.id, "telegram_order");
       location.href = telegramLink(
         orderText([p], lang, location.origin, bundleSelections),
       );
@@ -2363,7 +2476,7 @@ import {
           return;
         }
         const text = orderText(items, lang, location.origin, bundleSelections);
-        recordEvent("telegram_click", null, "telegram_cart_order");
+        await recordBeforeNavigation("telegram_click", null, "telegram_cart_order");
         location.href = telegramLink(text);
       });
     }
