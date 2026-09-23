@@ -2466,6 +2466,26 @@ body {
   padding: 10px 28px;
   border-color: #ece9ef;
 }
+#hugo-preview .hp-admin-return {
+  padding: 8px 28px;
+  border-bottom: 1px solid #ded7ec;
+  background: #f4efff;
+}
+#hugo-preview .hp-admin-return[hidden] {
+  display: none;
+}
+#hugo-preview .hp-admin-return .hp-button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border-color: #d9c8ff;
+  color: #5d32be;
+  background: #fff;
+}
+@media (max-width: 600px) {
+  #hugo-preview .hp-admin-return {
+    padding: 7px 14px;
+  }
+}
 #hugo-preview .hp-category {
   border-radius: 999px;
   padding: 10px 15px;

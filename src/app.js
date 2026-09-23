@@ -303,6 +303,7 @@ import {
   Object.assign(dict.uk, production.uk);
   Object.assign(dict.pl, production.pl);
   Object.assign(dict.uk, {
+    backToAdmin: "← До адмінки",
     setPassword: "Задай пароль адміністратора",
     changePassword: "Змінити пароль адміністратора",
     newPassword: "Новий пароль",
@@ -311,6 +312,7 @@ import {
     passwordHint: "Щонайменше 8 символів.",
   });
   Object.assign(dict.pl, {
+    backToAdmin: "← Do panelu admina",
     setPassword: "Ustaw hasło administratora",
     changePassword: "Zmień hasło administratora",
     newPassword: "Nowe hasło",
@@ -2111,6 +2113,17 @@ import {
     renderConsent();
     root.classList.toggle("hp-start-mode", view === "start");
     root.classList.toggle("hp-detail-mode", view === "detail");
+    let adminReturn = q("#hp-admin-return");
+    if (!adminReturn) {
+      adminReturn = document.createElement("div");
+      adminReturn.id = "hp-admin-return";
+      adminReturn.className = "hp-admin-return";
+      q("#hp-categories").after(adminReturn);
+    }
+    adminReturn.hidden = !admin || ["admin", "edit", "stats", "reviews", "reviewEdit", "activity", "start"].includes(view);
+    adminReturn.innerHTML = adminReturn.hidden
+      ? ""
+      : `<button type="button" class="hp-button" data-view="admin">${t("backToAdmin")}</button>`;
     if (
       ["admin", "edit", "stats", "reviews", "reviewEdit", "activity"].includes(view) &&
       !admin
