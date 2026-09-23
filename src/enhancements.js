@@ -66,8 +66,19 @@ export function createEnhancements(c) {
  async function afterSave(){clearTimeout(draftTimer);await draftChain;await drafts.removeDraft(c.db.currentUserId,c.editId).catch(()=>{});dirty=false;draftPending=null;editorForm=null;editGeneration++;}
  function beforeLeave(){return captureDraft();}
  function preview(){const p=readForm();if(!p)return;const issues=productIssues({...p,images:c.images});const dialog=document.createElement('dialog');dialog.className='hp-preview-dialog';dialog.innerHTML=`<div class="hp-preview-head"><h2>${L('Попередній перегляд','Podgląd')}</h2>${button('close-preview',L('Закрити','Zamknij'))}</div><p class="hp-muted">${L('Товар ще не опубліковано.','Produkt nie został jeszcze opublikowany.')}</p><div class="hp-preview-layout"><div class="hp-preview-images">${c.images.map(p=>`<img src="${E(typeof p==='string'?c.db.photoUrl(p):p.url)}" alt="${L('Фото товару','Zdjęcie produktu')}">`).join('')}</div><div><h2>${E(p.name||L('Назва товару','Nazwa produktu'))}</h2><strong class="hp-money">${effectivePrice({...p,price:Number(p.price)||0})} zł</strong><p>${E(p.cpu)} · ${E(p.ram)} GB RAM · ${E(p.ssd)} GB</p><p>${E(p.condition)} · ${E(p.warranty)}</p><p>${photoLabels()[p.photoKind||'']}</p><p class="hp-description">${E(c.lang==='pl'?p.descPl:p.descUk)}</p></div></div>${issues.length?`<p class="hp-note">${issues.map(k=>issueLabels()[k]).join(' · ')}</p>`:''}`;c.root.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();}
+ function renderTelegramBanner(){
+  let banner=q('#hm-telegram-banner');
+  if(!banner){banner=document.createElement('aside');banner.id='hm-telegram-banner';banner.className='hm-top-banner';q('.hp-header')?.before(banner);}
+  const publicView=['home','catalog','detail','start','finder','shared','compare','cart'].includes(c.view);
+  banner.hidden=!publicView;
+  if(!publicView){banner.innerHTML='';return;}
+  const slot=c.view==='start'?'start':c.view==='detail'?'product':'catalog';
+  banner.setAttribute('aria-label',L('Переваги Telegram-каналу','Korzyści kanału Telegram'));
+  banner.innerHTML=`<a href="${E(channelUrl(slot))}" target="_blank" rel="noopener noreferrer" data-track-target="telegram_channel" data-track-placement="${slot}"><svg class="hm-banner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg><span class="hm-banner-copy"><strong>${L('Унікальні пропозиції та безкоштовна доставка','Wyjątkowe oferty i bezpłatna dostawa')}</strong><span>${L('Для підписників нашого Telegram-каналу','Dla subskrybentów naszego kanału Telegram')}</span></span><span class="hm-banner-cta">${L('Підписатися','Dołącz do kanału')} <span aria-hidden="true">↗</span></span></a>`;
+ }
  function afterRender(){
  const view=c.view;
+ renderTelegramBanner();
  if(['quality','settings','drafts','versions'].includes(view)&&!c.admin)return;
  if(view==='quality')renderQuality();if(view==='settings')renderSettings();if(view==='drafts')renderDraftList();if(view==='versions')renderVersions();
  if(view==='finder')renderFinder();if(view==='shared')renderShared();

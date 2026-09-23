@@ -186,3 +186,16 @@
 #hugo-preview.hp-storefront .hm-picks .hp-photo img{max-height:175px}
 #hugo-preview.hp-storefront .hp-review-grid:has(>.hp-review:only-child){grid-template-columns:minmax(0,650px)}
 @media(max-width:480px){#hugo-preview.hp-storefront .hm-picks .hp-product-open{height:auto;min-height:180px}#hugo-preview.hp-storefront .hm-picks .hp-photo{height:180px}#hugo-preview.hp-storefront .hm-picks .hp-photo img{max-height:145px}}
+
+/* Telegram growth offer stays first in the public header on every page. */
+#hugo-preview .hm-top-banner{display:none}
+#hugo-preview.hp-storefront .hm-top-banner:not([hidden]){display:block;background:#5932a3;color:#fff}
+#hugo-preview.hp-storefront .hm-top-banner>a{display:flex;align-items:center;justify-content:center;gap:17px;min-height:66px;padding:11px 28px;color:#fff;text-decoration:none}
+#hugo-preview.hp-storefront .hm-banner-icon{width:26px;height:26px;flex-shrink:0;color:#e1d2ff}
+#hugo-preview.hp-storefront .hm-banner-copy{display:flex;flex-direction:column;gap:2px;line-height:1.4}
+#hugo-preview.hp-storefront .hm-banner-copy strong{font-size:15px;font-weight:700;letter-spacing:0}
+#hugo-preview.hp-storefront .hm-banner-copy>span{font-size:12px;color:#e6dcf6}
+#hugo-preview.hp-storefront .hm-banner-cta{display:inline-flex;align-items:center;justify-content:center;gap:9px;flex-shrink:0;min-height:40px;margin-left:12px;padding:9px 15px;background:#fff;color:#50308c;border-radius:8px;font-size:13px;font-weight:700;line-height:1.3}
+#hugo-preview.hp-storefront .hm-top-banner>a:hover .hm-banner-cta{background:#eee5fc}
+#hugo-preview.hp-storefront .hm-top-banner>a:focus-visible{outline:3px solid #fff;outline-offset:-4px}
+@media(max-width:600px){#hugo-preview.hp-storefront .hm-top-banner>a{gap:10px;padding:11px 16px;justify-content:space-between}#hugo-preview.hp-storefront .hm-banner-icon{display:none}#hugo-preview.hp-storefront .hm-banner-copy strong{font-size:12px}#hugo-preview.hp-storefront .hm-banner-copy>span{font-size:10px}#hugo-preview.hp-storefront .hm-banner-cta{margin-left:0;padding:9px 10px;min-height:42px;font-size:11px;max-width:100px;text-align:center}}
