@@ -1486,6 +1486,11 @@ body {
   background: #32264a;
   color: #fff;
 }
+#hugo-preview .hp-card-badges .hp-badge-new,
+#hugo-preview .hp-detail-badges .hp-badge-new {
+  background: #7557e8;
+  color: #fff;
+}
 #hugo-preview .hp-card-badges .hp-badge-sale,
 #hugo-preview .hp-detail-badges .hp-badge-sale {
   background: #d83a62;
@@ -1516,7 +1521,8 @@ body {
   margin: 10px 0 4px;
 }
 #hugo-preview .hp-detail-badges .hp-badge-best,
-#hugo-preview .hp-detail-badges .hp-badge-sale {
+#hugo-preview .hp-detail-badges .hp-badge-sale,
+#hugo-preview .hp-detail-badges .hp-badge-new {
   display: inline-flex;
   padding: 4px 9px;
   border-radius: 6px;
@@ -2642,6 +2648,9 @@ body {
 #hugo-preview .hp-card-badges .hp-badge-best {
   background: #17151f;
 }
+#hugo-preview .hp-card-badges .hp-badge-new {
+  background: #7557e8;
+}
 #hugo-preview .hp-card-badges .hp-badge-sale {
   margin-left: auto;
   background: #e33e62;
@@ -3338,7 +3347,8 @@ body {
   font-weight: 750;
 }
 #hugo-preview .hp-detail-badges .hp-badge-best,
-#hugo-preview .hp-detail-badges .hp-badge-sale {
+#hugo-preview .hp-detail-badges .hp-badge-sale,
+#hugo-preview .hp-detail-badges .hp-badge-new {
   padding: 5px 9px;
   border-radius: 999px;
 }
