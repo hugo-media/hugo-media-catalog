@@ -12,7 +12,11 @@ export function validateSettings(value) {
  const links = {}, trust = {};
  for (const key of LINK_SLOTS) { const v = normalizeInvite(value.links?.[key]); if (v === null) throw Error('invalidInvite'); links[key] = v; }
  for (const key of TRUST_SECTIONS) { trust[key] = {}; for (const lang of ['uk','pl']) { const v = String(value.trust?.[key]?.[lang] || '').trim(); if(v.length > 2000) throw Error('validation'); trust[key][lang] = v; } }
- return { links, trust };
+ const rawId=value.homepage?.featuredProductId;
+ const featuredProductId=rawId==null||rawId===''?null:Number(rawId);
+ if(featuredProductId!==null&&(!Number.isSafeInteger(featuredProductId)||featuredProductId<=0||!/^\d+$/.test(String(rawId))))throw Error('validation');
+ const featuredLabel={};for(const lang of ['uk','pl']){const label=String(value.homepage?.featuredLabel?.[lang]||'').trim();if(label.length>80)throw Error('validation');featuredLabel[lang]=label;}
+ return { links, trust, homepage:{featuredProductId,featuredLabel} };
 }
 export function publicProduct(p) { return [0,1,2].includes(p.status); }
 export function availableProduct(p) { return p.status === 0 && (p.quantity === '' || p.quantity == null || Number(p.quantity) > 0); }

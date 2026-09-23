@@ -15,3 +15,13 @@ test('home collections exclude unavailable and daily picks while preserving sour
  assert.deepEqual(homeSelection(products,[products[0]],'best'),[]);
  assert.equal(products[0].id,1);
 });
+
+test('homepage respects chosen product and falls back when hidden, sold, empty or without photos',async()=>{
+ const {featuredProduct}=await import('../src/storefront.js');
+ const p={id:1,cat:0,status:0,quantity:'1',images:['a.webp'],bestseller:'true'};
+ const chosen={...p,id:2,bestseller:''};
+ assert.equal(featuredProduct([p,chosen],[],2).id,2);
+ for(const change of [{status:2},{status:3},{quantity:'0'},{images:[]}])assert.equal(featuredProduct([p,{...chosen,...change}],[],2).id,1);
+ assert.equal(featuredProduct([p,chosen],[],999).id,1);
+ assert.equal(featuredProduct([],[],2),undefined);
+});

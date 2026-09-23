@@ -11,3 +11,10 @@ test('finder only recommends tagged gaming models; returns no more than three',(
 test('shared choice sanitizes malicious input, deduplicates and carries no private fields',()=>{assert.deepEqual(selectionIds('1,2,2,3<script>,0,-1,4'),[1,2,4]);const u=new URL(shareSelection([1,2,2],'https://example.com'));assert.equal(u.search,'?selection=1%2C2');assert.equal(publicProduct({...p,status:3}),false);});
 test('invite links only allow intended Telegram forms without redirects or query tracking',()=>{assert.equal(normalizeInvite('https://t.me/+abcdefgh_123'),'https://t.me/+abcdefgh_123');for(const v of ['javascript:alert(1)','https://evil.test/+abcdefgh','https://t.me@evil.test/h_m_g_pl','https://t.me/+abcdefgh?url=evil','https://t.me/another_shop'])assert.equal(normalizeInvite(v),null);assert.throws(()=>validateSettings({links:{catalog:'https://evil.test'}}),/invalidInvite/);});
 test('quality identifies missing real post, charger, translations and photo provenance',()=>{const issues=productIssues({...p,telegramPost:'https://t.me/h_m_g_pl',images:['example.webp']});assert(issues.includes('post'));assert(issues.includes('charger'));assert(issues.includes('pl'));assert(issues.includes('photoKind'));assert(!issues.includes('photos'));});
+
+test('homepage settings normalize automatic selection and reject invalid product IDs or oversized captions',()=>{
+ assert.equal(validateSettings({homepage:{featuredProductId:''}}).homepage.featuredProductId,null);
+ assert.deepEqual(validateSettings({homepage:{featuredProductId:'24',featuredLabel:{uk:' Мій вибір ',pl:'Polecam'}}}).homepage,{featuredProductId:24,featuredLabel:{uk:'Мій вибір',pl:'Polecam'}});
+ for(const id of ['-1','1.2','Infinity','1<script>',Number.MAX_SAFE_INTEGER+1])assert.throws(()=>validateSettings({homepage:{featuredProductId:id}}),/validation/);
+ assert.throws(()=>validateSettings({homepage:{featuredLabel:{uk:'a'.repeat(81)}}}),/validation/);
+});

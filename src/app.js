@@ -1106,7 +1106,7 @@ import {
   }
   function renderAudit() {
     const content = q("#hp-content");
-    const labels = { name: t("name"), brand: t("brand"), cat: t("category"), status: t("status"), price: t("price"), condition: t("condition"), warranty: t("warranty"), images: t("activityPhotos"), specs: t("activityOther"), text_uk: t("reviewUk"), text_pl: t("reviewPl"), customer_name: t("customerName"), purchased_model: t("purchasedModel"), rating: t("rating"), is_published: t("published"), product_ids: t("activityPickIds"), for_date: t("activityPickDate") };
+    const labels = { homepage: lang==="uk"?"Головний екран":"Ekran główny", name: t("name"), brand: t("brand"), cat: t("category"), status: t("status"), price: t("price"), condition: t("condition"), warranty: t("warranty"), images: t("activityPhotos"), specs: t("activityOther"), text_uk: t("reviewUk"), text_pl: t("reviewPl"), customer_name: t("customerName"), purchased_model: t("purchasedModel"), rating: t("rating"), is_published: t("published"), product_ids: t("activityPickIds"), for_date: t("activityPickDate") };
     const stringify = (value, key) => {
       if (key === "images") return String((value || []).length);
       if (key === "product_ids") return esc((value || []).map((id) => products.find((p) => p.id === Number(id))?.name || `HMG-${id}`).join(", ") || "—");
@@ -3061,7 +3061,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
     }
   });
   const storefront = createStorefront({esc,t,icon,photo,productTitle,localizedValue,priceBlock,stockQty,purposeKey,reviewsBlock,money,
-    get lang(){return lang;}, get compare(){return compare;}
+    get lang(){return lang;}, get compare(){return compare;}, get homepage(){return extra.homepage;}
   });
   if(adminRoute!==null && ["quality","drafts","settings"].includes(adminRoute))view=adminRoute;
   if(adminRoute===null && initialParams.has("finder"))view="finder";

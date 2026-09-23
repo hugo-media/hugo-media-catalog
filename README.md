@@ -86,6 +86,10 @@ For local configured builds, export the public variables into the shell before `
 
 ## Storefront refresh — 2026-09-23
 
+Admin `?admin=settings` now includes «Головний екран — Знайомся ближче»: select the featured product and edit the Ukrainian/Polish caption. Product photos, price and specifications come from the selected product; unavailable or photo-less products fall back to an available item. Settings use the existing administrator-only update policy and timestamp conflict checks. The homepage column migration is in `supabase/migrations/20260923200302_hmg_homepage_featured_product.sql`.
+
+Typography is enlarged throughout the storefront and administration: normal controls/body copy use at least 16px, with secondary metadata at least 14px. Narrow screens wrap collection tabs, card actions and hero captions.
+
 Public presentation is in `src/storefront.js` and scoped `storefront.css`; product management, authentication and analytics retain their existing modules. Home shows at most two daily picks, a single New/Best/Sale collection and Telegram delivery benefit. The finder, catalog and order actions retain existing event tracking and consent behavior.
 
 Numeric filters normalize existing RAM/storage/screen formats for display and matching; this does not rewrite database specifications. Product detail navigation records public browser history and restores catalog scroll/filter state. Photo captions distinguish model illustrations from actual-item photos; unknown provenance is never claimed to be an actual-item photo.
