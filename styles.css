@@ -3758,3 +3758,35 @@ body {
   #hugo-preview .hp-mobile-order-bar a { padding: 0 6px; }
   #hugo-preview .hp-mobile-order-bar { gap: 5px; }
 }
+
+/* Analytics is optional; the consent prompt never blocks browsing. */
+#hugo-preview .hp-privacy-panel[hidden] { display: none; }
+#hugo-preview .hp-privacy-panel {
+  position: fixed;
+  z-index: 110;
+  right: 20px;
+  bottom: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 18px 20px;
+  border: 1px solid #e7e0f1;
+  border-radius: 17px;
+  background: #fff;
+  box-shadow: 0 14px 48px #2115372c;
+  color: #282032;
+}
+#hugo-preview .hp-privacy-panel strong { font-size: 16px; }
+#hugo-preview .hp-privacy-panel p { margin: 5px 0 0; color: #625b69; font-size: 13px; line-height: 1.5; }
+#hugo-preview .hp-privacy-actions { display: flex; flex: 0 0 auto; gap: 9px; }
+#hugo-preview .hp-privacy-actions .hp-button { min-height: 42px; font-size: 13px; white-space: nowrap; }
+#hugo-preview #hp-privacy-settings { cursor: pointer; }
+@media (max-width: 760px) {
+  #hugo-preview .hp-privacy-panel { right: 12px; bottom: 12px; left: 12px; display: block; padding: 16px; }
+  #hugo-preview .hp-privacy-actions { margin-top: 14px; }
+  #hugo-preview .hp-privacy-actions .hp-button { flex: 1; padding: 10px; white-space: normal; }
+}

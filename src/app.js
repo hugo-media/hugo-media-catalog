@@ -846,6 +846,20 @@ import {
     interestRate: "CTR",
     noPhoto: "Zdjęcie wkrótce",
   });
+  Object.assign(dict.uk, {
+    privacySettings: "Налаштування аналітики",
+    privacyTitle: "Аналітика сайту",
+    privacyDescription: "З вашого дозволу ми зберігаємо випадковий ідентифікатор у браузері та передаємо до Supabase перегляди товарів, кліки, джерело переходу й тип пристрою. Це допомагає покращувати каталог. Без згоди сайт і вибрані товари працюють як завжди. Згоду можна змінити будь-коли внизу сторінки.",
+    privacyAccept: "Дозволити аналітику",
+    privacyDecline: "Без аналітики",
+  });
+  Object.assign(dict.pl, {
+    privacySettings: "Ustawienia analityki",
+    privacyTitle: "Analityka strony",
+    privacyDescription: "Za Twoją zgodą zapisujemy losowy identyfikator w przeglądarce i przesyłamy do Supabase odsłony produktów, kliknięcia, źródło wizyty i typ urządzenia. Pomaga nam to ulepszać katalog. Bez zgody strona i lista wybranych produktów działają normalnie. Zgodę można zmienić w dowolnym momencie w stopce.",
+    privacyAccept: "Zezwól na analitykę",
+    privacyDecline: "Bez analityki",
+  });
   function readLocal(k, f) {
     try {
       return JSON.parse(localStorage.getItem(k)) ?? f;
@@ -917,8 +931,55 @@ import {
       return crypto.randomUUID();
     }
   }
-  const visitorId = analyticsId(localStorage, "hmg-visitor-id"),
-    sessionId = analyticsId(sessionStorage, "hmg-session-id");
+  const consentKey = "hmg-analytics-consent";
+  let analyticsConsent = null;
+  try {
+    const choice = localStorage.getItem(consentKey);
+    if (choice === "yes" || choice === "no") analyticsConsent = choice === "yes";
+  } catch {}
+  if (analyticsConsent !== true) {
+    try {
+      localStorage.removeItem("hmg-visitor-id");
+      sessionStorage.removeItem("hmg-session-id");
+    } catch {}
+  }
+  let consentOpen = analyticsConsent === null;
+  function setAnalyticsConsent(allowed) {
+    const wasAllowed = analyticsConsent === true;
+    analyticsConsent = allowed;
+    consentOpen = false;
+    try {
+      localStorage.setItem(consentKey, allowed ? "yes" : "no");
+      if (!allowed) {
+        localStorage.removeItem("hmg-visitor-id");
+        sessionStorage.removeItem("hmg-session-id");
+      }
+    } catch {}
+    renderConsent();
+    if (allowed && !wasAllowed) {
+      recordEvent("page_view");
+      if (view === "detail") recordEvent("product_view", selected);
+    }
+  }
+  function renderConsent() {
+    let panel = q("#hp-privacy-panel");
+    if (!panel) {
+      panel = document.createElement("aside");
+      panel.id = "hp-privacy-panel";
+      panel.className = "hp-privacy-panel";
+      root.append(panel);
+    }
+    let settings = q("#hp-privacy-settings");
+    if (!settings) {
+      settings = document.createElement("button");
+      settings.type = "button";
+      settings.id = "hp-privacy-settings";
+      q(".hp-bottom").append(settings);
+    }
+    settings.textContent = t("privacySettings");
+    panel.hidden = !consentOpen || admin;
+    panel.innerHTML = panel.hidden ? "" : `<div><strong>${t("privacyTitle")}</strong><p>${t("privacyDescription")}</p></div><div class="hp-privacy-actions"><button type="button" class="hp-button" id="hp-privacy-decline">${t("privacyDecline")}</button><button type="button" class="hp-button hp-primary" id="hp-privacy-accept">${t("privacyAccept")}</button></div>`;
+  }
   let entryReferrer = "",
     trafficSource =
       new URLSearchParams(location.search).get("utm_source")?.slice(0, 80) ||
@@ -936,10 +997,10 @@ import {
     return width < 700 ? "mobile" : width < 1024 ? "tablet" : "desktop";
   }
   function recordEvent(event_type, product_id = null, destination = "") {
-    if (admin || !db.ready) return Promise.resolve();
+    if (admin || !db.ready || analyticsConsent !== true) return Promise.resolve();
     return db.trackEvent({
-      visitor_id: visitorId,
-      session_id: sessionId,
+      visitor_id: analyticsId(localStorage, "hmg-visitor-id"),
+      session_id: analyticsId(sessionStorage, "hmg-session-id"),
       event_type,
       product_id,
       path: (location.pathname + location.search).slice(0, 256),
@@ -1978,6 +2039,7 @@ import {
   }
   function render() {
     document.documentElement.lang = lang;
+    renderConsent();
     root.classList.toggle("hp-start-mode", view === "start");
     root.classList.toggle("hp-detail-mode", view === "detail");
     if (
@@ -2341,6 +2403,15 @@ import {
       );
     const b = e.target.closest("button");
     if (!b || busy) return;
+    if (b.id === "hp-privacy-accept" || b.id === "hp-privacy-decline") {
+      setAnalyticsConsent(b.id === "hp-privacy-accept");
+      return;
+    }
+    if (b.id === "hp-privacy-settings") {
+      consentOpen = true;
+      renderConsent();
+      return;
+    }
     if (
       (view === "edit" || view === "reviewEdit") &&
       (b.dataset.view || b.dataset.lang || b.dataset.cat) &&
@@ -2411,6 +2482,7 @@ import {
       view = "detail";
       history.replaceState(null, "", `?product=${selected}`);
       render();
+      window.scrollTo(0, 0);
       recordEvent("product_view", selected);
     } else if (b.dataset.orderOne) {
       const p = products.find((p) => p.id === Number(b.dataset.orderOne));
