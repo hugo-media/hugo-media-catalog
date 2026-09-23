@@ -719,10 +719,28 @@ import {
     trustQuestion: "Питання про повернення або гарантію?",
     trustQuestionSub: "Напиши нам до замовлення — розкажемо умови для конкретного товару.",
     moreRam: "Більше RAM",
+    strongerOption: "Потужніший варіант",
     lowerPrice: "Дешевше",
     underBudget: "До 1500 zł",
     productInterest: "Інтерес до товарів",
     productInterestDesc: "Перегляди, натискання «Замовити» та переходи до огляду в Telegram по кожній моделі. CTR — частка сеансів із переглядом, у яких натиснули «Замовити». Це не підтверджені продажі.",
+    interestNoContact: "Без звернення",
+    interestNoContactDesc: "Сеанси з переглядом моделі без натискання «Замовити» (не означає втрачений продаж).",
+    sourceBreakdown: "Джерела переглядів",
+    sourceOther: "Інші / прямі",
+    productInterestDetail: "Перегляди товару та переходи до особистого повідомлення по днях/годинах. Кліки не означають підтверджені замовлення.",
+    trustDetails: "Перед купівлею",
+    trustWarranty: "Гарантія",
+    trustWarrantyText: "Термін зазначено в картці товару. Деталі гарантійного обслуговування підтвердимо перед замовленням.",
+    trustPayment: "Оплата",
+    trustPaymentText: "Доступний спосіб оплати узгодимо в особистому повідомленні до підтвердження замовлення.",
+    trustDelivery: "Доставка",
+    trustDeliveryText: "Надсилаємо InPost або DPD. Умови та адресу погодимо перед відправленням.",
+    trustInspection: "Перевірка",
+    trustInspectionText: "Перевіряємо техніку перед відправленням. Живі фото й огляд шукай у Telegram-пості товару.",
+    trustReturns: "Повернення й обмін",
+    trustReturnsText: "Напиши нам перед купівлею — повідомимо чинні умови для конкретного товару.",
+    purchasedModel: "Придбана модель",
     interestViews: "Перегляди",
     interestOrders: "Замовити",
     interestChannel: "Огляд у TG",
@@ -796,10 +814,28 @@ import {
     trustQuestion: "Pytania o zwrot lub gwarancję?",
     trustQuestionSub: "Napisz przed zakupem — przedstawimy warunki dla konkretnego produktu.",
     moreRam: "Więcej RAM",
+    strongerOption: "Mocniejszy wariant",
     lowerPrice: "Taniej",
     underBudget: "Do 1500 zł",
     productInterest: "Zainteresowanie produktami",
     productInterestDesc: "Wyświetlenia, kliknięcia „Zamów” i przejścia do prezentacji w Telegramie według modelu. CTR to udział sesji z wyświetleniem, w których kliknięto „Zamów”. Nie są to potwierdzone transakcje.",
+    interestNoContact: "Bez kontaktu",
+    interestNoContactDesc: "Sesje z widokiem modelu bez kliknięcia „Zamów” (nie oznacza utraconej sprzedaży).",
+    sourceBreakdown: "Źródła wyświetleń",
+    sourceOther: "Inne / bezpośrednie",
+    productInterestDetail: "Wyświetlenia produktu i przejścia do prywatnej wiadomości według dni/godzin. Kliknięcia nie oznaczają potwierdzonych zamówień.",
+    trustDetails: "Przed zakupem",
+    trustWarranty: "Gwarancja",
+    trustWarrantyText: "Okres podany jest przy produkcie. Szczegóły obsługi gwarancyjnej potwierdzimy przed zamówieniem.",
+    trustPayment: "Płatność",
+    trustPaymentText: "Dostępną metodę płatności ustalimy w prywatnej wiadomości przed potwierdzeniem zamówienia.",
+    trustDelivery: "Dostawa",
+    trustDeliveryText: "Wysyłamy przez InPost lub DPD. Warunki i adres ustalimy przed wysyłką.",
+    trustInspection: "Sprawdzenie",
+    trustInspectionText: "Sprawdzamy sprzęt przed wysyłką. Zdjęcia i prezentację znajdziesz w poście produktu na Telegramie.",
+    trustReturns: "Zwroty i wymiany",
+    trustReturnsText: "Napisz przed zakupem — przedstawimy aktualne warunki dla konkretnego produktu.",
+    purchasedModel: "Kupiony model",
     interestViews: "Wyświetlenia",
     interestOrders: "Zamów",
     interestChannel: "Pokaz w TG",
@@ -978,19 +1014,30 @@ import {
         (a, b) => new Date(b.created_at) - new Date(a.created_at),
       ),
       destinations = countBy(transitions, "destination");
-    const interest = [...new Set([...productViews, ...telegram].map((event) => Number(event.product_id)).filter(Boolean))]
+    const sourceLabel = (value) => {
+      const source = String(value || "").toLowerCase();
+      if (source.includes("tiktok")) return "TikTok";
+      if (source.includes("facebook") || source === "fb") return "Facebook";
+      if (source.includes("telegram") || source.includes("t.me")) return "Telegram";
+      return t("sourceOther");
+    };
+    const interest = [...new Set([...products.map((p) => p.id), ...productViews.map((event) => Number(event.product_id)), ...telegram.map((event) => Number(event.product_id))].filter(Boolean))]
       .map((id) => {
-        const views = productViews.filter((event) => Number(event.product_id) === id).length;
-        const orders = telegram.filter((event) => Number(event.product_id) === id && event.destination === "telegram_order").length;
-        const media = telegram.filter((event) => Number(event.product_id) === id && event.destination === "telegram_product").length;
-        const source = countBy(productViews.filter((event) => Number(event.product_id) === id), "traffic_source")[0]?.[0] || t("directTraffic");
-        const viewSessions = new Set(productViews.filter((event) => Number(event.product_id) === id).map((event) => event.session_id));
-        const orderSessions = new Set(telegram.filter((event) => Number(event.product_id) === id && event.destination === "telegram_order").map((event) => event.session_id));
+        const viewed = productViews.filter((event) => Number(event.product_id) === id),
+          orderClicks = telegram.filter((event) => Number(event.product_id) === id && event.destination === "telegram_order"),
+          media = telegram.filter((event) => Number(event.product_id) === id && event.destination === "telegram_product").length,
+          sourceCounts = new Map();
+        viewed.forEach((event) => {
+          const label = sourceLabel(event.traffic_source);
+          sourceCounts.set(label, (sourceCounts.get(label) || 0) + 1);
+        });
+        const viewSessions = new Set(viewed.map((event) => event.session_id).filter(Boolean));
+        const orderSessions = new Set(orderClicks.map((event) => event.session_id).filter(Boolean));
         const converted = [...viewSessions].filter((session) => orderSessions.has(session)).length;
-        return { id, views, orders, media, source, rate: viewSessions.size ? Math.round(converted / viewSessions.size * 100) : 0 };
+        return { id, views: viewed.length, orders: orderClicks.length, media, noContact: viewSessions.size - converted, sourceCounts, rate: viewSessions.size ? Math.round(converted / viewSessions.size * 100) : 0 };
       })
       .sort((a, b) => b.views - a.views)
-      .slice(0, 20);
+      ;
     const destinationLabel = (value) =>
       ({
         telegram_channel: t("destChannel"),
@@ -1209,6 +1256,23 @@ import {
       `<button type="button" class="hp-stat-panel hp-stat-panel-action" data-stat-metric="${key}"><span class="hp-stat-panel-title">${esc(breakdowns[key].label)}${icon("arrow-up-right")}</span><span class="hp-stat-list">${content}</span></button>`;
     const chartModal = () => {
       if (!statsMetric) return "";
+      if (statsMetric.startsWith("product:")) {
+        const id = Number(statsMetric.slice(8)),
+          item = interest.find((row) => row.id === id);
+        if (!item) return "";
+        const label = productTitle(products.find((p) => p.id === id) || { name: `HMG-${id}` }),
+          points = buckets().map((point) => ({
+            ...point,
+            views: point.rows.filter((event) => event.event_type === "product_view" && Number(event.product_id) === id).length,
+            orders: point.rows.filter((event) => event.event_type === "telegram_click" && event.destination === "telegram_order" && Number(event.product_id) === id).length,
+          })),
+          max = Math.max(1, ...points.map((point) => point.views));
+        const graph = points.some((point) => point.views || point.orders)
+          ? `<div class="hp-time-chart hp-interest-chart" style="--hp-chart-columns:${points.length}">${points.map((point) => `<div class="hp-chart-column" title="${esc(point.label)}: ${point.views} / ${point.orders}"><b>${point.views}</b><i><em style="height:${Math.max(point.views ? 5 : 0, Math.round(point.views / max * 100))}%"></em></i><span>${esc(point.label)}</span><small>${point.orders} ${t("interestOrders")}</small></div>`).join("")}</div>`
+          : `<p class="hp-muted">${t("chartEmpty")}</p>`;
+        const sourcesForProduct = [...item.sourceCounts].map(([source, count]) => `<span>${esc(source)}: <b>${count}</b></span>`).join(" · ");
+        return `<div class="hp-stat-modal-backdrop"><section class="hp-stat-modal" role="dialog" aria-modal="true" aria-labelledby="hp-chart-title"><button type="button" class="hp-stat-modal-close" id="hp-stat-close" aria-label="${t("chartClose")}">${icon("x")}</button><div class="hp-kicker">${t("analytics")}</div><h2 id="hp-chart-title">${esc(label)}</h2><p>${t("productInterestDetail")}</p><div class="hp-chart-summary"><span>${t("interestViews")}: ${item.views} · ${t("interestOrders")}: ${item.orders} · ${t("interestRate")}: ${item.rate}%</span></div><h3>${statsRange === 1 ? t("chartByHour") : t("chartByDay")}</h3>${graph}<p class="hp-interest-sources"><b>${t("sourceBreakdown")}:</b> ${sourcesForProduct || t("noAnalytics")}</p></section></div>`;
+      }
       const breakdown = breakdowns[statsMetric],
         metricConfig = metrics.find(([key]) => key === statsMetric);
       if (!breakdown && !metricConfig) return "";
@@ -1284,7 +1348,7 @@ import {
                 list(devices, (type) => t(type) || type),
               )}<section class="hp-stat-panel hp-stat-recent"><h3>${t("recentTransitions")}</h3><p class="hp-stat-panel-desc">${t("recentTransitionsDesc")}</p>${journeys}</section></div>${chartModal()}`
       }`;
-    if (!statsLoading && !statsError) q("#hp-content").insertAdjacentHTML("beforeend", `<section class="hp-interest"><button type="button" class="hp-interest-title" data-stat-metric="productInterest"><span><strong>${t("productInterest")}</strong><small>${t("productInterestDesc")}</small></span>${icon("chart-no-axes-column-increasing")}</button><div class="hp-interest-scroll"><table><thead><tr><th>${t("name")}</th><th>${t("interestViews")}</th><th>${t("interestOrders")}</th><th>${t("interestChannel")}</th><th>${t("interestRate")}</th><th>${t("trafficSources")}</th></tr></thead><tbody>${interest.length ? interest.map(({ id, views, orders, media, rate, source }) => `<tr><th>${esc(productTitle(products.find((p) => p.id === id) || { name: `HMG-${id}` }))}</th><td>${views}</td><td>${orders}</td><td>${media}</td><td>${rate}%</td><td>${esc(source)}</td></tr>`).join("") : `<tr><td colspan="6">${t("noAnalytics")}</td></tr>`}</tbody></table></div></section>`);
+    if (!statsLoading && !statsError) q("#hp-content").insertAdjacentHTML("beforeend", `<section class="hp-interest"><button type="button" class="hp-interest-title" data-stat-metric="productInterest"><span><strong>${t("productInterest")}</strong><small>${t("productInterestDesc")}</small></span>${icon("chart-no-axes-column-increasing")}</button><div class="hp-interest-scroll"><table><thead><tr><th>${t("name")}</th><th>${t("interestViews")}</th><th>${t("interestOrders")}</th><th>${t("interestChannel")}</th><th title="${esc(t("interestNoContactDesc"))}">${t("interestNoContact")}</th><th>${t("interestRate")}</th><th>${t("sourceBreakdown")}</th></tr></thead><tbody>${interest.length ? interest.map(({ id, views, orders, media, noContact, rate, sourceCounts }) => `<tr><th><button type="button" class="hp-interest-product" data-stat-metric="product:${id}">${esc(productTitle(products.find((p) => p.id === id) || { name: `HMG-${id}` }))}${icon("chart-no-axes-column-increasing")}</button></th><td>${views}</td><td>${orders}</td><td>${media}</td><td>${noContact}</td><td>${rate}%</td><td>${[...sourceCounts].map(([source, count]) => `${esc(source)} ${count}`).join(" · ") || "—"}</td></tr>`).join("") : `<tr><td colspan="7">${t("noAnalytics")}</td></tr>`}</tbody></table></div></section>`);
     refreshIcons();
   }
   const icons = [
@@ -1788,12 +1852,20 @@ import {
     if (benefits.includes("touch")) highlights.push(t("benefitTouch"));
     if (benefits.includes("keyboard")) highlights.push(t("benefitKeyboard"));
     if (p.purposes) highlights.push(...csv(p.purposes).slice(0, 2).map((code) => t(purposeKey(code))));
-    return highlights.filter(Boolean).slice(0, 4);
+    return highlights.filter(Boolean);
   }
-  function reviewsBlock(limit = 3) {
+  function cpuLevel(p) {
+    const intel = String(p.cpu || "").match(/\bi([3579])\b/i),
+      intelGeneration = String(p.generation || "").match(/\b(\d{1,2})(?:st|nd|rd|th)?\s*gen\b/i);
+    if (intel && intelGeneration) return { family: `intel-${intelGeneration[1]}`, rank: Number(intel[1]) };
+    const apple = String(p.cpu || "").match(/\bM([1-4])(?:\s+(Pro|Max|Ultra))?\b/i);
+    if (apple) return { family: `apple-${apple[1]}`, rank: { pro: 2, max: 3, ultra: 4 }[apple[2]?.toLowerCase()] || 1 };
+    return null;
+  }
+  function reviewsBlock(limit = 6) {
     const list = reviews.filter((r) => r.is_published).slice(0, limit);
     if (!list.length) return "";
-    return `<section class="hp-home-section"><div class="hp-section-title"><h2>${t("customerReviews")}</h2></div><div class="hp-review-grid">${list.map((r) => `<article class="hp-review">${r.image_path ? `<a class="hp-review-image" href="${esc(db.photoUrl(r.image_path))}" target="_blank" rel="noopener noreferrer" aria-label="${esc(t("reviewPhoto"))}: ${esc(r.customer_name)}"><img src="${esc(db.photoUrl(r.image_path))}" alt="${esc(t("reviewPhoto"))}: ${esc(r.customer_name)}" loading="lazy"></a>` : ""}<div class="hp-stars" aria-label="${r.rating}/5">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</div>${(lang === "uk" ? r.text_uk : r.text_pl) || r.text_uk || r.text_pl ? `<p>${esc((lang === "uk" ? r.text_uk : r.text_pl) || r.text_uk || r.text_pl)}</p>` : ""}<b>${esc(r.customer_name)}</b></article>`).join("")}</div></section>`;
+    return `<section class="hp-home-section"><div class="hp-section-title"><h2>${t("customerReviews")}</h2></div><div class="hp-review-grid">${list.map((r) => `<article class="hp-review">${r.image_path ? `<a class="hp-review-image" href="${esc(db.photoUrl(r.image_path))}" target="_blank" rel="noopener noreferrer" aria-label="${esc(t("reviewPhoto"))}: ${esc(r.customer_name)}"><img src="${esc(db.photoUrl(r.image_path))}" alt="${esc(t("reviewPhoto"))}: ${esc(r.customer_name)}" loading="lazy"></a>` : ""}<div class="hp-stars" aria-label="${r.rating}/5">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</div>${(lang === "uk" ? r.text_uk : r.text_pl) || r.text_uk || r.text_pl ? `<p>${esc((lang === "uk" ? r.text_uk : r.text_pl) || r.text_uk || r.text_pl)}</p>` : ""}<b>${esc(r.customer_name)}</b>${r.purchased_model ? `<small class="hp-review-model">${t("purchasedModel")}: ${esc(r.purchased_model)}</small>` : ""}</article>`).join("")}</div></section>`;
   }
   function renderCompareDock() {
     let dock = q("#hp-compare-dock");
@@ -1814,12 +1886,13 @@ import {
   }
   function renderReviewsAdmin() {
     q("#hp-content").innerHTML =
-      `${adminNav("reviews")}<div class="hp-intro"><div><h1>${t("reviewsTitle")}</h1><span class="hp-muted">${t("reviewsSub")}</span></div><button type="button" class="hp-button hp-primary" id="hp-new-review">${icon("plus")}${t("addReview")}</button></div><div class="hp-admin-list">${reviews.length ? reviews.map((r) => `<div class="hp-admin-row hp-review-row"><div><b>${esc(r.customer_name)}</b><div class="hp-small hp-muted">${"★".repeat(r.rating)} · ${r.is_published ? t("published") : t("no")}</div></div><p>${esc((lang === "uk" ? r.text_uk : r.text_pl) || r.text_uk || r.text_pl)}</p><div class="hp-admin-actions"><button type="button" data-edit-review="${r.id}" aria-label="${t("edit")}">${icon("pencil")}</button><button type="button" data-delete-review="${r.id}" aria-label="${t("delete")}">${icon("trash-2")}</button></div></div>`).join("") : `<div class="hp-empty">${t("noAnalytics")}</div>`}</div>`;
+      `${adminNav("reviews")}<div class="hp-intro"><div><h1>${t("reviewsTitle")}</h1><span class="hp-muted">${t("reviewsSub")}</span></div><button type="button" class="hp-button hp-primary" id="hp-new-review">${icon("plus")}${t("addReview")}</button></div><div class="hp-admin-list">${reviews.length ? reviews.map((r) => `<div class="hp-admin-row hp-review-row"><div><b>${esc(r.customer_name)}</b><div class="hp-small hp-muted">${"★".repeat(r.rating)} · ${r.is_published ? t("published") : t("no")}${r.purchased_model ? ` · ${esc(r.purchased_model)}` : ""}</div></div><p>${esc((lang === "uk" ? r.text_uk : r.text_pl) || r.text_uk || r.text_pl)}</p><div class="hp-admin-actions"><button type="button" data-edit-review="${r.id}" aria-label="${t("edit")}">${icon("pencil")}</button><button type="button" data-delete-review="${r.id}" aria-label="${t("delete")}">${icon("trash-2")}</button></div></div>`).join("") : `<div class="hp-empty">${t("noAnalytics")}</div>`}</div>`;
     refreshIcons();
   }
   function renderReviewForm() {
     const r = reviews.find((x) => x.id === editReviewId) || {
       customer_name: "",
+      purchased_model: "",
       text_uk: "",
       text_pl: "",
       rating: 5,
@@ -1828,7 +1901,7 @@ import {
     };
     reviewImage = reviewImage ?? r.image_path;
     q("#hp-content").innerHTML =
-      `<button type="button" class="hp-back" data-view="reviews">${icon("arrow-left")}${t("reviewsTab")}</button><form class="hp-form" id="hp-review-form"><h2>${editReviewId ? t("edit") : t("addReview")}</h2><div class="hp-form-grid">${field("customer_name", t("customerName"), r.customer_name, "text", true)}<label class="hp-field">${t("rating")}<select name="rating">${[5, 4, 3, 2, 1].map((v) => option(v, `${v} ★`, r.rating)).join("")}</select></label><label class="hp-field">${t("published")}<select name="is_published">${option("true", t("yes"), String(r.is_published))}${option("false", t("no"), String(r.is_published))}</select></label><label class="hp-field hp-wide">${t("reviewPhoto")}<input type="file" id="hp-review-upload" accept="image/jpeg,image/png,image/webp"><div id="hp-review-preview">${reviewImage ? `<img src="${esc(pictureUrl(reviewImage))}" alt="${t("reviewPhoto")}"><button type="button" id="hp-remove-review-photo">${t("remove")}</button>` : ""}</div></label><label class="hp-field">${t("reviewUk")}<textarea name="text_uk" maxlength="1200">${esc(r.text_uk)}</textarea></label><label class="hp-field">${t("reviewPl")}<textarea name="text_pl" maxlength="1200">${esc(r.text_pl)}</textarea></label></div><div class="hp-form-actions"><button type="button" class="hp-button" data-view="reviews">${t("cancel")}</button><button type="submit" class="hp-button hp-primary">${t("save")}</button></div></form>`;
+      `<button type="button" class="hp-back" data-view="reviews">${icon("arrow-left")}${t("reviewsTab")}</button><form class="hp-form" id="hp-review-form"><h2>${editReviewId ? t("edit") : t("addReview")}</h2><div class="hp-form-grid">${field("customer_name", t("customerName"), r.customer_name, "text", true)}${field("purchased_model", t("purchasedModel"), r.purchased_model || "", "text")}<label class="hp-field">${t("rating")}<select name="rating">${[5, 4, 3, 2, 1].map((v) => option(v, `${v} ★`, r.rating)).join("")}</select></label><label class="hp-field">${t("published")}<select name="is_published">${option("true", t("yes"), String(r.is_published))}${option("false", t("no"), String(r.is_published))}</select></label><label class="hp-field hp-wide">${t("reviewPhoto")}<input type="file" id="hp-review-upload" accept="image/jpeg,image/png,image/webp"><div id="hp-review-preview">${reviewImage ? `<img src="${esc(pictureUrl(reviewImage))}" alt="${t("reviewPhoto")}"><button type="button" id="hp-remove-review-photo">${t("remove")}</button>` : ""}</div></label><label class="hp-field">${t("reviewUk")}<textarea name="text_uk" maxlength="1200">${esc(r.text_uk)}</textarea></label><label class="hp-field">${t("reviewPl")}<textarea name="text_pl" maxlength="1200">${esc(r.text_pl)}</textarea></label></div><div class="hp-form-actions"><button type="button" class="hp-button" data-view="reviews">${t("cancel")}</button><button type="submit" class="hp-button hp-primary">${t("save")}</button></div></form>`;
     refreshIcons();
   }
   function photo(p) {
@@ -1963,6 +2036,16 @@ import {
           : "";
       content.innerHTML = `<section class="hp-home-hero"><div class="hp-home-copy"><div class="hp-kicker">${t("heroEyebrow")}</div><h1>${t("heroTitle")}</h1><p>${t("heroSub")}</p><div class="hp-home-actions"><button type="button" class="hp-button hp-primary" data-cat="0">${t("shopNow")}${icon("arrow-right")}</button><a class="hp-button hp-hero-secondary" href="https://t.me/HUGO_Media" target="_blank" rel="noopener noreferrer" data-track-target="telegram_contact">${icon("message-circle")}${t("ask")}</a></div><div class="hp-hero-proof"><span>${icon("badge-check")}${t("verifiedLabel")}</span><span>${icon("camera")}${t("realPhotos")}</span></div></div>${featured ? `<div class="hp-featured"><div class="hp-featured-label">${t("heroPick")}</div><button type="button" class="hp-featured-product" data-detail="${featured.id}"><div class="hp-featured-image">${featured.images.length ? `<img src="${esc(pictureUrl(featured.images[0]))}" alt="${esc(featured.name)}">` : icon("laptop")}</div><div class="hp-featured-info"><span>${esc(featured.brand)}</span><strong>${esc(productTitle(featured))}</strong><small>${esc(featured.cpu)} · ${esc(featured.ram)} GB RAM · ${esc(featured.ssd)} GB SSD</small><div>${t("heroFrom")} <b>${money(effectivePrice(featured))} zł</b> ${icon("arrow-right")}</div></div></button></div>` : ""}</section><section class="hp-benefits"><div>${icon("badge-check")}<span><b>${t("checkedTech")}</b><small>${t("checkedTechSub")}</small></span></div><div>${icon("shield-check")}<span><b>${t("warrantyBenefit")}</b><small>${t("warrantyBenefitSub")}</small></span></div><div>${icon("truck")}<span><b>${t("deliveryBenefit")}</b><small>${t("deliveryBenefitSub")}</small></span></div><div class="hp-stock-benefit">${icon("package-check")}<span><b>${available.length} ${t("inStockNow")}</b><small>${t("realPhotos")}</small></span></div></section>${productSection(t("bestChoice"), t("bestChoiceSub"), bestsellers, "hp-bestsellers")}${productSection(t("saleOffers"), t("saleOffersSub"), offers, "hp-offers")}${productSection(t("latestProducts"), t("newArrivalsSub"), latest, "hp-latest")}${reviewsBlock()}<section class="hp-telegram-band"><div><div class="hp-kicker">Hugo concierge</div><h2>${t("telegramHelp")}</h2><p>${t("telegramHelpSub")}</p></div><a class="hp-button hp-primary" href="https://t.me/HUGO_Media" target="_blank" rel="noopener noreferrer" data-track-target="telegram_contact">${icon("send")}${t("writeTelegram")}</a></section>`;
       content.insertAdjacentHTML("beforeend", `<section class="hp-home-section hp-order-guide"><div class="hp-section-title"><div><div class="hp-kicker">Hugo service</div><h2>${t("orderSteps")}</h2><p>${t("orderStepsSub")}</p></div></div><div class="hp-order-steps"><div><b>01</b><strong>${t("orderStepOne")}</strong><p>${t("orderStepOneSub")}</p></div><div><b>02</b><strong>${t("orderStepTwo")}</strong><p>${t("orderStepTwoSub")}</p></div><div><b>03</b><strong>${t("orderStepThree")}</strong><p>${t("orderStepThreeSub")}</p></div></div><div class="hp-order-guide-foot"><span>${icon("truck")}${t("deliveryNote")}</span><span><b>${t("trustQuestion")}</b> ${t("trustQuestionSub")}</span></div></section>`);
+      content.querySelector(".hp-order-steps").insertAdjacentHTML("afterend", `<h3 class="hp-trust-heading">${t("trustDetails")}</h3><div class="hp-trust-grid">${[
+        ["shield-check", "trustWarranty", "trustWarrantyText"],
+        ["credit-card", "trustPayment", "trustPaymentText"],
+        ["truck", "trustDelivery", "trustDeliveryText"],
+        ["badge-check", "trustInspection", "trustInspectionText"],
+        ["rotate-ccw", "trustReturns", "trustReturnsText"],
+      ].map(([symbol, title, details]) => `<div>${icon(symbol)}<strong>${t(title)}</strong><p>${t(details)}</p></div>`).join("")}</div>`);
+      if (featured) {
+        content.querySelector(".hp-featured-product").outerHTML = `<div class="hp-featured-product"><button type="button" class="hp-featured-image" data-detail="${featured.id}" aria-label="${esc(t("heroView"))}: ${esc(featured.name)}">${featured.images.length ? `<img src="${esc(pictureUrl(featured.images[0]))}" alt="${esc(featured.name)}">` : icon("laptop")}</button><div class="hp-featured-info"><span>${esc(featured.brand)}</span><strong>${esc(productTitle(featured))}</strong><small>${esc(featured.cpu)} · ${esc(featured.ram)} GB RAM · ${esc(featured.ssd)} GB SSD</small><div class="hp-featured-facts">${featured.condition ? `<span>${t("conditionShort")}: ${esc(localizedValue(featured.condition))}</span>` : ""}${featured.warranty ? `<span>${t("warrantyShort")}: ${esc(localizedValue(featured.warranty))}</span>` : ""}</div><div class="hp-featured-bottom"><span class="hp-featured-price">${t("heroFrom")} <b>${money(effectivePrice(featured))} zł</b></span><button type="button" class="hp-button hp-primary" data-order-one="${featured.id}">${icon("send")}${t("orderNow")}</button></div></div></div>`;
+      }
       const strip = document.createElement("aside");
       strip.className = "hp-channel-strip";
       strip.innerHTML = `<span>${icon("send")}${t("channelStrip")}</span><a href="https://t.me/h_m_g_pl" target="_blank" rel="noopener noreferrer" data-track-target="telegram_channel">${t("subscribe")}${icon("arrow-up-right")}</a>`;
@@ -2027,11 +2110,15 @@ import {
           if (item) { chosen.push({ label, item }); used.add(item.id); }
         };
         pick(t("lowerPrice"), [...candidates].filter((item) => effectivePrice(item) < effectivePrice(p)).sort((a, b) => effectivePrice(b) - effectivePrice(a)));
-        pick(t("moreRam"), [...candidates].filter((item) => Number(item.ram) > Number(p.ram)).sort((a, b) => Math.abs(effectivePrice(a) - effectivePrice(p)) - Math.abs(effectivePrice(b) - effectivePrice(p))));
-        pick(t("underBudget"), [...candidates].filter((item) => effectivePrice(item) <= 1500).sort((a, b) => b.id - a.id));
+        const baseline = cpuLevel(p);
+        pick(t("strongerOption"), [...candidates].filter((item) => {
+          const option = cpuLevel(item);
+          return baseline && option && option.family === baseline.family && option.rank > baseline.rank && Number(item.ram) >= Number(p.ram);
+        }).sort((a, b) => effectivePrice(a) - effectivePrice(b)));
+        pick(t("underBudget"), [...candidates].filter((item) => effectivePrice(item) <= 1500).sort((a, b) => Number(b.ram) - Number(a.ram) || Number(b.ssd) - Number(a.ssd) || effectivePrice(a) - effectivePrice(b)));
         if (chosen.length) related.innerHTML = `<div class="hp-section-title"><h2>${t("similar")}</h2></div><div class="hp-grid">${chosen.map(({ label, item }) => `<div class="hp-recommendation"><span>${esc(label)}</span>${productCard(item)}</div>`).join("")}</div>`;
       }
-      content.insertAdjacentHTML("beforeend", `<div class="hp-mobile-order-bar"><div><small>${esc(productTitle(p))}</small><strong>${money(effectivePrice(p))} zł</strong></div><button type="button" class="hp-button hp-primary" data-order-one="${p.id}" ${p.status !== 0 || qty < 1 ? "disabled" : ""}>${t("orderNow")}</button><a href="${esc(telegramPostUrl(p.telegramPost))}" target="_blank" rel="noopener noreferrer" data-track-target="telegram_product" aria-label="${t("telegramMedia")}">${icon("send")}</a></div>`);
+      content.insertAdjacentHTML("beforeend", `<div class="hp-mobile-order-bar"><div><small>${esc(productTitle(p))}</small><strong>${money(effectivePrice(p))} zł</strong></div><button type="button" class="hp-button hp-primary" data-order-one="${p.id}" ${p.status !== 0 || qty < 1 ? "disabled" : ""}>${t("orderNow")}</button><a href="${esc(telegramPostUrl(p.telegramPost))}" target="_blank" rel="noopener noreferrer" data-track-target="telegram_product" aria-label="${t("telegramMedia")}">${icon("send")}<span>Telegram</span></a></div>`);
     }
     if (view === "compare") {
       const items = products.filter((p) => compare.includes(p.id));

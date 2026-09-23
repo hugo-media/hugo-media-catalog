@@ -231,6 +231,7 @@ export async function saveReview(review, picture) {
     }
     const values = {
       customer_name: String(review.customer_name || "").trim(),
+      purchased_model: String(review.purchased_model || "").trim(),
       text_uk: String(review.text_uk || ""),
       text_pl: String(review.text_pl || ""),
       rating: Number(review.rating || 5),
@@ -240,6 +241,7 @@ export async function saveReview(review, picture) {
     if (
       !values.customer_name ||
       values.customer_name.length > 80 ||
+      values.purchased_model.length > 140 ||
       values.text_uk.length > 1200 ||
       values.text_pl.length > 1200 ||
       values.rating < 1 ||

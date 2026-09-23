@@ -3678,3 +3678,79 @@ body {
   #hugo-preview .hp-featured-image { height: 170px; }
   #hugo-preview .hp-featured-image img { padding: 3px; transform: scale(1.1); }
 }
+
+/* Explicit purchase details and compact, readable conversion surfaces. */
+#hugo-preview .hp-featured-image {
+  width: 100%;
+  height: 315px;
+  padding: 0;
+  border: 0;
+  background: #e9e8f0;
+  cursor: pointer;
+}
+#hugo-preview .hp-featured-image img {
+  padding: 0;
+  mix-blend-mode: multiply;
+  transform: scale(1.34);
+}
+#hugo-preview .hp-featured-info > .hp-featured-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 11px;
+}
+#hugo-preview .hp-featured-facts span {
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #f2eefb;
+  color: #553d87;
+  font-size: 12px;
+  font-weight: 700;
+}
+#hugo-preview .hp-featured-info > .hp-featured-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+#hugo-preview .hp-featured-bottom .hp-featured-price {
+  color: #655b71;
+  font-size: 13px;
+}
+#hugo-preview .hp-featured-bottom .hp-featured-price b {
+  display: block;
+  color: #17151f;
+  font-size: 25px;
+  white-space: nowrap;
+}
+#hugo-preview .hp-featured-bottom .hp-button { min-height: 43px; }
+#hugo-preview .hp-card-highlights span { font-size: 12px; }
+#hugo-preview .hp-review-model { color: #62556f; font-size: 13px; }
+#hugo-preview .hp-trust-heading { margin: 24px 0 12px; font-size: 19px; }
+#hugo-preview .hp-trust-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+#hugo-preview .hp-trust-grid > div { display: grid; align-content: start; gap: 8px; padding: 18px; border: 1px solid #ece8f2; border-radius: 14px; background: #faf9fd; }
+#hugo-preview .hp-trust-grid svg { color: #7150ce; }
+#hugo-preview .hp-trust-grid strong { font-size: 15px; }
+#hugo-preview .hp-trust-grid p { margin: 0; color: #615b6a; font-size: 14px; line-height: 1.45; }
+#hugo-preview .hp-interest-product { display: inline-flex; align-items: center; gap: 6px; max-width: 270px; padding: 0; border: 0; background: transparent; color: #5033a5; text-align: left; font-weight: 700; cursor: pointer; }
+#hugo-preview .hp-interest-product svg { flex: 0 0 15px; width: 15px; height: 15px; }
+#hugo-preview .hp-interest-chart .hp-chart-column small { color: #675a78; font-size: 11px; white-space: nowrap; }
+#hugo-preview .hp-interest-sources { margin-top: 18px; font-size: 14px; line-height: 1.5; }
+@media (max-width: 760px) {
+  #hugo-preview .hp-featured-product { grid-template-columns: 1fr; }
+  #hugo-preview .hp-featured-image { height: 220px; }
+  #hugo-preview .hp-featured-image img { transform: scale(1.24); }
+  #hugo-preview .hp-featured-info { padding: 16px; }
+  #hugo-preview .hp-featured-info > small { font-size: 12px; }
+  #hugo-preview .hp-trust-grid { grid-template-columns: 1fr; }
+  #hugo-preview .hp-mobile-order-bar a { display: inline-flex; width: auto; height: 44px; align-items: center; justify-content: center; gap: 5px; padding: 0 10px; font-size: 12px; font-weight: 750; text-decoration: none; }
+  #hugo-preview .hp-mobile-order-bar a svg { width: 15px; }
+  #hugo-preview .hp-mobile-order-bar .hp-button { padding: 10px; }
+}
+@media (max-width: 360px) {
+  #hugo-preview .hp-mobile-order-bar strong { font-size: 15px; }
+  #hugo-preview .hp-mobile-order-bar a { padding: 0 6px; }
+  #hugo-preview .hp-mobile-order-bar { gap: 5px; }
+}
