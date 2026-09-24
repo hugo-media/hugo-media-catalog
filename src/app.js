@@ -937,6 +937,7 @@ import {
       );
       const formError = q("#hp-form-error");
       if (formError) {
+        q("#hp-form .hp-inline-error")?.remove();
         const field = error.field ? q(`#hp-form [name="${error.field}"]`) : null;
         const label = field?.closest(".hp-field")?.firstChild?.textContent?.trim() || error.field || "";
         const detail = error.field === "telegramPost"
@@ -945,7 +946,13 @@ import {
             ? (lang === "pl" ? "Sprawdź zgodność rozbudowy z obecną pamięcią RAM lub dyskiem SSD." : "Перевір, чи апгрейд більший за поточну RAM або SSD.")
             : error.field ? `${message} ${label}` : message;
         formError.textContent = detail;
-        (field || formError).scrollIntoView({ behavior: "smooth", block: "center" });
+        if (field) {
+          const inline = document.createElement("span");
+          inline.className = "hp-inline-error hp-alert";
+          inline.textContent = detail;
+          field.closest(".hp-field")?.append(inline);
+        }
+        (field?.closest(".hp-field") || formError).scrollIntoView({ behavior: "smooth", block: "center" });
         field?.focus({ preventScroll: true });
       } else notify(message);
     } finally {
