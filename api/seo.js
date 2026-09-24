@@ -72,7 +72,7 @@ export async function servePage(url,{template,config,loadProducts=publicProducts
 export default async function handler(req,res) {
   const url=new URL(req.url,`https://${req.headers.host||'www.hugomedia.pl'}`);
   // The rewrite supplies the public route; the browser's query is preserved.
-  if(url.searchParams.has('__path')) {url.pathname='/'+url.searchParams.get('__path');url.searchParams.delete('__path');}
+  if(url.searchParams.has('__path')) {url.pathname=('/'+url.searchParams.get('__path')).replace(/\/+$/,'')||'/';url.searchParams.delete('__path');url.searchParams.delete('path');}
   if(url.pathname==='/api/seo') url.pathname='/';
   const result=await servePage(url);
   res.statusCode=result.status;
