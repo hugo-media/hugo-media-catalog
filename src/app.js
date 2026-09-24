@@ -928,22 +928,26 @@ import {
     try {
       await fn();
     } catch (error) {
-      if (/editConflict/.test(error.message || "")) { notify(extra.message(error)); return; }
-      notify(
-        t(
-          error.message === "notAdmin"
-            ? "notAdmin"
-            : error.message === "validation"
-              ? "validation"
-            : error.message === "imageError"
-                ? "imageError"
-                : error.message === "selectionUnavailable"
-                  ? "dailyPicksUnavailable"
-                  : error.message === "saveUnconfirmed"
-                    ? "dailyPicksSaveError"
-                : "error",
-        ),
+      const message = /editConflict/.test(error.message || "") ? extra.message(error) : t(
+        error.message === "notAdmin" ? "notAdmin"
+          : error.message === "validation" ? "validation"
+            : error.message === "imageError" ? "imageError"
+              : error.message === "selectionUnavailable" ? "dailyPicksUnavailable"
+                : error.message === "saveUnconfirmed" ? "dailyPicksSaveError" : "error",
       );
+      const formError = q("#hp-form-error");
+      if (formError) {
+        const field = error.field ? q(`#hp-form [name="${error.field}"]`) : null;
+        const label = field?.closest(".hp-field")?.firstChild?.textContent?.trim() || error.field || "";
+        const detail = error.field === "telegramPost"
+          ? (lang === "pl" ? "Wklej link do wpisu w kanale t.me/h_m_g_pl." : "Встав посилання на допис із каналу t.me/h_m_g_pl.")
+          : error.field?.endsWith("Enabled")
+            ? (lang === "pl" ? "Sprawdź zgodność rozbudowy z obecną pamięcią RAM lub dyskiem SSD." : "Перевір, чи апгрейд більший за поточну RAM або SSD.")
+            : error.field ? `${message} ${label}` : message;
+        formError.textContent = detail;
+        (field || formError).scrollIntoView({ behavior: "smooth", block: "center" });
+        field?.focus({ preventScroll: true });
+      } else notify(message);
     } finally {
       busy = false;
       root.removeAttribute("aria-busy");
