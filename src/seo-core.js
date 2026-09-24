@@ -25,7 +25,7 @@ export function pagePath({lang='uk',view,cat=-1,product}) {
   if(view==='detail' && product) return productPath(product,lang);
   if(view==='catalog') return catalogPath(lang,cat);
   if(view==='start') return `/${lang}/start`;
-  return `/${lang}/`;
+  return `/${lang}`;
 }
 export function imageUrl(path,base) {
   if(!path || !base) return '';
@@ -65,7 +65,7 @@ export function headMarkup(meta) {
 export function sitemap(products) {
   const paths=[];
   for(const lang of ['uk','pl']) {
-    paths.push({path:`/${lang}/`},{path:`/${lang}/start`},{path:catalogPath(lang)});
+    paths.push({path:`/${lang}`},{path:`/${lang}/start`},{path:catalogPath(lang)});
     for(let cat=0;cat<categories.length;cat++) if(products.some(p=>Number(p.cat)===cat)) paths.push({path:catalogPath(lang,cat)});
     for(const p of products) if([0,1,2].includes(Number(p.status))) paths.push({path:productPath(p,lang),date:p.updated_at});
   }

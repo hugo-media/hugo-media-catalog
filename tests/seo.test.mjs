@@ -21,7 +21,7 @@ test('product response contains visible description, current discounted offer an
 });
 test('missing products are genuine 404s and DB failures are retryable 503s',async()=>{
  const r=await page('/uk/product/99-missing');assert.equal(r.status,404);assert.match(r.headers['X-Robots-Tag'],/noindex/);assert.doesNotMatch(r.body,/src="\/src\/app.js"/);
- const failure=await servePage(new URL('https://www.hugomedia.pl/uk/'),{...options,loadProducts:async()=>{throw Error('offline');}});
+ const failure=await servePage(new URL('https://www.hugomedia.pl/uk'),{...options,loadProducts:async()=>{throw Error('offline');}});
  assert.equal(failure.status,503);assert.equal(failure.headers['Retry-After'],'60');
 });
 test('admin and auth callback stay accessible, uncached and unindexable without public DB dependency',async()=>{
@@ -39,4 +39,10 @@ test('untrusted product text cannot break out of HTML or JSON-LD',async()=>{
  const bad={...p,name:'</script><script>alert(1)</script>',descUk:'<img onerror=alert(1)>'};
  const r=await servePage(new URL('https://www.hugomedia.pl'+productPath(bad)),{...options,loadProducts:async()=>[bad]});
  assert.equal(r.status,200);assert.doesNotMatch(r.body,/<script>alert\(1\)<\/script>/);assert.match(r.body,/&lt;img onerror/);assert.doesNotMatch(safeJson(bad),/</);
+});
+
+test('home canonical does not redirect back to a trailing slash',async()=>{
+ const root=await page('/');assert.equal(root.headers.Location,'/uk');
+ const home=await page('/uk');assert.equal(home.status,200);assert.equal(home.headers.Location,undefined);
+ assert.match(home.body,/href="https:\/\/www.hugomedia.pl\/uk"/);
 });

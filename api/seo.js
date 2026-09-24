@@ -17,7 +17,7 @@ async function publicProducts(config) {
 function serverContent(route,products,base) {
   const {lang,view,cat,product}=route,pl=lang==='pl';
   const meta=metadata({...route,base});
-  const nav=`<nav class="hp-toprow" aria-label="${pl?'Nawigacja':'Навігація'}"><a href="/${lang}/">Hugo Media</a><a href="${catalogPath(lang)}">${pl?'Katalog':'Каталог'}</a><a href="${pagePath({...route,lang:lang==='uk'?'pl':'uk'})}">${pl?'Українська':'Polski'}</a></nav>`;
+  const nav=`<nav class="hp-toprow" aria-label="${pl?'Nawigacja':'Навігація'}"><a href="/${lang}">Hugo Media</a><a href="${catalogPath(lang)}">${pl?'Katalog':'Каталог'}</a><a href="${pagePath({...route,lang:lang==='uk'?'pl':'uk'})}">${pl?'Українська':'Polski'}</a></nav>`;
   if(product) return nav+`<article class="hp-detail"><h1>${E(product.name)}</h1>${meta.image?`<div class="hp-photo"><img src="${E(meta.image)}" alt="${E(product.name)}" fetchpriority="high"></div>`:''}<p>${E(meta.schema['@graph'][2].offers.price)} zł · ${E((pl?['Dostępny','Zarezerwowany','Sprzedany']:['У наявності','Заброньовано','Продано'])[product.status])}</p><p>${E(pl?product.descPl:product.descUk).replace(/\n/g,'<br>')}</p><dl>${['cpu','ram','ssd','gpu','screen','battery','condition','warranty'].filter(k=>product[k]).map(k=>`<dt>${E(k)}</dt><dd>${E(product[k])}</dd>`).join('')}</dl><a href="https://t.me/HUGO_Media">${pl?'Zapytaj w Telegramie':'Запитати в Telegram'}</a></article>`;
   if(view==='start') return nav+`<section class="hm-start"><h1>Hugo Media</h1><p>${E(meta.description)}</p><a class="hp-button" href="${catalogPath(lang)}">${pl?'Otwórz katalog':'Відкрити каталог'}</a><a class="hp-button" href="https://t.me/h_m_g_pl">Telegram</a></section>`;
   const list=cat>=0?products.filter(p=>Number(p.cat)===cat):products;
@@ -49,7 +49,7 @@ export async function servePage(url,{template,config,loadProducts=publicProducts
         if(!route.product) route.view='notFound';
       }
       if(route.view==='notFound') {
-        status=404;body=`<h1>${route.lang==='pl'?'Nie znaleziono strony':'Сторінку не знайдено'}</h1><a href="/${route.lang}/">Hugo Media</a>`;
+        status=404;body=`<h1>${route.lang==='pl'?'Nie znaleziono strony':'Сторінку не знайдено'}</h1><a href="/${route.lang}">Hugo Media</a>`;
       } else {
         const canonical=pagePath(route),params=new URLSearchParams(url.search);
         params.delete('product');params.delete('catalog');

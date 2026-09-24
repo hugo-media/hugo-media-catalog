@@ -66,5 +66,6 @@
       "destination": "https://www.hugomedia.pl/:path*",
       "permanent": true
     }
-  ]
+  ],
+  "trailingSlash": false
 }
