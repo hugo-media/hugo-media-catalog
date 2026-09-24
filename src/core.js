@@ -31,22 +31,25 @@ export function normalizeTelegramPost(value=''){
 export function validTelegramPost(value=''){return normalizeTelegramPost(value)!==null;}
 export function telegramPostUrl(value=''){return normalizeTelegramPost(value)||TELEGRAM_CHANNEL;}
 export function validateProduct(p){
- if(!String(p.name||'').trim()||!String(p.brand||'').trim())throw Error('validation');
- if(String(p.name).length>180||String(p.brand).length>80)throw Error('validation');
- if(!Number.isFinite(Number(p.price))||Number(p.price)<0||Number(p.price)>10000000)throw Error('validation');
- if(!Number.isInteger(Number(p.cat))||Number(p.cat)<0||Number(p.cat)>5)throw Error('validation');
- if(!Number.isInteger(Number(p.status))||Number(p.status)<0||Number(p.status)>3)throw Error('validation');
- if(!DISCOUNTS.includes(Number(p.discount||0)))throw Error('validation');
- if(!['','true'].includes(String(p.newArrival||'')))throw Error('validation');
- if(!['','true'].includes(String(p.bestseller||'')))throw Error('validation');
- if(!['','adapter','cable','none'].includes(String(p.charger||'')))throw Error('validation');
- if(!['','actual','model','mixed'].includes(String(p.photoKind||'')))throw Error('validation');
- if(!validTelegramPost(p.telegramPost))throw Error('validation');
- const quantity=p.quantity===''||p.quantity==null?1:Number(p.quantity);if(!Number.isInteger(quantity)||quantity<0||quantity>99)throw Error('validation');
- if(csv(p.purposes).some(v=>!PURPOSES.includes(v))||csv(p.benefits).some(v=>!BENEFITS.includes(v))||csv(p.bundles).some(v=>!(v in BUNDLES)))throw Error('validation');
- for(const key of Object.keys(UPGRADES)){if(!['','true'].includes(String(p[key+'Enabled']||'')))throw Error('validation');if(p[key+'Enabled']==='true'&&(Number(p.cat)!==0||!upgradeOptions(p).some(o=>o.key===key)))throw Error('validation');}
- if((p.images||[]).length>MAX_IMAGES)throw Error('validation');
- for(const k of ['descUk','descPl'])if(String(p[k]||'').length>10000)throw Error('validation');
+ const invalid=(field)=>{const error=Error('validation');error.field=field;throw error;};
+ if(!String(p.name||'').trim()||String(p.name).length>180)invalid('name');
+ if(!String(p.brand||'').trim()||String(p.brand).length>80)invalid('brand');
+ if(!Number.isFinite(Number(p.price))||Number(p.price)<0||Number(p.price)>10000000)invalid('price');
+ if(!Number.isInteger(Number(p.cat))||Number(p.cat)<0||Number(p.cat)>5)invalid('cat');
+ if(!Number.isInteger(Number(p.status))||Number(p.status)<0||Number(p.status)>3)invalid('status');
+ if(!DISCOUNTS.includes(Number(p.discount||0)))invalid('discount');
+ if(!['','true'].includes(String(p.newArrival||'')))invalid('newArrival');
+ if(!['','true'].includes(String(p.bestseller||'')))invalid('bestseller');
+ if(!['','adapter','cable','none'].includes(String(p.charger||'')))invalid('charger');
+ if(!['','actual','model','mixed'].includes(String(p.photoKind||'')))invalid('photoKind');
+ if(!validTelegramPost(p.telegramPost))invalid('telegramPost');
+ const quantity=p.quantity===''||p.quantity==null?1:Number(p.quantity);if(!Number.isInteger(quantity)||quantity<0||quantity>99)invalid('quantity');
+ if(csv(p.purposes).some(v=>!PURPOSES.includes(v)))invalid('purposes');
+ if(csv(p.benefits).some(v=>!BENEFITS.includes(v)))invalid('benefits');
+ if(csv(p.bundles).some(v=>!(v in BUNDLES)))invalid('bundles');
+ for(const key of Object.keys(UPGRADES)){if(!['','true'].includes(String(p[key+'Enabled']||'')))invalid(key+'Enabled');if(p[key+'Enabled']==='true'&&(Number(p.cat)!==0||!upgradeOptions(p).some(o=>o.key===key)))invalid(key+'Enabled');}
+ if((p.images||[]).length>MAX_IMAGES)invalid('images');
+ for(const k of ['descUk','descPl'])if(String(p[k]||'').length>10000)invalid(k);
 }
 export function toRow(p){validateProduct(p);return {name:p.name.trim(),brand:p.brand.trim(),cat:Number(p.cat),status:Number(p.status),price:Math.round(Number(p.price)*100)/100,condition:String(p.condition||''),warranty:String(p.warranty||''),desc_uk:String(p.descUk||''),desc_pl:String(p.descPl||''),images:p.images||[],specs:Object.fromEntries(SPEC_KEYS.map(k=>[k,k==='telegramPost'?normalizeTelegramPost(p[k]):String(p[k]||'').trim()]))};}
 export function fromRow(r){return {...r,...r.specs,price:Number(r.price),descUk:r.desc_uk||'',descPl:r.desc_pl||'',images:Array.isArray(r.images)?r.images:[]};}
