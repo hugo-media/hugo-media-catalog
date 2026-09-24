@@ -143,6 +143,8 @@ export async function saveProduct(p, pictures) {
     error: userError,
   } = await c.auth.getUser();
   if (userError || !user) throw Error("notAdmin");
+  // Validate the editor fields before uploading photos, so a rejected form never uploads files.
+  toRow({ ...p, images: pictures.map((image) => typeof image === "string" ? image : "pending-photo") });
   const staged = [];
   let row;
   let writingRow = false;
