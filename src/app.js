@@ -2527,10 +2527,16 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
     const firstInvalid = form.querySelector(":invalid");
     const label = firstInvalid?.closest(".hp-field")?.firstChild?.textContent?.trim() || firstInvalid?.name || "";
     const error = q("#hp-form-error");
-    if (error) error.textContent = lang === "pl"
-      ? `Uzupełnij wymagane pole: ${label}`
-      : `Заповни обов’язкове поле: ${label}`;
-    firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const message = lang === "pl" ? `Uzupełnij wymagane pole: ${label}` : `Заповни обов’язкове поле: ${label}`;
+    if (error) error.textContent = message;
+    q("#hp-form .hp-inline-error")?.remove();
+    if (firstInvalid) {
+      const inline = document.createElement("span");
+      inline.className = "hp-inline-error hp-alert";
+      inline.textContent = message;
+      firstInvalid.closest(".hp-field")?.append(inline);
+    }
+    (firstInvalid?.closest(".hp-field") || error)?.scrollIntoView({ behavior: "smooth", block: "center" });
     firstInvalid?.focus({ preventScroll: true });
   }, true);
   root.addEventListener("click", async (e) => {
