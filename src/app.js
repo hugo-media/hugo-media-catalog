@@ -1,3 +1,5 @@
+import { productPath, catalogPath } from './seo-core.js';
+import { updateSeo, currentRoute } from './seo-client.js';
 import { adminUpgrades, configPanel } from './configurator.js';
 import { configuration } from './core.js';
 import { safeSearch } from './insights-core.js';
@@ -1937,10 +1939,11 @@ import {
   });
   const initialParams = new URLSearchParams(location.search),
     adminRoute = initialParams.get("admin"),
-    startRoute = /^\/start\/?$/.test(location.pathname);
+    startRoute = /^\/start\/?$/.test(location.pathname),
+    initialRoute = currentRoute();
   let products = [],
     reviews = [];
-  let lang = readLocal("hmg-language", "uk"),
+  let lang = initialRoute.lang || readLocal("hmg-language", "uk"),
     view =
       db.authCallback || adminRoute !== null
         ? adminRoute === "stats"
@@ -1952,12 +1955,12 @@ import {
             : adminRoute === "picks"
               ? "picks"
             : "admin"
-        : initialParams.has("product")
+        : initialParams.has("product") || initialRoute.view === "detail"
           ? "detail"
-          : startRoute
+          : startRoute || initialRoute.view === "start"
             ? "start"
-            : "home",
-    cat = -1,
+            : initialRoute.view === "catalog" ? "catalog" : "home",
+    cat = initialRoute.cat ?? -1,
     search = "",
     sort = "newest",
     filters = {},
@@ -1967,7 +1970,7 @@ import {
     compare = readLocal("hmg-compare", []),
     bundleSelections = readLocal("hmg-bundles", {}),
     upgradeSelections = readLocal("hmg-upgrades", {}),
-    selected = Number(initialParams.get("product")) || 1,
+    selected = initialRoute.id || Number(initialParams.get("product")) || 1,
     editId = null,
     formImages = [],
     editReviewId = null,
@@ -2120,7 +2123,7 @@ import {
     refreshIcons();
   }
   function photo(p) {
-    return `<div class="hp-photo">${p.images.length ? `<img src="${esc(pictureUrl(p.images[0]))}" alt="${esc(p.name)}">` : `${icon(icons[p.cat])}<span class="hp-small">${t("photo")}</span>`}</div>`;
+    return `<div class="hp-photo">${p.images.length ? `<img src="${esc(pictureUrl(p.images[0]))}" alt="${esc(p.name)}" decoding="async" ${view === "detail" ? 'fetchpriority="high"' : 'loading="lazy"'}>` : `${icon(icons[p.cat])}<span class="hp-small">${t("photo")}</span>`}</div>`;
   }
   function option(v, label, chosen) {
     return `<option value="${esc(v)}" ${String(v) === String(chosen) ? "selected" : ""}>${esc(label)}</option>`;
@@ -2181,6 +2184,7 @@ import {
     const detailOpen = view==='detail' && q('.hm-compact-detail')?.dataset.detailProduct===String(selected)
       ? [...root.querySelectorAll('details[id]')].map(el=>[el.id,el.open]) : [];
     document.documentElement.lang = lang;
+    updateSeo({lang,view,cat,product:view==="detail"?products.find(p=>p.id===selected):undefined,loading,search});
     renderConsent();
     root.classList.toggle("hp-storefront", ["home","catalog","detail","start","finder","shared","compare","cart"].includes(view));
     root.classList.toggle("hp-start-mode", view === "start");
@@ -2219,10 +2223,13 @@ import {
     ]
       .map(
         (c) =>
-          `<button type="button" class="hp-category" data-cat="${c.id}" aria-pressed="${cat === c.id}">${icon(c.icon)}${c.label}</button>`,
+          `<a href="${catalogPath(lang,c.id)}" class="hp-category" data-cat="${c.id}" aria-current="${cat === c.id ? "page" : "false"}">${icon(c.icon)}${c.label}</a>`,
       )
       .join("");
     const content = q("#hp-content");
+    if (loading && content.dataset.ssr && ["home","catalog","detail","start"].includes(view)) return;
+    if (loading && view === "detail") {content.innerHTML=`<p>${t("loading")}</p>`;return;}
+    delete content.dataset.ssr;
     if (
       (["catalog","home","finder","shared"].includes(view)) &&
       (loading || !db.ready || loadError)
@@ -2550,8 +2557,13 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
           (view === "detail" ? "telegram_product" : "telegram_contact"),
         link.dataset.trackPlacement || "",
       );
-    const b = e.target.closest("button");
-    if (!b || busy) return;
+    const b = e.target.closest("button, a[data-detail], a[data-cat]");
+    if (!b) return;
+    if (b.tagName === "A") {
+      if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey||e.button!==0) return;
+      e.preventDefault();
+    }
+    if (busy) return;
     if (b.id === "hp-privacy-accept" || b.id === "hp-privacy-decline") {
       setAnalyticsConsent(b.id === "hp-privacy-accept");
       return;
@@ -2667,7 +2679,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
       savePublicHistory();
       selected = Number(b.dataset.detail);
       view = "detail";
-      history.pushState({hmg:true,view:"detail",selected,cat,search,sort,filters,catalogScroll,scroll:0}, "", `?product=${selected}`);
+      history.pushState({hmg:true,view:"detail",selected,cat,search,sort,filters,catalogScroll,scroll:0}, "", productPath(products.find(p=>p.id===selected)||{id:selected},lang));
       render();
       window.scrollTo(0, 0);
       recordEvent("product_view", selected);
@@ -3068,12 +3080,15 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
   }
   window.addEventListener('popstate',event=>{
     const state=event.state;
+    const route=currentRoute();
+    lang=route.lang||lang;
     if(state?.hmg && ['home','catalog','detail','start','finder','shared','compare','cart'].includes(state.view)) {
       view=state.view; selected=state.selected; cat=state.cat; search=state.search; sort=state.sort; filters=state.filters||{}; catalogScroll=state.catalogScroll||0;
     } else {
       const params=new URLSearchParams(location.search);
-      view=params.has('admin')?'admin':params.has('product')?'detail':params.has('catalog')?'catalog':params.has('finder')?'finder':location.pathname.startsWith('/start')?'start':'home';
-      selected=Number(params.get('product'))||selected;
+      view=params.has('admin')?'admin':params.has('product')?'detail':params.has('catalog')?'catalog':params.has('finder')?'finder':route.view==='notFound'?'home':route.view;
+      cat=route.cat??-1;
+      selected=route.id||Number(params.get('product'))||selected;
     }
     q('#hp-search').value=search;render();window.scrollTo(0,state?.scroll||0);
   });

@@ -1,8 +1,70 @@
 {
- "framework":null,
- "installCommand":"echo No package installation required",
- "buildCommand":"npm run build",
- "outputDirectory":"dist",
- "rewrites":[{"source":"/start","destination":"/index.html"}],
- "headers":[{"source":"/(.*)","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"},{"key":"X-Frame-Options","value":"DENY"}]}]
+  "framework": null,
+  "installCommand": "echo No package installation required",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/api/seo?__path="
+    },
+    {
+      "source": "/start",
+      "destination": "/api/seo?__path=start"
+    },
+    {
+      "source": "/uk/:path*",
+      "destination": "/api/seo?__path=uk/:path*"
+    },
+    {
+      "source": "/pl/:path*",
+      "destination": "/api/seo?__path=pl/:path*"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/seo?__path=sitemap.xml"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/api/seo?__path=robots.txt"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
+    }
+  ],
+  "functions": {
+    "api/seo.js": {
+      "includeFiles": "{index.html,public-config.json}",
+      "maxDuration": 30
+    }
+  },
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "hugo-media-catalog.vercel.app"
+        }
+      ],
+      "destination": "https://www.hugomedia.pl/:path*",
+      "permanent": true
+    }
+  ]
 }

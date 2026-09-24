@@ -312,3 +312,9 @@
  #hugo-preview.hp-storefront .hp-lang button{font-size:14px;padding:6px;min-width:30px}
  #hugo-preview.hp-storefront .hp-header{gap:10px}
 }
+
+/* Native links remain crawlable and support opening products in a new tab. */
+a.hp-product-open,a.hp-category,a.hm-hero-product,a.hp-card-details{color:inherit;text-decoration:none}
+a.hp-product-open{display:block}
+a.hp-category{display:inline-flex;align-items:center;gap:8px}
+a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
