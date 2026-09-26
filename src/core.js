@@ -2,7 +2,7 @@ export const UPGRADES = {ram16:{group:'ram',target:16},ram32:{group:'ram',target
 export const TABLE = 'hmg_catalog_products';
 export const BUCKET = 'hmg-catalog-photos';
 export const MAX_IMAGES = 8;
-export const SPEC_KEYS = ['cpu','generation','ram','ssd','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','newArrival','bestseller','discount','telegramPost','quantity','purposes','benefits','bundles','charger','photoKind',...Object.keys(UPGRADES).flatMap(k=>[k+'Enabled',k+'Price'])];
+export const SPEC_KEYS = ['cpu','generation','ram','ssd','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','newArrival','bestseller','discount','telegramPost','quantity','seoTitleUk','seoTitlePl','seoDescriptionUk','seoDescriptionPl','purposes','benefits','bundles','charger','photoKind',...Object.keys(UPGRADES).flatMap(k=>[k+'Enabled',k+'Price'])];
 export const DISCOUNTS = [0,5,10,15,20,25,30];
 export const TELEGRAM_CHANNEL = 'https://t.me/h_m_g_pl';
 export const PURPOSES = ['study','office','programming','editing','gaming','travel'];
@@ -50,6 +50,8 @@ export function validateProduct(p){
  for(const key of Object.keys(UPGRADES)){if(!['','true'].includes(String(p[key+'Enabled']||'')))invalid(key+'Enabled');if(p[key+'Enabled']==='true'&&(Number(p.cat)!==0||!upgradeOptions(p).some(o=>o.key===key)))invalid(key+'Enabled');}
  if((p.images||[]).length>MAX_IMAGES)invalid('images');
  for(const k of ['descUk','descPl'])if(String(p[k]||'').length>10000)invalid(k);
+ for(const k of ['seoTitleUk','seoTitlePl'])if(String(p[k]||'').length>80)invalid(k);
+ for(const k of ['seoDescriptionUk','seoDescriptionPl'])if(String(p[k]||'').length>300)invalid(k);
 }
 export function toRow(p){validateProduct(p);return {name:p.name.trim(),brand:p.brand.trim(),cat:Number(p.cat),status:Number(p.status),price:Math.round(Number(p.price)*100)/100,condition:String(p.condition||''),warranty:String(p.warranty||''),desc_uk:String(p.descUk||''),desc_pl:String(p.descPl||''),images:p.images||[],specs:Object.fromEntries(SPEC_KEYS.map(k=>[k,k==='telegramPost'?normalizeTelegramPost(p[k]):String(p[k]||'').trim()]))};}
 export function fromRow(r){return {...r,...r.specs,price:Number(r.price),descUk:r.desc_uk||'',descPl:r.desc_pl||'',images:Array.isArray(r.images)?r.images:[]};}

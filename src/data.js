@@ -319,7 +319,7 @@ export async function readSettings() {
 }
 export async function saveSettings(value) {
  if(!(await isAdmin())) throw Error('notAdmin');
- const c=await connect(); const {data,error}=await c.from('hmg_catalog_settings').update({links:value.links,trust:value.trust,homepage:value.homepage}).eq('id',1).eq('updated_at',value.updated_at).select().maybeSingle();
+ const c=await connect(); const {data,error}=await c.from('hmg_catalog_settings').update({links:value.links,trust:value.trust,homepage:value.homepage,...(value.seo!==undefined?{seo:value.seo}:{})}).eq('id',1).eq('updated_at',value.updated_at).select().maybeSingle();
  if(error) throw error; if(!data) throw Error('editConflict'); return data;
 }
 export async function listVersions(productId) {

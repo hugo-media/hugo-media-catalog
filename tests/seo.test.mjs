@@ -46,3 +46,16 @@ test('home canonical does not redirect back to a trailing slash',async()=>{
  const home=await page('/uk');assert.equal(home.status,200);assert.equal(home.headers.Location,undefined);
  assert.match(home.body,/href="https:\/\/www.hugomedia.pl\/uk"/);
 });
+
+
+test('admin SEO metadata is used in server rendered HTML for pages and products',async()=>{
+ const seo={pages:{home:{uk:{title:'Ноутбуки та техніка у Польщі | Hugo Media',description:'Підбери ноутбук і техніку у Польщі: актуальні ціни, характеристики, фото товарів і консультація українською в Telegram.'}},'category:laptops':{pl:{title:'Laptopy poleasingowe w Polsce | Hugo Media',description:'Sprawdź dostępne laptopy poleasingowe w Polsce. Porównaj ceny, parametry i stan urządzeń, a przed zakupem zapytaj o szczegóły.'}}}};
+ const opts={...options,loadSeo:async()=>seo};
+ const home=await servePage(new URL('https://www.hugomedia.pl/uk'),opts);
+ assert.match(home.body,/<title>Ноутбуки та техніка у Польщі \| Hugo Media<\/title>/);
+ const category=await servePage(new URL('https://www.hugomedia.pl/pl/catalog/laptops'),opts);
+ assert.match(category.body,/<title>Laptopy poleasingowe w Polsce \| Hugo Media<\/title>/);
+ const seoProduct={...p,seoTitlePl:'Laptop HP EliteBook do pracy | Hugo Media',seoDescriptionPl:'Sprawdź laptop HP EliteBook do pracy. Zobacz aktualną cenę, stan, parametry i zdjęcia urządzenia. Zapytaj o dostępność przed zakupem.'};
+ const product=await servePage(new URL('https://www.hugomedia.pl'+productPath(seoProduct,'pl')),{...opts,loadProducts:async()=>[seoProduct]});
+ assert.match(product.body,/<title>Laptop HP EliteBook do pracy \| Hugo Media<\/title>/);
+});

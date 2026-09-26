@@ -14,16 +14,20 @@ async function publicProducts(config) {
     if(rows.length<500) return products;
   }
 }
-function serverContent(route,products,base) {
+async function publicSeo(config) {
+  if(!publicConfigValid(config)||/example\.supabase\.co$/.test(new URL(config.supabaseUrl).hostname)) return {};
+  try {const r=await fetch(`${config.supabaseUrl}/rest/v1/hmg_catalog_settings?select=seo&id=eq.1`,{headers:{apikey:config.supabaseKey},signal:AbortSignal.timeout(3000)});if(!r.ok)return {};const rows=await r.json();return rows[0]?.seo||{};}catch{return {};}
+}
+function serverContent(route,products,base,seo={}) {
   const {lang,view,cat,product}=route,pl=lang==='pl';
-  const meta=metadata({...route,base});
+  const meta=metadata({...route,base,seo});
   const nav=`<nav class="hp-toprow" aria-label="${pl?'Nawigacja':'Навігація'}"><a href="/${lang}">Hugo Media</a><a href="${catalogPath(lang)}">${pl?'Katalog':'Каталог'}</a><a href="${pagePath({...route,lang:lang==='uk'?'pl':'uk'})}">${pl?'Українська':'Polski'}</a></nav>`;
   if(product) return nav+`<article class="hp-detail"><h1>${E(product.name)}</h1>${meta.image?`<div class="hp-photo"><img src="${E(meta.image)}" alt="${E(product.name)}" fetchpriority="high"></div>`:''}<p>${E(meta.schema['@graph'][2].offers.price)} zł · ${E((pl?['Dostępny','Zarezerwowany','Sprzedany']:['У наявності','Заброньовано','Продано'])[product.status])}</p><p>${E(pl?product.descPl:product.descUk).replace(/\n/g,'<br>')}</p><dl>${['cpu','ram','ssd','gpu','screen','battery','condition','warranty'].filter(k=>product[k]).map(k=>`<dt>${E(k)}</dt><dd>${E(product[k])}</dd>`).join('')}</dl><a href="https://t.me/HGM_Manager">${pl?'Zapytaj w Telegramie':'Запитати в Telegram'}</a></article>`;
   if(view==='start') return nav+`<section class="hm-start"><h1>Hugo Media</h1><p>${E(meta.description)}</p><a class="hp-button" href="${catalogPath(lang)}">${pl?'Otwórz katalog':'Відкрити каталог'}</a><a class="hp-button" href="https://t.me/h_m_g_pl">Telegram</a></section>`;
   const list=cat>=0?products.filter(p=>Number(p.cat)===cat):products;
   return nav+`<h1>${E(meta.title.replace(' — Hugo Media',''))}</h1><p>${E(meta.description)}</p><div class="hp-grid">${list.map(p=>`<article class="hp-product"><a class="hp-product-open" href="${E(productPath(p,lang))}">${p.images?.length?`<div class="hp-photo"><img src="${E(imageUrl(p.images[0],base))}" alt="${E(p.name)}" loading="lazy" decoding="async"></div>`:''}<div class="hp-product-body"><h2>${E(p.name)}</h2><p>${E(metadata({lang,view:'detail',product:p}).schema['@graph'][2].offers.price)} zł</p></div></a></article>`).join('')}</div>`;
 }
-export async function servePage(url,{template,config,loadProducts=publicProducts}={}) {
+export async function servePage(url,{template,config,loadProducts=publicProducts,loadSeo=publicSeo}={}) {
   template ??= await templatePromise;
   config ??= {...await configPromise};
   config.supabaseUrl=process.env.SUPABASE_URL||config.supabaseUrl;
@@ -36,9 +40,10 @@ export async function servePage(url,{template,config,loadProducts=publicProducts
   const route=parseRoute(url.pathname);route.lang ||= 'uk';
   const privatePage=['admin','finder','selection','code','error','type'].some(k=>url.searchParams.has(k));
   const preview=!['www.hugomedia.pl','hugomedia.pl'].includes(url.hostname);
-  let products=[],status=200,body='';
+  let products=[],status=200,body='',seo={};
   try {
     if(!privatePage && (url.pathname==='/sitemap.xml'||['home','catalog','detail'].includes(route.view)||url.searchParams.has('product'))) products=await loadProducts(config);
+    if(!privatePage && url.pathname!=='/sitemap.xml') seo=await loadSeo(config);
     if(url.pathname==='/sitemap.xml') return send(200,sitemap(products),{'Content-Type':'application/xml; charset=utf-8'});
     if(privatePage) route.view='admin';
     else {
@@ -54,14 +59,14 @@ export async function servePage(url,{template,config,loadProducts=publicProducts
         const canonical=pagePath(route),params=new URLSearchParams(url.search);
         params.delete('product');params.delete('catalog');
         if(url.pathname!==canonical || url.searchParams.has('product')||url.searchParams.has('catalog')) return redirect(canonical+(params.size?'?'+params:''));
-        body=serverContent(route,products,config.supabaseUrl);
+        body=serverContent(route,products,config.supabaseUrl,seo);
       }
     }
   } catch {
     status=503;headers['Retry-After']='60';
     body='<h1>Hugo Media</h1><p>Каталог тимчасово недоступний. Спробуйте оновити сторінку. / Katalog chwilowo niedostępny. Odśwież stronę.</p>';
   }
-  const meta=metadata({...route,base:config.supabaseUrl,noindex:privatePage||preview||status!==200});
+  const meta=metadata({...route,base:config.supabaseUrl,noindex:privatePage||preview||status!==200,seo});
   if(meta.noindex) headers['X-Robots-Tag']='noindex, follow';
   let html=template.replace(/<title>[\s\S]*?<\/title>/,'').replace(/<meta name="description"[^>]*>/,'').replace('<html lang="uk">',`<html lang="${route.lang}">`).replace('</head>',headMarkup(meta)+'</head>');
   html=html.replace('<main class="hp-main" id="hp-content"></main>',`<main class="hp-main" id="hp-content"${body?' data-ssr="true"':''}>${body}</main>`);

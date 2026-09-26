@@ -32,12 +32,18 @@ export function imageUrl(path,base) {
   if(/^https:\/\//.test(path)) return path;
   return `${base}/storage/v1/object/public/${BUCKET}/${String(path).split('/').map(encodeURIComponent).join('/')}`;
 }
-export function metadata({lang='uk',view='home',cat=-1,product,base='',noindex=false}) {
+export function metadata({lang='uk',view='home',cat=-1,product,base='',noindex=false,seo={}}) {
   const pl=lang==='pl',path=pagePath({lang,view,cat,product});
-  const description=product ? String((pl?product.descPl:product.descUk)||product.name).replace(/\s+/g,' ').trim().slice(0,170)
-    : view==='start' ? (pl?'Hugo Media: katalog elektroniki, kanał Telegram i kontakt.':'Hugo Media: каталог техніки, Telegram-канал і зв’язок із нами.')
-    : `${cat>=0?labels[lang][cat]+'. ':''}${pl?'Elektronika w Polsce. Porównaj laptopy, telefony i inne urządzenia. Aktualne ceny w złotych, parametry i kontakt przez Telegram.':'Техніка в Польщі. Порівнюй ноутбуки, телефони та інші пристрої. Актуальні ціни у злотих, характеристики й консультація в Telegram.'}`;
-  const title=product ? `${product.name} — Hugo Media` : `${cat>=0?labels[lang][cat]:pl?'Katalog elektroniki w Polsce':'Каталог техніки в Польщі'} — Hugo Media`;
+  const defaults={
+    description:product ? String((pl?product.descPl:product.descUk)||product.name).replace(/\s+/g,' ').trim().slice(0,170)
+      : view==='start' ? (pl?'Hugo Media: katalog elektroniki, kanał Telegram i kontakt.':'Hugo Media: каталог техніки, Telegram-канал і зв’язок із нами.')
+      : `${cat>=0?labels[lang][cat]+'. ':''}${pl?'Elektronika w Polsce. Porównaj laptopy, telefony i inne urządzenia. Aktualne ceny w złotych, parametry i kontakt przez Telegram.':'Техніка в Польщі. Порівнюй ноутбуки, телефони та інші пристрої. Актуальні ціни у злотих, характеристики й консультація в Telegram.'}`,
+    title:product ? `${product.name} — Hugo Media` : `${cat>=0?labels[lang][cat]:pl?'Katalog elektroniki w Polsce':'Каталог техніки в Польщі'} — Hugo Media`
+  };
+  const pageKey=view==='start'?'start':view==='catalog'?(cat>=0?`category:${categories[cat]}`:'catalog'):'home';
+  const custom=product ? {title:product[pl?'seoTitlePl':'seoTitleUk'],description:product[pl?'seoDescriptionPl':'seoDescriptionUk']} : (seo.pages?.[pageKey]?.[lang]||{});
+  const description=String(custom.description||defaults.description).replace(/\s+/g,' ').trim().slice(0,300);
+  const title=String(custom.title||defaults.title).replace(/\s+/g,' ').trim().slice(0,180);
   const url=ORIGIN+path,image=product?.images?.length?imageUrl(product.images[0],base):'';
   const graph=[{'@type':'Organization','@id':ORIGIN+'/#organization',name:'Hugo Media',url:ORIGIN,sameAs:['https://t.me/h_m_g_pl']},
     {'@type':'WebSite','@id':ORIGIN+'/#website',url:ORIGIN,name:'Hugo Media',inLanguage:['uk','pl'],publisher:{'@id':ORIGIN+'/#organization'}}];
