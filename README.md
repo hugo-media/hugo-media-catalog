@@ -5,7 +5,7 @@ UA/PL catalog for notebooks, phones, tablets, headphones, smartwatches and monit
 ## Implemented
 
 - Search, category-specific filters, numeric price sorting and product links (`?product=ID`).
-- Multi-product selection retained locally; availability rechecked before opening a Telegram draft to **@HUGO_Media**. The customer must press Send. No bot, automatic message, payment or automatic reservation.
+- Multi-product selection retained locally; availability rechecked before opening a Telegram draft to **@HGM_Manager**. The customer must press Send. No bot, automatic message, payment or automatic reservation.
 - Admin email/password sign-in through Supabase; account allowlist enforced by PostgreSQL RLS, not only UI controls.
 - Persistent product create/edit/duplicate/delete and status changes. Drafts are private; available/reserved/sold product pages are public. The main catalog lists available products.
 - Up to 8 genuine photographs per item. JPEG/PNG/WebP input is compressed to 1600px WebP before upload. Photos can be removed or made primary.

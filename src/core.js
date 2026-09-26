@@ -80,7 +80,7 @@ export function orderText(items,lang='uk',origin='',bundleSelections={},upgradeS
  lines.push(lang==='pl'?'Proszę o potwierdzenie konfiguracji i dostępności.':'Прошу підтвердити конфігурацію та наявність.');return lines.join('\n');
 }
 export function bundleLabel(key,lang='uk'){const labels={uk:{mouse:'Мишка',office:'Встановлення Microsoft Office',photoshop:'Встановлення Adobe Photoshop',software:'Інші програми — за запитом',setup:'Налаштування Windows',upgrade:'Апгрейд RAM/SSD — узгодити'},pl:{mouse:'Mysz',office:'Instalacja Microsoft Office',photoshop:'Instalacja Adobe Photoshop',software:'Inne programy — na zapytanie',setup:'Konfiguracja Windows',upgrade:'Rozbudowa RAM/SSD — do ustalenia'}};return labels[lang]?.[key]||key;}
-export function telegramLink(text){return `https://t.me/HUGO_Media?text=${encodeURIComponent(text)}`;}
+export function telegramLink(text){return `https://t.me/HGM_Manager?text=${encodeURIComponent(text)}`;}
 export function publicConfigValid(c){
  try { const url=new URL(c.supabaseUrl);if(url.protocol!=='https:'||!url.hostname.endsWith('.supabase.co')||url.pathname!=='/'||url.search||url.hash||url.username||url.password)return false;
  const key=c.supabaseKey||'';if(key.startsWith('sb_publishable_'))return key.length>25;
