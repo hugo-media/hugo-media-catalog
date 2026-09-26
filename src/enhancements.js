@@ -24,10 +24,77 @@ export function createEnhancements(c) {
  function channelUrl(slot){return normalizeInvite(settings.links?.[slot])||TELEGRAM_CHANNEL;}
  function sectionHeader(title,desc=''){return `<div class="hp-intro"><div><h1>${title}</h1>${desc?`<p class="hp-muted">${desc}</p>`:''}</div></div>`;}
  function adminTabs(){return `<div class="hp-admin-tabs hp-extra-tabs">${['quality','drafts','settings','seo'].map((v,i)=>button(v,[L('Потребує уваги','Wymaga uwagi'),L('Чернетки','Szkice'),L('Головна, Telegram і довіра','Strona główna, Telegram i zaufanie'),L('SEO та видача','SEO i wyniki')][i],c.view===v)).join('')}</div>`;}
-function seoPages(){return [{key:'home',uk:'Головна',pl:'Strona główna'},{key:'start',uk:'Старт',pl:'Start'},{key:'catalog',uk:'Каталог',pl:'Katalog'},...categories.map((s,i)=>({key:'category:'+s,uk:'Категорія: '+labels.uk[i],pl:'Kategoria: '+labels.pl[i]}))];}
- function seoIssues(t,d){t=String(t||'').trim();d=String(d||'').trim();const a=[];if(!t)a.push(L('немає заголовка','brak tytułu'));else if(t.length<25||t.length>65)a.push(L('заголовок поза орієнтиром 25–65 символів','tytuł poza zalecanym zakresem 25–65'));if(!d)a.push(L('немає опису','brak opisu'));else if(d.length<70||d.length>170)a.push(L('опис поза орієнтиром 70–170 символів','opis poza zalecanym zakresem 70–170'));return a;}
- function renderSeo(){const ps=seoPages(),saved=settings.seo?.pages||{},items=ps.flatMap(p=>['uk','pl'].map(l=>({p,l,v:saved[p.key]?.[l]||{}}))),needs=items.filter(x=>seoIssues(x.v.title,x.v.description).length).length,products=c.products.filter(p=>[0,1,2].includes(p.status));content().innerHTML=`${c.adminNav('seo')}${sectionHeader(L('SEO та пошукова видача','SEO i wyniki wyszukiwania'),L('Заповни унікальний заголовок та опис кожної сторінки обома мовами. Перевірка показує пропуски й орієнтовну довжину. Google може змінити текст у видачі.','Uzupełnij unikalny tytuł i opis każdej strony w obu językach. Kontrola pokazuje braki i zalecaną długość. Google może zmienić tekst wyniku.'))}<div class="hp-quality-summary"><strong>${needs}</strong><span>${L('сторінок потребують SEO-полів','stron wymaga pól SEO')}</span></div><form id="hp-seo-form" class="hp-form"><section class="hp-form-section"><h2>${L('Головна, каталог і категорії','Strona główna, katalog i kategorie')}</h2>${ps.map(p=>`<details class="hp-form-section"><summary><strong>${E(p[c.lang])}</strong></summary>${['uk','pl'].map(l=>{const v=saved[p.key]?.[l]||{};const problems=seoIssues(v.title,v.description);return `<div class="hp-form-grid" data-seo-group><h3>${l.toUpperCase()}</h3><label class="hp-field hp-wide">Tytuł SEO / SEO-заголовок<input name="seo__${p.key}__${l}__title" maxlength="80" value="${E(v.title||'')}" data-seo-live></label><label class="hp-field hp-wide">Opis SEO / SEO-опис<textarea name="seo__${p.key}__${l}__description" maxlength="300" data-seo-live>${E(v.description||'')}</textarea></label><p class="hp-muted" data-seo-status>${problems.length?E(problems.join('; ')):L('Поля заповнені за орієнтирами.','Pola spełniają zalecenia.')}</p></div>`;}).join('')}</details>`).join('')}<button class="hp-button hp-primary" type="submit">${L('Зберегти SEO сторінок','Zapisz SEO stron')}</button><p id="hp-seo-message" role="status"></p></section></form><section class="hp-form-section"><h2>${L('Товари','Produkty')}</h2><p>${L('Редагуй товар: додай SEO-заголовки й описи українською та польською.','Edytuj produkt: dodaj tytuły i opisy SEO po ukraińsku i polsku.')}</p><div class="hp-quality-list">${products.map(p=>{const issues=['uk','pl'].flatMap(l=>seoIssues(p['seoTitle'+(l==='uk'?'Uk':'Pl')],p['seoDescription'+(l==='uk'?'Uk':'Pl')]));return `<article><div><strong>${E(p.name)}</strong><small>HMG-${p.id}</small><div class="hp-issue-tags">${issues.length?issues.slice(0,3).map(i=>`<span>${E(i)}</span>`).join(''):`<span>${L('SEO заповнено','SEO uzupełnione')}</span>`}</div></div><button type="button" class="hp-button" data-edit="${p.id}">${c.t('edit')}</button></article>`;}).join('')||L('Товарів поки немає.','Brak produktów.')}</div></section><p class="hp-muted">${L('Це перевірка вмісту полів, не гарантія індексації чи позицій. Перевіряй sitemap і Google Search Console.','To kontrola pól, nie gwarancja indeksacji ani pozycji. Sprawdzaj sitemapę i Google Search Console.')}</p>`;}
-  function navigate(view){c.setView(view);history.replaceState(null,'',view==='finder'?'/?finder':view==='shared'?`/?selection=${shared.join(',')}`:`/?admin=${view}`);c.render();window.scrollTo(0,0);}
+function seoPages(){
+  return [
+    {key:'home',uk:'Головна',pl:'Strona główna',indexable:true},
+    {key:'start',uk:'Старт',pl:'Start',indexable:false},
+    {key:'catalog',uk:'Каталог',pl:'Katalog',indexable:true},
+    ...categories.map((s,i)=>({key:'category:'+s,uk:'Категорія: '+labels.uk[i],pl:'Kategoria: '+labels.pl[i],cat:i,indexable:true}))
+  ];
+}
+function seoNormalize(value){return String(value||'').toLocaleLowerCase().normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu,' ').trim();}
+function seoIssues(t,d,focus,intro){
+  t=String(t||'').trim();d=String(d||'').trim();const a=[];
+  if(!t)a.push(L('немає SEO-заголовка','brak tytułu SEO'));
+  else if(t.length<25||t.length>65)a.push(L('заголовок поза орієнтиром 25–65 символів','tytuł poza zalecanym zakresem 25–65'));
+  if(!d)a.push(L('немає SEO-опису','brak opisu SEO'));
+  else if(d.length<70||d.length>170)a.push(L('опис поза орієнтиром 70–170 символів','opis poza zalecanym zakresem 70–170'));
+  if(focus!==undefined){
+    const phrase=seoNormalize(focus);
+    if(!phrase)a.push(L('не задано цільовий пошуковий запит','brak frazy docelowej'));
+    else {
+      if(!seoNormalize(t).includes(phrase))a.push(L('цільовий запит відсутній у заголовку та H1','fraza nie występuje w tytule i H1'));
+      if(!seoNormalize(d).includes(phrase))a.push(L('цільовий запит відсутній в описі','fraza nie występuje w opisie'));
+      const copy=String(intro||'').trim();
+      if(copy.length<300)a.push(L('додай корисний текст сторінки (від 300 символів)','dodaj użyteczną treść (min. 300 znaków)'));
+      if(!seoNormalize(copy).includes(phrase))a.push(L('цільовий запит відсутній у тексті сторінки','fraza nie występuje w treści strony'));
+    }
+  }
+  return a;
+}
+function renderSeo(){
+  const ps=seoPages(),saved=settings.seo?.pages||{},products=c.products.filter(p=>[0,1,2].includes(p.status));
+  const stockCount=cat=>c.products.filter(p=>Number(p.cat)===Number(cat)&&Number(p.status)===0&&Number(c.stockQty(p))>0).length;
+  const items=ps.flatMap(p=>['uk','pl'].map(l=>({p,l,v:saved[p.key]?.[l]||{},available:p.cat===undefined||stockCount(p.cat)>0})));
+  const eligible=items.filter(x=>x.p.indexable&&x.available);
+  const pageProblems=x=>seoIssues(x.v.title,x.v.description,x.p.indexable?x.v.focus:undefined,x.p.indexable?x.v.intro:undefined);
+  const titleCounts=new Map(),descriptionCounts=new Map();
+  for(const x of eligible){const t=seoNormalize(x.v.title),d=seoNormalize(x.v.description);if(t)titleCounts.set(t,(titleCounts.get(t)||0)+1);if(d)descriptionCounts.set(d,(descriptionCounts.get(d)||0)+1);}
+  const issuesForPage=x=>{const a=pageProblems(x);if(x.v.title&&titleCounts.get(seoNormalize(x.v.title))>1)a.push(L('повторюється SEO-заголовок','powtarza się tytuł SEO'));if(x.v.description&&descriptionCounts.get(seoNormalize(x.v.description))>1)a.push(L('повторюється SEO-опис','powtarza się opis SEO'));return a;};
+  const needs=eligible.filter(x=>issuesForPage(x).length).length,ready=eligible.length-needs;
+  const hidden=items.filter(x=>x.p.indexable&&!x.available).length,noindex=items.filter(x=>!x.p.indexable).length;
+  const pageForms=ps.map(p=>`<details class="hp-form-section"><summary><strong>${E(p[c.lang])}</strong></summary>${['uk','pl'].map(l=>{
+    const v=saved[p.key]?.[l]||{},entry={p,l,v,available:p.cat===undefined||stockCount(p.cat)>0};
+    const problems=pageProblems(entry);
+    const status=!p.indexable?L('Сторінка-перехід: noindex, у Google не просувається.','Strona przejściowa: noindex, nie jest pozycjonowana.'):
+      !entry.available?L('Немає товарів у наявності — сторінка автоматично закрита від індексації до появи товару.','Brak dostępnych produktów — strona jest automatycznie wyłączona z indeksowania do czasu dodania oferty.'):
+      problems.length?problems.join('; '):L('Базова перевірка пройдена: запит є в title, описі та тексті сторінки. H1 береться із заголовка.','Kontrola podstawowa zaliczona: fraza jest w title, opisie i treści. H1 korzysta z tytułu.');
+    return `<div class="hp-form-grid" data-seo-group><h3>${l.toUpperCase()}</h3>
+      <label class="hp-field hp-wide">${L('Цільовий пошуковий запит','Docelowa fraza wyszukiwania')}<input name="seo__${p.key}__${l}__focus" maxlength="100" value="${E(v.focus||'')}" data-seo-live></label>
+      <label class="hp-field hp-wide">SEO-заголовок / Tytuł SEO<input name="seo__${p.key}__${l}__title" maxlength="80" value="${E(v.title||'')}" data-seo-live></label>
+      <label class="hp-field hp-wide">SEO-опис / Opis SEO<textarea name="seo__${p.key}__${l}__description" maxlength="300" data-seo-live>${E(v.description||'')}</textarea></label>
+      ${p.indexable?`<label class="hp-field hp-wide">${L('Текст сторінки для відвідувачів і Google','Treść strony dla użytkowników i Google')}<textarea name="seo__${p.key}__${l}__intro" maxlength="1600" data-seo-live>${E(v.intro||'')}</textarea><span class="hp-muted hp-small">${L('Текст відображається на сторінці. Перевірка просить від 300 символів і наявність цільового запиту.','Tekst jest widoczny na stronie. Kontrola wymaga co najmniej 300 znaków i frazy docelowej.')}</span></label>`:''}
+      <p class="hp-muted" data-seo-status>${E(status)}</p></div>`;
+  }).join('')}</details>`).join('');
+  const productRows=products.map(p=>{
+    const issues=['uk','pl'].flatMap(l=>{
+      const problems=seoIssues(p['seoTitle'+(l==='uk'?'Uk':'Pl')],p['seoDescription'+(l==='uk'?'Uk':'Pl')]);
+      if(String((l==='uk'?p.descUk:p.descPl)||'').trim().length<180)problems.push(L('короткий опис товару','krótki opis produktu'));
+      return problems;
+    });
+    if(!p.images?.length)issues.push(L('немає фото для картки товару','brak zdjęcia produktu'));
+    return `<article><div><strong>${E(p.name)}</strong><small>HMG-${p.id}</small><div class="hp-issue-tags">${issues.length?issues.slice(0,3).map(i=>`<span>${E(i)}</span>`).join(''):`<span>${L('Базова перевірка пройдена','Kontrola podstawowa zaliczona')}</span>`}</div></div><button type="button" class="hp-button" data-edit="${p.id}">${c.t('edit')}</button></article>`;
+  }).join('');
+  content().innerHTML=`${c.adminNav('seo')}${sectionHeader(L('SEO та пошукова видача','SEO i wyniki wyszukiwania'),L('Перевіряємо не лише довжину метаданих: цільовий запит, видимий текст, унікальність заголовків і наявність товарів. Це on-page перевірка, а не прогноз позиції Google.','Sprawdzamy nie tylko długość metadanych, ale też frazę docelową, widoczną treść, unikalność tytułów i dostępność produktów. To kontrola on-page, nie prognoza pozycji w Google.'))}
+  <div class="hp-quality-summary"><strong>${ready}/${eligible.length}</strong><span>${L('мовних сторінок проходять базову перевірку','wersji językowych przechodzi kontrolę podstawową')}</span></div>
+  <p class="hp-muted">${hidden?L(`${hidden/2} категорії без товарів приховані від індексації; вони з’являться в sitemap автоматично після появи товару.`,`${hidden/2} kategorii bez produktów jest ukrytych przed indeksowaniem; po dodaniu produktu automatycznie trafią do sitemapy.`):''} ${noindex?L(`${noindex/2} службові сторінки мають noindex.`,`${noindex/2} stron pomocniczych ma noindex.`):''}</p>
+  <form id="hp-seo-form" class="hp-form"><section class="hp-form-section"><h2>${L('Головна, каталог і категорії','Strona główna, katalog i kategorie')}</h2>${pageForms}
+    <button class="hp-button hp-primary" type="submit">${L('Зберегти SEO сторінок','Zapisz SEO stron')}</button><p id="hp-seo-message" role="status"></p></section></form>
+  <section class="hp-form-section"><h2>${L('Товари','Produkty')}</h2><p>${L('Перевірка шукає заповнені унікальні метадані, опис і фото. H1 та alt фото беруться з назви товару.','Kontrola sprawdza unikalne metadane, opis i zdjęcie. H1 oraz alt zdjęcia pochodzą z nazwy produktu.')}</p><div class="hp-quality-list">${productRows||L('Товарів поки немає.','Brak produktów.')}</div></section>
+  <section class="hp-form-section"><h2>Google Search Console</h2><p>${L('Індексування, реальні пошукові запити й позиції тут не вигадуються: їхній статус можна перевірити у Search Console.','Indeksowanie, rzeczywiste zapytania i pozycje sprawdzisz w Search Console.')}</p><a class="hp-button" href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer">Google Search Console ↗</a></section>
+  <p class="hp-muted">${L('Google може переписати заголовок або опис і сам обирає, які сторінки показувати. Довжини 25–65 / 70–170 символів — лише редакційні орієнтири.','Google może zmienić tytuł lub opis i sam wybiera strony do wyświetlenia. Zakresy 25–65 / 70–170 znaków to wskazówki redakcyjne.')}</p>`;
+}
+ function navigate(view){c.setView(view);history.replaceState(null,'',view==='finder'?'/?finder':view==='shared'?`/?selection=${shared.join(',')}`:`/?admin=${view}`);c.render();window.scrollTo(0,0);}
  function finderCTA(){return `<section class="hp-finder-cta"><div><strong>${L('Який ноутбук підійде саме тобі?','Jaki laptop będzie dla Ciebie?')}</strong><p>${L('Бюджет, задачі, розмір — підберемо до трьох моделей.','Budżet, zastosowanie, rozmiar — wybierzemy do trzech modeli.')}</p></div>${button('finder',L('Підібрати за 30 секунд','Dobierz w 30 sekund'),true)}</section>`;}
  function renderFinder(){
  const purposeOptions=['study','office','programming','editing','gaming','travel'];
@@ -136,9 +203,46 @@ function seoPages(){return [{key:'home',uk:'Головна',pl:'Strona główna'
  return true;
  }
  async function handleSubmit(form){if(form.id==='hp-form'&&draftPending){c.notify(L('Спочатку віднови або відкинь попередню чернетку.','Najpierw przywróć lub odrzuć poprzedni szkic.'));return true;}if(form.id==='hp-quiz-form'){Object.assign(quiz,Object.fromEntries(new FormData(form)));if(quizStep<2)quizStep++;else quizResults=true;c.render();window.scrollTo(0,0);return true;}
- if(form.id==='hp-settings-form'){if(!c.admin)return true;const d=Object.fromEntries(new FormData(form));await c.run(async()=>{try{const value=validateSettings({homepage:{featuredProductId:d.home_featured_product,featuredLabel:{uk:d.home_label_uk,pl:d.home_label_pl}},links:Object.fromEntries(LINK_SLOTS.map(k=>[k,d['link_'+k]])),trust:Object.fromEntries(TRUST_SECTIONS.map(k=>[k,Object.fromEntries(['uk','pl'].map(l=>[l,d['trust_'+k+'_'+l]]))]))});await c.db.saveSettings({...value,updated_at:settings.updated_at});await reloadSettings();if(settingsError)throw Error('saveUnconfirmed');c.render();for(const el of c.root.querySelectorAll('#hp-settings-message,#hp-home-settings-message'))el.textContent=L('Збережено. Зміни вже використовуються на сайті.','Zapisano. Zmiany są już używane na stronie.');}catch(err){for(const el of c.root.querySelectorAll('#hp-settings-message,#hp-home-settings-message'))el.textContent=message(err);}});return true;}if(form.id==='hp-seo-form'){if(!c.admin)return true;const d=Object.fromEntries(new FormData(form)),seo={...(settings.seo||{}),pages:{...(settings.seo?.pages||{})}};for(const p of seoPages()){seo.pages[p.key]={...(seo.pages[p.key]||{})};for(const l of ['uk','pl']){const title=String(d['seo__'+p.key+'__'+l+'__title']||'').trim(),description=String(d['seo__'+p.key+'__'+l+'__description']||'').trim();if(title.length>80||description.length>300){q('#hp-seo-message').textContent=L('Заголовок до 80 символів, опис до 300.','Tytuł do 80 znaków, opis do 300.');return true;}seo.pages[p.key][l]={title,description};}}await c.run(async()=>{try{await c.db.saveSettings({...settings,seo,updated_at:settings.updated_at});await reloadSettings();if(settingsError)throw Error('saveUnconfirmed');c.render();if(q('#hp-seo-message'))q('#hp-seo-message').textContent=L('Збережено. Метадані застосовані на сайті.','Zapisano. Metadane są używane na stronie.');}catch(err){if(q('#hp-seo-message'))q('#hp-seo-message').textContent=message(err);}});return true;}return false;}
+ if(form.id==='hp-settings-form'){if(!c.admin)return true;const d=Object.fromEntries(new FormData(form));await c.run(async()=>{try{const value=validateSettings({homepage:{featuredProductId:d.home_featured_product,featuredLabel:{uk:d.home_label_uk,pl:d.home_label_pl}},links:Object.fromEntries(LINK_SLOTS.map(k=>[k,d['link_'+k]])),trust:Object.fromEntries(TRUST_SECTIONS.map(k=>[k,Object.fromEntries(['uk','pl'].map(l=>[l,d['trust_'+k+'_'+l]]))]))});await c.db.saveSettings({...value,updated_at:settings.updated_at});await reloadSettings();if(settingsError)throw Error('saveUnconfirmed');c.render();for(const el of c.root.querySelectorAll('#hp-settings-message,#hp-home-settings-message'))el.textContent=L('Збережено. Зміни вже використовуються на сайті.','Zapisano. Zmiany są już używane na stronie.');}catch(err){for(const el of c.root.querySelectorAll('#hp-settings-message,#hp-home-settings-message'))el.textContent=message(err);}});return true;}if(form.id==='hp-seo-form'){
+    if(!c.admin)return true;
+    const d=Object.fromEntries(new FormData(form)),seo={...(settings.seo||{}),pages:{...(settings.seo?.pages||{})}};
+    for(const p of seoPages()){
+      seo.pages[p.key]={...(seo.pages[p.key]||{})};
+      for(const l of ['uk','pl']){
+        const existing=seo.pages[p.key][l]||{};
+        const title=String(d['seo__'+p.key+'__'+l+'__title']||'').trim();
+        const description=String(d['seo__'+p.key+'__'+l+'__description']||'').trim();
+        const focus=String(d['seo__'+p.key+'__'+l+'__focus']||'').trim();
+        const intro=String(d['seo__'+p.key+'__'+l+'__intro']||'').trim();
+        if(title.length>80||description.length>300||focus.length>100||intro.length>1600){
+          q('#hp-seo-message').textContent=L('Перевір довжину полів: заголовок до 80, опис до 300, запит до 100, текст до 1600 символів.','Sprawdź długość pól: tytuł do 80, opis do 300, fraza do 100, treść do 1600 znaków.');
+          return true;
+        }
+        seo.pages[p.key][l]={...existing,title,description};
+        if(p.indexable)Object.assign(seo.pages[p.key][l],{focus,intro});
+      }
+    }
+    await c.run(async()=>{try{
+      await c.db.saveSettings({...settings,seo,updated_at:settings.updated_at});
+      await reloadSettings();if(settingsError)throw Error('saveUnconfirmed');c.render();
+      if(q('#hp-seo-message'))q('#hp-seo-message').textContent=L('Збережено. Заголовки, описи й текст сторінок одразу передаються у серверну HTML-сторінку.','Zapisano. Tytuły, opisy i treść są od razu dodawane do serwerowego HTML strony.');
+    }catch(err){if(q('#hp-seo-message'))q('#hp-seo-message').textContent=message(err);}});
+    return true;
+  }return false;}
  c.root.addEventListener('input',e=>{if(e.target.closest('#hp-form'))changed();});
  c.root.addEventListener('change',e=>{if(e.target.closest('#hp-form')&&e.target.type!=='file')changed();});
- c.root.addEventListener('input',e=>{if(!e.target.matches('[data-seo-live]'))return;const g=e.target.closest('[data-seo-group]')||e.target.closest('.hp-form-section');if(!g)return;const l=e.target.name.endsWith('__uk__title')||e.target.name.endsWith('__uk__description')||e.target.name==='seoTitleUk'||e.target.name==='seoDescriptionUk'?'uk':'pl',prod=e.target.name.startsWith('seoTitle')||e.target.name.startsWith('seoDescription'),ts=prod?'[name="seoTitle'+(l==='uk'?'Uk':'Pl')+'"]':'[name$="__'+l+'__title"]',ds=prod?'[name="seoDescription'+(l==='uk'?'Uk':'Pl')+'"]':'[name$="__'+l+'__description"]',t=g.querySelector(ts)?.value||'',d=g.querySelector(ds)?.value||'',a=seoIssues(t,d),s=g.querySelector('[data-seo-status]');if(s)s.textContent=a.length?a.join('; '):L('Поля заповнені за орієнтирами.','Pola spełniają zalecenia.');});
+ c.root.addEventListener('input',e=>{
+    if(!e.target.matches('[data-seo-live]'))return;
+    const group=e.target.closest('[data-seo-group]');if(!group)return;
+    const name=e.target.name||'',pageField=name.startsWith('seo__'),productField=!pageField;
+    const lang=pageField?(name.includes('__uk__')?'uk':'pl'):(name.endsWith('Uk')||name.includes('Uk')?'uk':'pl');
+    const title=group.querySelector(pageField?`[name$="__${lang}__title"]`:`[name="seoTitle${lang==='uk'?'Uk':'Pl'}"]`)?.value||'';
+    const description=group.querySelector(pageField?`[name$="__${lang}__description"]`:`[name="seoDescription${lang==='uk'?'Uk':'Pl'}"]`)?.value||'';
+    const focus=pageField?group.querySelector(`[name$="__${lang}__focus"]`)?.value||'':undefined;
+    const intro=pageField?group.querySelector(`[name$="__${lang}__intro"]`)?.value||'':undefined;
+    const problems=seoIssues(title,description,focus,intro),status=group.querySelector('[data-seo-status]');
+    if(status&&pageField)status.textContent=problems.length?problems.join('; '):L('Базова перевірка пройдена. H1 формується із заголовка.','Kontrola podstawowa zaliczona. H1 korzysta z tytułu.');
+    else if(status&&productField)status.textContent=problems.length?problems.join('; '):L('Заголовок та опис у рекомендованих межах.','Tytuł i opis mieszczą się w zalecanym zakresie.');
+  });
  return {afterRender,handleClick,handleSubmit,reloadSettings,formReady,changed,captureDraft,beforeLeave,afterSave,message,get homepage(){return settings.homepage||{};},get seo(){return settings.seo||{};},get editorBase(){return editorBase;},get dirty(){return dirty;},get draftPending(){return !!draftPending;}};
 }

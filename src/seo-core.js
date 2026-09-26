@@ -32,7 +32,8 @@ export function imageUrl(path,base) {
   if(/^https:\/\//.test(path)) return path;
   return `${base}/storage/v1/object/public/${BUCKET}/${String(path).split('/').map(encodeURIComponent).join('/')}`;
 }
-export function metadata({lang='uk',view='home',cat=-1,product,base='',noindex=false,seo={}}) {
+export function categoryHasStock(products,cat) { return (products||[]).some(p=>Number(p.cat)===Number(cat)&&Number(p.status)===0&&(p.quantity===''||p.quantity==null?1:Number(p.quantity))>0); }
+export function metadata({lang='uk',view='home',cat=-1,product,base='',noindex=false,emptyCategory=false,seo={}}) {
   const pl=lang==='pl',path=pagePath({lang,view,cat,product});
   const defaults={
     description:product ? String((pl?product.descPl:product.descUk)||product.name).replace(/\s+/g,' ').trim().slice(0,170)
@@ -58,7 +59,7 @@ export function metadata({lang='uk',view='home',cat=-1,product,base='',noindex=f
       {'@type':'ListItem',position:2,name:labels[lang][product.cat],item:ORIGIN+catalogPath(lang,product.cat)},
       {'@type':'ListItem',position:3,name:product.name,item:url}]});
   }
-  return {lang,title,description,url,image,noindex:noindex||!['home','catalog','detail','start'].includes(view),
+  return {lang,title,description,url,image,noindex:noindex||emptyCategory||view==='start'||!['home','catalog','detail','start'].includes(view),
     alternates:['uk','pl'].map(l=>({lang:l,url:ORIGIN+pagePath({lang:l,view,cat,product})})),
     schema:{'@context':'https://schema.org','@graph':graph}};
 }
@@ -70,10 +71,20 @@ export function headMarkup(meta) {
 }
 export function sitemap(products) {
   const paths=[];
-  for(const lang of ['uk','pl']) {
-    paths.push({path:`/${lang}`},{path:`/${lang}/start`},{path:catalogPath(lang)});
-    for(let cat=0;cat<categories.length;cat++) if(products.some(p=>Number(p.cat)===cat)) paths.push({path:catalogPath(lang,cat)});
-    for(const p of products) if([0,1,2].includes(Number(p.status))) paths.push({path:productPath(p,lang),date:p.updated_at});
-  }
-  return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+paths.map(({path,date})=>`<url><loc>${escapeHtml(ORIGIN+path)}</loc>${date&&!Number.isNaN(Date.parse(date))?`<lastmod>${new Date(date).toISOString()}</lastmod>`:''}</url>`).join('')+'</urlset>';
+  const addLocalized=(pathUk,pathPl,date)=>{
+    const alternates=[['uk',pathUk],['pl',pathPl]];
+    for(const [lang,path] of alternates) paths.push({path,date,alternates});
+  };
+  addLocalized('/uk','/pl');
+  addLocalized(catalogPath('uk'),catalogPath('pl'));
+  for(let cat=0;cat<categories.length;cat++) if(categoryHasStock(products,cat))
+    addLocalized(catalogPath('uk',cat),catalogPath('pl',cat));
+  for(const p of products) if([0,1,2].includes(Number(p.status)))
+    addLocalized(productPath(p,'uk'),productPath(p,'pl'),p.updated_at);
+  const entries=paths.map(({path,date,alternates})=>{
+    const links=alternates.map(([lang,alternatePath])=>`<xhtml:link rel="alternate" hreflang="${lang}" href="${escapeHtml(ORIGIN+alternatePath)}"/>`).join('')+
+      `<xhtml:link rel="alternate" hreflang="x-default" href="${escapeHtml(ORIGIN+alternates[1][1])}"/>`;
+    return `<url><loc>${escapeHtml(ORIGIN+path)}</loc>${links}${date&&!Number.isNaN(Date.parse(date))?`<lastmod>${new Date(date).toISOString()}</lastmod>`:''}</url>`;
+  }).join('');
+  return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">'+entries+'</urlset>';
 }

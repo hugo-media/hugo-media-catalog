@@ -2184,7 +2184,7 @@ import {
     const detailOpen = view==='detail' && q('.hm-compact-detail')?.dataset.detailProduct===String(selected)
       ? [...root.querySelectorAll('details[id]')].map(el=>[el.id,el.open]) : [];
     document.documentElement.lang = lang;
-    updateSeo({lang,view,cat,product:view==="detail"?products.find(p=>p.id===selected):undefined,loading,search,seo:extra.seo});
+    updateSeo({lang,view,cat,product:view==="detail"?products.find(p=>p.id===selected):undefined,products,loading,search,seo:extra.seo});
     renderConsent();
     root.classList.toggle("hp-storefront", ["home","catalog","detail","start","finder","shared","compare","cart"].includes(view));
     root.classList.toggle("hp-start-mode", view === "start");
@@ -3093,7 +3093,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
     q('#hp-search').value=search;render();window.scrollTo(0,state?.scroll||0);
   });
   const extra = createEnhancements({
-    root, db, esc, readLocal, writeLocal, t, productCard, notify, run, refresh, render, adminNav, formCategory, showUploads,
+    root, db, esc, readLocal, writeLocal, t, productCard, stockQty, notify, run, refresh, render, adminNav, formCategory, showUploads,
     get lang(){return lang;}, get view(){return view;}, get products(){return products;}, get reviews(){return reviews;},
     get admin(){return admin;}, get selected(){return selected;}, get editId(){return editId;}, get images(){return formImages;},
     get cart(){return cart;}, get analyticsEvents(){return analyticsEvents;}, get statsLoading(){return statsLoading;}, get statsError(){return statsError;},

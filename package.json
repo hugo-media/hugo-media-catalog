@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check src/app.js && node --check src/data.js && node --check src/core.js && node --check src/enhancements.js && node --check src/enhancement-core.js && node --check src/drafts.js && node --check src/storefront.js"
+    "check": "node --check src/app.js && node --check src/data.js && node --check src/core.js && node --check src/seo-core.js && node --check src/seo-client.js && node --check src/enhancements.js && node --check src/enhancement-core.js && node --check src/drafts.js && node --check src/storefront.js && node --check api/seo.js"
   },
   "engines": {
     "node": ">=22"
