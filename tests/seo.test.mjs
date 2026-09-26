@@ -33,6 +33,7 @@ test('admin and auth callback stay accessible, uncached and unindexable without 
 test('sitemap is current, excludes drafts and includes both languages; no invented stock',()=>{
  const xml=sitemap([p,{...p,id:8,status:3}]);assert.match(xml,/\/uk\/product\/7-/);assert.match(xml,/\/pl\/product\/7-/);assert.doesNotMatch(xml,/product\/8-/);assert.doesNotMatch(xml,/admin/);
  assert.equal(metadata({product:{...p,quantity:'0'}}).schema['@graph'][2].offers.availability,'https://schema.org/OutOfStock');
+ assert.doesNotMatch(xml,/\/start/);assert.match(xml,/xmlns:xhtml/);assert.match(xml,/hreflang="uk"/);assert.match(xml,/hreflang="pl"/);
  assert.equal(metadata({product:{...p,status:1}}).schema['@graph'][2].offers.availability,'https://schema.org/OutOfStock');
 });
 test('untrusted product text cannot break out of HTML or JSON-LD',async()=>{
@@ -58,4 +59,24 @@ test('admin SEO metadata is used in server rendered HTML for pages and products'
  const seoProduct={...p,seoTitlePl:'Laptop HP EliteBook do pracy | Hugo Media',seoDescriptionPl:'Sprawdź laptop HP EliteBook do pracy. Zobacz aktualną cenę, stan, parametry i zdjęcia urządzenia. Zapytaj o dostępność przed zakupem.'};
  const product=await servePage(new URL('https://www.hugomedia.pl'+productPath(seoProduct,'pl')),{...opts,loadProducts:async()=>[seoProduct]});
  assert.match(product.body,/<title>Laptop HP EliteBook do pracy \| Hugo Media<\/title>/);
+});
+
+test('empty categories and the start page stay out of the index; useful localized copy is server rendered',async()=>{
+ const seo={pages:{'category:laptops':{pl:{
+  title:'Używane laptopy biznesowe w Polsce | Hugo Media',
+  description:'Używane laptopy biznesowe HP, Dell i Lenovo w Polsce. Porównaj ceny, parametry, zdjęcia, stan oraz warunki gwarancji przed zakupem.',
+  focus:'używane laptopy biznesowe',
+  intro:'Przeglądaj używane laptopy biznesowe w Polsce. Każda karta pokazuje konkretny model, jego konfigurację, cenę i zdjęcia. Stan urządzenia oraz warunki gwarancji opisujemy przy danej ofercie. Przed zakupem potwierdź dostępność przez Telegram.'
+ }}}};
+ const category=await servePage(new URL('https://www.hugomedia.pl/pl/catalog/laptops'),{...options,loadSeo:async()=>seo});
+ assert.equal(category.status,200);assert.match(category.body,/Przeglądaj używane laptopy biznesowe w Polsce/);
+ assert.match(category.body,/href="\/pl\/catalog\/phones"/);
+ assert.match(category.body,/name="robots" content="index,follow/);
+ assert.match(category.headers['Cache-Control'],/s-maxage=30/);
+ const empty=await page('/pl/catalog/tablets');
+ assert.match(empty.body,/name="robots" content="noindex,follow"/);
+ assert.match(empty.headers['X-Robots-Tag'],/noindex/);
+ const start=await page('/pl/start');
+ assert.match(start.body,/name="robots" content="noindex,follow"/);
+ assert.match(start.headers['X-Robots-Tag'],/noindex/);
 });
