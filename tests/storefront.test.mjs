@@ -43,6 +43,16 @@ test('homepage renders new arrivals and bestsellers together',()=>{
  assert.deepEqual(collections.bestsellers.map(p=>p.id),[3]);
 });
 
+test('homepage shows three new arrivals and six bestsellers',()=>{
+ const featured={id:1,status:0,quantity:'1'};
+ const fresh=Array.from({length:5},(_,i)=>({id:i+2,status:0,quantity:'1',newArrival:'true'}));
+ const popular=Array.from({length:8},(_,i)=>({id:i+10,status:0,quantity:'1',bestseller:'true'}));
+ const collections=homeCollections([featured,...fresh,...popular],[],featured);
+ assert.equal(collections.newArrivals.length,3);
+ assert.equal(collections.bestsellers.length,6);
+ assert.equal(new Set([...collections.newArrivals,...collections.bestsellers].map(p=>p.id)).size,9);
+});
+
 test('homepage keeps the localized admin SEO heading and intro visible after hydration',()=>{
  const app=createStorefront({lang:'pl',esc:escapeHtml,t:value=>value,icon:()=>'',stockQty:()=>1,reviewsBlock:()=>'',compare:[]});
  const html=app.home([],[],{title:'Używane laptopy w Polsce | Hugo Media',intro:'Porównaj <modele> i ceny.\n\nSprawdź dostępność.'});
