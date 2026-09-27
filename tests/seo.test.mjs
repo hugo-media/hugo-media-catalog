@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {servePage} from '../api/seo.js';
-import {productPath,parseRoute,metadata,sitemap,safeJson} from '../src/seo-core.js';
+import {productPath,parseRoute,metadata,sitemap,safeJson,visibleSeoContent} from '../src/seo-core.js';
 const p={id:7,name:'HP EliteBook 850 G8',cat:0,status:0,price:1990,discount:'10',quantity:'1',brand:'HP',descUk:'Ноутбук HP для роботи',descPl:'Laptop HP do pracy',images:['7/photo.jpg'],updated_at:'2026-09-24T00:00:00Z'};
 const template=await readFile(new URL('../index.html',import.meta.url),'utf8');
 const config={supabaseUrl:'https://example.supabase.co',supabaseKey:'sb_publishable_example'};
@@ -79,4 +79,10 @@ test('empty categories and the start page stay out of the index; useful localize
  const start=await page('/pl/start');
  assert.match(start.body,/name="robots" content="noindex,follow"/);
  assert.match(start.headers['X-Robots-Tag'],/noindex/);
+});
+
+test('admin SEO copy can safely supply a visible heading and readable paragraphs after hydration',()=>{
+ const copy=visibleSeoContent({title:'Używane laptopy biznesowe w Polsce | Hugo Media',intro:'Porównaj <modele> i ceny.\n\nSprawdź dostępność.'});
+ assert.equal(copy.title,'Używane laptopy biznesowe w Polsce');
+ assert.equal(copy.intro,'<p>Porównaj &lt;modele&gt; i ceny.</p><p>Sprawdź dostępność.</p>');
 });
