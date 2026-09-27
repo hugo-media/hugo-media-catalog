@@ -435,3 +435,11 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
  #hugo-preview.hp-storefront .hm-picks .hp-specs{font-size:16px}
 }
 @media(prefers-reduced-motion:reduce){#hugo-preview.hp-storefront .hp-button{transition:none}}
+
+
+/* Keep admin-managed SEO copy readable in both the home hero and catalog header. */
+.hp-seo-copy,.hm-seo-copy{max-width:900px;color:var(--muted);font-size:16px;line-height:1.7}
+.hp-seo-copy{margin-top:12px}
+.hm-seo-copy{margin:26px 0 0}
+.hp-seo-copy p,.hm-seo-copy p{margin:0 0 12px}
+.hp-seo-copy p:last-child,.hm-seo-copy p:last-child{margin-bottom:0}

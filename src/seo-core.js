@@ -6,6 +6,11 @@ export const labels = {
   pl: ['Laptopy','Telefony','Tablety','Słuchawki','Smartwatche','Monitory'],
 };
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export function visibleSeoContent(page={},fallbackTitle='',escape=escapeHtml) {
+  const title=String(page.title||'').replace(/\s+(?:\||—|-)\s+Hugo Media$/i,'').trim()||String(fallbackTitle||'');
+  const intro=String(page.intro||'').split(/\n{2,}/).map(text=>text.trim()).filter(Boolean).map(text=>`<p>${escape(text)}</p>`).join('');
+  return {title,intro};
+}
 export const safeJson = value => JSON.stringify(value).replace(/</g,'\\u003c');
 export const slug = name => String(name || 'product').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,100).replace(/-$/,'') || 'product';
 export const productPath = (p, lang='uk') => `/${lang}/product/${p.id}-${slug(p.name)}`;
