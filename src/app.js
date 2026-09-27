@@ -1964,7 +1964,6 @@ import {
     search = "",
     sort = "newest",
     filters = {},
-    homeTab = "new",
     catalogScroll = 0,
     cart = readLocal("hmg-cart", []),
     compare = readLocal("hmg-compare", []),
@@ -2240,7 +2239,7 @@ import {
     if (view === "start") content.innerHTML = storefront.start();
     if (view === "home") {
       const todayList = dailyPicksDate === warsawDate() ? dailyPicks.map(id=>products.find(p=>p.id===id && p.status===0 && stockQty(p)>0)).filter(Boolean).slice(0,2) : [];
-      content.innerHTML = storefront.home(products, todayList, homeTab, extra.seo?.pages?.home?.[lang] || {});
+      content.innerHTML = storefront.home(products, todayList, extra.seo?.pages?.home?.[lang] || {});
     }
     if (view === "catalog") {
       const vals = (k) => filterValues(eligible(), k);
@@ -2581,11 +2580,6 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
       if (extra.dirty && !confirm(lang === "uk" ? "Покинути редактор? Зміни ще не опубліковано. Статус локальної чернетки показано над формою." : "Opuścić edytor? Zmiany nie zostały opublikowane. Status lokalnego szkicu jest nad formularzem.")) return;
     }
     if (view === "reviewEdit" && (b.dataset.view || b.dataset.lang || b.dataset.cat) && !confirm(t("abandon"))) return;
-    if (b.dataset.homeTab) {
-      homeTab = b.dataset.homeTab;
-      const top = window.scrollY; render(); window.scrollTo(0,top);
-      q(`[data-home-tab="${homeTab}"]`)?.focus({preventScroll:true}); return;
-    }
     if (b.dataset.budget || b.dataset.purpose) {
       cat=0; search=''; q('#hp-search').value=''; filters=b.dataset.budget?{max:b.dataset.budget}:{purpose:b.dataset.purpose};
       view='catalog'; recordEvent('catalog_click',null,'catalog'); history.replaceState(null,'','?catalog'); render(); window.scrollTo(0,0); return;

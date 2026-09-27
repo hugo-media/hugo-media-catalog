@@ -443,3 +443,14 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
 .hm-seo-copy{margin:26px 0 0}
 .hp-seo-copy p,.hm-seo-copy p{margin:0 0 12px}
 .hp-seo-copy p:last-child,.hm-seo-copy p:last-child{margin-bottom:0}
+
+/* Home collections: keep new arrivals and bestsellers visible together. */
+#hugo-preview.hp-storefront .hm-home-collections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;align-items:start;margin-top:14px}
+#hugo-preview.hp-storefront .hm-home-collection{min-width:0}
+#hugo-preview.hp-storefront .hm-collection-heading{margin:0 0 12px;padding:0 0 10px;border-bottom:1px solid var(--line)}
+#hugo-preview.hp-storefront .hm-collection-heading h3{margin:0;font-size:21px;line-height:1.25;letter-spacing:-.3px}
+#hugo-preview.hp-storefront .hm-collection-heading p{margin:5px 0 0;color:var(--muted);font-size:14px;line-height:1.45}
+#hugo-preview.hp-storefront .hm-home-collection .hp-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#hugo-preview.hp-storefront .hm-home-collection .hp-empty{grid-column:1/-1}
+@media(max-width:900px){#hugo-preview.hp-storefront .hm-home-collections{grid-template-columns:1fr;gap:26px}}
+@media(max-width:480px){#hugo-preview.hp-storefront .hm-home-collection .hp-grid{grid-template-columns:1fr}}
