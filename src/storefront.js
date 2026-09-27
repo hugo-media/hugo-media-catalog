@@ -32,11 +32,11 @@ export function homeSelection(products, picks, tab, limit=4) {
 }
 export function homeCollections(products,picks=[],featured=null) {
  const hidden=[...picks,...(featured?[featured]:[])];
- const newArrivals=homeSelection(products,hidden,'new');
+ const newArrivals=homeSelection(products,hidden,'new',3);
  const bestCandidates=homeSelection(products,hidden,'best',products.length);
  const newIds=new Set(newArrivals.map(product=>product.id));
  const distinctBest=bestCandidates.filter(product=>!newIds.has(product.id));
- const bestsellers=[...distinctBest,...bestCandidates.filter(product=>newIds.has(product.id))].slice(0,4);
+ const bestsellers=[...distinctBest,...bestCandidates.filter(product=>newIds.has(product.id))].slice(0,6);
  return {newArrivals,bestsellers};
 }
 export function featuredProduct(products,picks=[],preferredId=null) {
