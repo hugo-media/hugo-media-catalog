@@ -24,11 +24,20 @@ export function filterValues(items, key) {
   return [...new Set(items.map(p => normalizedSpec(key, p[key])).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 }
-export function homeSelection(products, picks, tab) {
+export function homeSelection(products, picks, tab, limit=4) {
   const excluded = new Set(picks.map(p => p.id));
   const available = products.filter(p => p.status === 0 && (p.quantity === '' || p.quantity == null || Number(p.quantity) > 0) && !excluded.has(p.id));
   return available.filter(p => tab === 'sale' ? discountPercent(p) > 0 : tab === 'best' ? p.bestseller === 'true' : p.newArrival === 'true')
-    .sort((a,b) => tab === 'sale' ? discountPercent(b)-discountPercent(a) || b.id-a.id : tab === 'new' ? Number(b.newArrival==='true')-Number(a.newArrival==='true') || b.id-a.id : b.id-a.id).slice(0,4);
+    .sort((a,b) => tab === 'sale' ? discountPercent(b)-discountPercent(a) || b.id-a.id : tab === 'new' ? Number(b.newArrival==='true')-Number(a.newArrival==='true') || b.id-a.id : b.id-a.id).slice(0,limit);
+}
+export function homeCollections(products,picks=[],featured=null) {
+ const hidden=[...picks,...(featured?[featured]:[])];
+ const newArrivals=homeSelection(products,hidden,'new');
+ const bestCandidates=homeSelection(products,hidden,'best',products.length);
+ const newIds=new Set(newArrivals.map(product=>product.id));
+ const distinctBest=bestCandidates.filter(product=>!newIds.has(product.id));
+ const bestsellers=[...distinctBest,...bestCandidates.filter(product=>newIds.has(product.id))].slice(0,4);
+ return {newArrivals,bestsellers};
 }
 export function featuredProduct(products,picks=[],preferredId=null) {
  const available=products.filter(p=>p.status===0&&(p.quantity===''||p.quantity==null||Number(p.quantity)>0)&&p.images?.length);
@@ -49,17 +58,24 @@ export function createStorefront(c) {
     const extras=csv(p.benefits).filter(x=>['touch','keyboard'].includes(x)).map(x=>c.t(x==='touch'?'benefitTouch':'benefitKeyboard'));
     return `<article class="hp-product"><a class="hp-product-open" href="${productPath(p,c.lang)}" data-detail="${p.id}" aria-label="${E(c.t('detail'))}: ${E(p.name)}"><div class="hp-card-badges">${tags.join('')}</div>${c.photo(p)}<div class="hp-product-body"><div class="hp-product-meta"><span>${E(p.brand)}</span></div><h3 class="hp-product-name">${E(c.productTitle(p))}</h3><p class="hp-specs">${E(specSummary(p))}</p><div class="hm-card-facts">${p.condition?`<span>${E(c.localizedValue(p.condition))}</span>`:''}${p.warranty?`<span>${c.icon('shield-check')}${E(c.localizedValue(p.warranty))}</span>`:''}</div>${extras.length?`<div class="hm-card-extras">${extras.map(E).join(' · ')}</div>`:''}</div></a><div class="hp-product-foot"><div class="hp-price-row">${c.priceBlock(p)}<button type="button" class="hp-compare-add" data-compare="${p.id}" aria-label="${E(c.t('compare'))}: ${E(p.name)}" aria-pressed="${c.compare.includes(p.id)}">${c.icon(c.compare.includes(p.id)?'check':'columns-2')}</button></div><div class="hp-card-cta"><a class="hp-button hp-card-details" href="${productPath(p,c.lang)}" data-detail="${p.id}">${c.t('cardDetails')}</a><button type="button" class="hp-button hp-primary hp-card-order" data-order-one="${p.id}">${c.icon('send')}${c.t('cardOrder')}</button></div></div></article>`;
   }
-  function home(products, picks, tab, seoPage={}) {
+  function home(products, picks, seoPage={}) {
     const seoCopy=visibleSeoContent(seoPage,L('Твій наступний ноутбук. За розумну ціну.','Twój kolejny laptop. W rozsądnej cenie.'),E);
     const available=products.filter(p=>p.status===0&&c.stockQty(p)>0);
     const featured=featuredProduct(products,picks,c.homepage?.featuredProductId);
-    const items=homeSelection(products,featured?[...picks,featured]:picks,tab);
-    const choices=[['new',L('Нові надходження','Nowości')],['best',c.t('bestseller')],['sale',L('Знижки','Promocje')]];
+    const {newArrivals,bestsellers}=homeCollections(products,picks,featured);
+    const collection = (id,title,subtitle,items,empty) =>
+      '<section class="hm-home-collection" aria-labelledby="'+id+'-title"><div class="hm-collection-heading"><h3 id="'+id+'-title">'+E(title)+'</h3><p>'+E(subtitle)+'</p></div><div class="hp-grid">'+(items.length?items.map(card).join(''):'<p class="hp-empty">'+E(empty)+'</p>')+'</div></section>';
     return `<section class="hm-hero"><div class="hm-hero-copy"><span class="hp-kicker">HUGO MEDIA · ${L('ТЕХНІКА В ПОЛЬЩІ','ELEKTRONIKA W POLSCE')}</span><h1>${E(seoCopy.title)}</h1><p>${L('Порівняй характеристики, обери під свій бюджет і напиши нам у Telegram. Допоможемо з вибором.','Porównaj parametry, wybierz w swoim budżecie i napisz do nas na Telegramie. Pomożemy Ci wybrać.')}</p><div class="hm-hero-actions"><button type="button" class="hp-button hp-primary" data-cat="0">${L('Переглянути ноутбуки','Zobacz laptopy')}${c.icon('arrow-right')}</button><button type="button" class="hp-button" data-grow="finder">${L('Допомогти з вибором','Pomóż mi wybrać')}</button></div><div class="hm-hero-proof"><span>${c.icon('shield-check')}${L('Гарантія в картці товару','Gwarancja w karcie produktu')}</span><span>${c.icon('message-circle')}${L('Консультація українською / польською','Pomoc po polsku / ukraińsku')}</span></div></div>${featured?`<a class="hm-hero-product" href="${productPath(featured,c.lang)}" data-detail="${featured.id}" aria-label="${E(featured.name)}"><span class="hm-hero-product-label">${E(c.homepage?.featuredLabel?.[c.lang]||L('Знайомся ближче','Poznaj bliżej'))}</span>${c.photo(featured)}<span class="hm-hero-product-caption"><span><strong>${E(c.productTitle(featured))}</strong><small>${E(specSummary(featured))}</small><small>${[featured.condition&&E(c.localizedValue(featured.condition)),featured.warranty&&E(c.t('warrantyShort'))+': '+E(c.localizedValue(featured.warranty))].filter(Boolean).join(' · ')}</small></span><b>${c.money(effectivePrice(featured))} zł ${c.icon('arrow-up-right')}</b></span></a>`:''}</section>
       <section class="hm-quick"><span>${L('Швидкий вибір','Szybki wybór')}</span>${[1000,1500,2500].map(n=>`<button type="button" data-budget="${n}">${L('До','Do')} ${n} zł</button>`).join('')}<button type="button" data-purpose="study">${c.t('purposeStudy')}</button><button type="button" data-purpose="office">${c.t('purposeOffice')}</button><button type="button" data-cat="-1">${L('Уся техніка','Cały asortyment')} ↗</button></section>
       ${seoCopy.intro ? `<section class="hm-seo-copy">${seoCopy.intro}</section>` : ""}
       ${picks.length?`<section class="hp-home-section hm-daily"><div class="hp-section-title"><div><span class="hp-kicker">HUGO SELECT</span><h2>${c.t('dailyPicks')}</h2><p>${L('Наш вибір із того, що зараз у наявності.','Nasz wybór z aktualnie dostępnych modeli.')}</p></div></div><div class="hm-picks">${picks.slice(0,2).map(card).join('')}</div></section>`:''}
-      <section class="hp-home-section hm-selection"><div class="hp-section-title"><div><h2>${L('Знайди свій варіант','Znajdź coś dla siebie')}</h2><p>${available.length} ${L('товарів у наявності','produktów w ofercie')}</p></div><button type="button" class="hp-home-link" data-cat="-1">${L('Увесь каталог','Cały katalog')}${c.icon('arrow-right')}</button></div><div class="hm-tabs" role="group" aria-label="${L('Добірки товарів','Kolekcje produktów')}">${choices.map(([k,label])=>`<button type="button" data-home-tab="${k}" aria-pressed="${k===tab}">${label}</button>`).join('')}</div><div class="hp-grid hp-home-products hm-tab-products">${items.length?items.map(card).join(''):`<p class="hp-empty">${L('У цій добірці поки немає інших товарів. Переглянь рекомендації вище або весь каталог.','W tej kolekcji nie ma teraz innych produktów. Zobacz polecane wyżej lub cały katalog.')}</p>`}</div></section>
+       <section class="hp-home-section hm-selection">
+         <div class="hp-section-title"><div><h2>${L('Знайди свій варіант','Znajdź coś dla siebie')}</h2><p>${available.length} ${L('товарів у наявності','produktów w ofercie')}</p></div><button type="button" class="hp-home-link" data-cat="-1">${L('Увесь каталог','Cały katalog')}${c.icon('arrow-right')}</button></div>
+         <div class="hm-home-collections">
+           ${collection('hm-new-arrivals',L('Нові надходження','Nowości'),c.t('newArrivalsSub'),newArrivals,L('Зараз нових надходжень немає.','Brak nowych produktów w tej chwili.'))}
+           ${collection('hm-bestsellers',c.t('bestChoice'),c.t('bestChoiceSub'),bestsellers,L('Поки немає позначених бестселерів.','Nie ma jeszcze oznaczonych bestsellerów.'))}
+         </div>
+       </section>
       <aside class="hm-channel"><span class="hm-channel-icon">${c.icon('send')}</span><div><span class="hp-kicker">HUGO · TELEGRAM</span><h2>${L('Підписникам — доставка за наш рахунок.','Dla subskrybentów — dostawa na nasz koszt.')}</h2><p>${L('Нові надходження, живі огляди й спеціальні пропозиції в каналі. Про підписку скажи нам під час замовлення.','Nowości, prezentacje sprzętu i oferty specjalne w kanale. Powiedz nam o subskrypcji przy zamówieniu.')}</p></div><a class="hp-button hp-primary" href="https://t.me/h_m_g_pl" target="_blank" rel="noopener noreferrer" data-track-target="telegram_channel">${L('Приєднатися до каналу','Dołącz do kanału')}${c.icon('arrow-up-right')}</a></aside>
       ${c.reviewsBlock(4)}<section class="hp-home-section hm-how"><div><span class="hp-kicker">${L('УСЕ ПРОСТО','TO PROSTE')}</span><h2>${L('Від вибору до отримання','Od wyboru do odbioru')}</h2></div><ol><li><b>01</b><strong>${L('Обери техніку','Wybierz sprzęt')}</strong><p>${L('Порівняй моделі, ціну й комплектацію.','Porównaj modele, ceny i wyposażenie.')}</p></li><li><b>02</b><strong>${L('Напиши нам','Napisz do nas')}</strong><p>${L('Уточнимо стан, оплату та доставку в Telegram.','Ustalimy stan, płatność i dostawę na Telegramie.')}</p></li><li><b>03</b><strong>${L('Отримай свій пристрій','Odbierz swój sprzęt')}</strong><p>${L('Перед відправленням узгодимо всі деталі.','Przed wysyłką potwierdzimy wszystkie szczegóły.')}</p></li></ol></section><div id="hm-home-terms"></div>`;
   }

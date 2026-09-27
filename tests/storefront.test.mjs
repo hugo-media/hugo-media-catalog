@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizedSpec,specLabel,filterValues,homeSelection,createStorefront} from '../src/storefront.js';
+import {normalizedSpec,specLabel,filterValues,homeSelection,homeCollections,createStorefront} from '../src/storefront.js';
 import {escapeHtml} from '../src/seo-core.js';
 test('mixed existing screen and capacity formats produce usable sorted filters',()=>{
  assert.deepEqual(filterValues([{ram:'16'},{ram:'8 GB'},{ram:'32'},{ram:'8'}],'ram'),['8','16','32']);
@@ -27,9 +27,25 @@ test('homepage respects chosen product and falls back when hidden, sold, empty o
  assert.equal(featuredProduct([],[],2),undefined);
 });
 
+test('homepage renders new arrivals and bestsellers together',()=>{
+ const featured={id:1,cat:0,status:0,quantity:'1',price:1000,name:'Featured laptop',images:['featured.webp']};
+ const fresh={id:2,cat:0,status:0,quantity:'1',price:1200,name:'Fresh laptop',newArrival:'true'};
+ const popular={id:3,cat:0,status:0,quantity:'1',price:1400,name:'Popular laptop',bestseller:'true'};
+ const c={lang:'uk',esc:escapeHtml,t:key=>({bestChoice:'Бестселери',bestChoiceSub:'Популярні моделі',newArrivalsSub:'Свіжі моделі',bestseller:'Бестселер',newArrival:'Нове'})[key]||key,icon:()=>'',stockQty:()=>1,reviewsBlock:()=>'',compare:[],homepage:{featuredProductId:1},photo:()=>'<div class="hp-photo"></div>',productTitle:p=>p.name,priceBlock:()=>'',localizedValue:value=>value,money:value=>String(value)};
+ const html=createStorefront(c).home([featured,fresh,popular],[]);
+ assert.match(html,/<h3 id="hm-new-arrivals-title">Нові надходження<\/h3>/);
+ assert.match(html,/<h3 id="hm-bestsellers-title">Бестселери<\/h3>/);
+ assert.match(html,/Fresh laptop/);
+ assert.match(html,/Popular laptop/);
+ assert.doesNotMatch(html,/hm-tabs|data-home-tab/);
+ const collections=homeCollections([featured,fresh,popular],[],featured);
+ assert.deepEqual(collections.newArrivals.map(p=>p.id),[2]);
+ assert.deepEqual(collections.bestsellers.map(p=>p.id),[3]);
+});
+
 test('homepage keeps the localized admin SEO heading and intro visible after hydration',()=>{
  const app=createStorefront({lang:'pl',esc:escapeHtml,t:value=>value,icon:()=>'',stockQty:()=>1,reviewsBlock:()=>'',compare:[]});
- const html=app.home([],[],'new',{title:'Używane laptopy w Polsce | Hugo Media',intro:'Porównaj <modele> i ceny.\n\nSprawdź dostępność.'});
+ const html=app.home([],[],{title:'Używane laptopy w Polsce | Hugo Media',intro:'Porównaj <modele> i ceny.\n\nSprawdź dostępność.'});
  assert.match(html,/<h1>Używane laptopy w Polsce<\/h1>/);
  assert.match(html,/<section class="hm-seo-copy"><p>Porównaj &lt;modele&gt; i ceny\.<\/p><p>Sprawdź dostępność\.<\/p><\/section>/);
 });
