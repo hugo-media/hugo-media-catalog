@@ -35,3 +35,11 @@ export function consistencyIssues(p){
  const match=String(p.name||'').match(re);const n=parseFloat(String(p[field]||'').replace(',','.'));if(match&&Number.isFinite(n)&&Math.abs(Number(match[1].replace(',','.'))-n)>.01)issues.push('mismatch');
  }return [...new Set(issues)];
 }
+
+export function reportMetrics(events) {
+ const rows=Array.isArray(events)?events:[], pageViews=rows.filter(e=>e.event_type==='page_view'), productViews=rows.filter(e=>e.event_type==='product_view'), contacts=rows.filter(e=>e.event_type==='telegram_click'&&['telegram_order','telegram_cart_order','telegram_contact'].includes(e.destination)), carts=rows.filter(e=>e.event_type==='cart_add'), viewed=new Set(productViews.map(e=>e.session_id).filter(Boolean)), contacted=new Set(contacts.map(e=>e.session_id).filter(Boolean)), sources=new Map(), products=new Map();
+ for(const e of pageViews){const k=e.traffic_source||'direct';sources.set(k,(sources.get(k)||0)+1);}
+ for(const e of productViews){const k=Number(e.product_id);if(Number.isFinite(k)&&k>0)products.set(k,(products.get(k)||0)+1);}
+ const topSource=[...sources].sort((a,b)=>b[1]-a[1])[0]||null, topProduct=[...products].sort((a,b)=>b[1]-a[1])[0]||null, misses=rows.filter(e=>e.event_type==='search_no_results');
+ return {pageViews:pageViews.length,visitors:new Set(pageViews.map(e=>e.visitor_id).filter(Boolean)).size,productViews:productViews.length,cartAdds:carts.length,contactClicks:contacts.length,productSessions:viewed.size,contactSessions:[...viewed].filter(id=>contacted.has(id)).length,noResultSearches:misses.length,topSource,topProduct,topSearch:missedSearches(misses)[0]?.term||''};
+}

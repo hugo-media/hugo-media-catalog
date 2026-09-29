@@ -2,7 +2,7 @@ import { productPath, catalogPath, categories, visibleSeoContent } from './seo-c
 import { updateSeo, currentRoute } from './seo-client.js';
 import { adminUpgrades, configPanel } from './configurator.js';
 import { configuration } from './core.js';
-import { safeSearch } from './insights-core.js';
+import { safeSearch, reportMetrics } from './insights-core.js';
 import { createStorefront, normalizedSpec, specLabel, filterValues } from "./storefront.js";
 import { createEnhancements } from "./enhancements.js";
 import * as db from "./data.js";
@@ -1142,6 +1142,18 @@ import {
     });
     return [...counts].sort((a, b) => b[1] - a[1]);
   }
+  function renderAdminReport(summary) {
+    const source = summary.topSource ? summary.topSource[0] : "", top = summary.topProduct ? products.find((p) => Number(p.id) === summary.topProduct[0])?.name || ("HMG-" + summary.topProduct[0]) : "", rate = summary.productSessions ? Math.round(summary.contactSessions / summary.productSessions * 100) : 0, uk = lang === "uk";
+    const findings = [];
+    if (summary.visitors && source) findings.push("<li><b>" + (uk ? "Працює: джерело трафіку" : "Działa: źródło ruchu") + "</b><span>" + esc(source) + " — " + summary.topSource[1] + (uk ? " переходів" : " wejść") + "</span></li>");
+    if (top) findings.push("<li><b>" + (uk ? "Популярний товар" : "Popularny produkt") + "</b><span>" + esc(top) + " — " + summary.topProduct[1] + (uk ? " переглядів" : " wyświetleń") + "</span></li>");
+    if (summary.productSessions >= 10) findings.push("<li class=\"" + (rate >= 5 ? "hp-report-good" : "hp-report-attention") + "\"><b>" + (rate >= 5 ? (uk ? "Добре: інтерес до товарів" : "Dobrze: zainteresowanie produktami") : (uk ? "Увага: мало звернень після перегляду" : "Uwaga: mało kontaktów po wyświetleniu")) + "</b><span>" + rate + "% " + (uk ? "сесій із переглядом товару завершилися кліком звернення." : "sesji z wyświetleniem produktu zakończyło się kliknięciem kontaktu.") + "</span></li>");
+    if (summary.noResultSearches) findings.push("<li class=\"hp-report-attention\"><b>" + (uk ? "Перевір пошук" : "Sprawdź wyszukiwanie") + "</b><span>" + summary.noResultSearches + (uk ? " пошуків без результату" : " wyszukiwań bez wyników") + (summary.topSearch ? ": «" + esc(summary.topSearch) + "»" : "") + (uk ? ". Перевір наявність товару." : ". Sprawdź dostępność produktu.") + "</span></li>");
+    if (summary.productSessions < 10 && summary.visitors) findings.push("<li><b>" + (uk ? "Поки мало даних для оцінки конверсії" : "Za mało danych do oceny konwersji") + "</b><span>" + (uk ? "Відкрий звіт за тиждень або місяць, щоб набрати більше спостережень." : "Wybierz tydzień lub miesiąc, aby zebrać więcej obserwacji.") + "</span></li>");
+    if (!summary.visitors) findings.push("<li><b>" + (uk ? "Даних поки немає" : "Brak danych") + "</b><span>" + (uk ? "Аналітика рахує лише відвідування після згоди на її збір." : "Analityka liczy wizyty po wyrażeniu zgody na jej zbieranie.") + "</span></li>");
+    const period = statsRange === 1 ? (uk ? "день" : "dzień") : statsRange === 7 ? (uk ? "7 днів" : "7 dni") : (uk ? "30 днів" : "30 dni");
+    return "<section class=\"hp-stat-panel hp-admin-report\" role=\"status\"><div class=\"hp-report-heading\"><div><h2>" + (uk ? "Короткий звіт" : "Krótki raport") + "</h2><p>" + (uk ? "Період: " : "Okres: ") + period + "</p></div><button type=\"button\" class=\"hp-button\" data-close-report>" + (uk ? "Закрити" : "Zamknij") + "</button></div><div class=\"hp-report-metrics\"><span>" + (uk ? "Відвідувачі" : "Odwiedzający") + "<b>" + summary.visitors + "</b></span><span>" + (uk ? "Перегляди" : "Wyświetlenia") + "<b>" + summary.pageViews + "</b></span><span>" + (uk ? "Товари" : "Produkty") + "<b>" + summary.productViews + "</b></span><span>" + (uk ? "Кліки звернення" : "Kliknięcia kontaktu") + "<b>" + summary.contactClicks + "</b></span><span>" + (uk ? "Додали до кошика" : "Dodania do koszyka") + "<b>" + summary.cartAdds + "</b></span></div><ul class=\"hp-report-findings\">" + findings.join("") + "</ul><p class=\"hp-report-note\">" + (uk ? "Це кліки та анонімні сесії, а не підтверджені замовлення." : "To kliknięcia i anonimowe sesje, a nie potwierdzone zamówienia.") + "</p></section>";
+  }
   function renderAnalytics() {
     const events = analyticsEvents,
       pageViews = events.filter((e) => e.event_type === "page_view"),
@@ -1484,7 +1496,7 @@ import {
       return `<div class="hp-stat-modal-backdrop"><section class="hp-stat-modal" role="dialog" aria-modal="true" aria-labelledby="hp-chart-title"><button type="button" class="hp-stat-modal-close" id="hp-stat-close" aria-label="${t("chartClose")}">${icon("x")}</button><div class="hp-kicker">${t("analytics")}</div><h2 id="hp-chart-title">${esc(label)}</h2><p>${esc(description)}</p><div class="hp-chart-summary"><span>${t("chartTotal")}</span><strong>${value}</strong></div>${graphTitle ? `<h3>${graphTitle}</h3>` : ""}${graph}</section></div>`;
     };
     q("#hp-content").innerHTML =
-      `${adminNav("stats")}<div class="hp-intro hp-stats-head"><div><h1>${t("analyticsTitle")}</h1><span class="hp-muted">${t("analyticsSub")}</span><small>${t("analyticsClickHint")}</small></div><div class="hp-range-tabs" role="group" aria-label="${t("analyticsTitle")}">${[
+      `${adminNav("stats")}<div class="hp-intro hp-stats-head"><div><h1>${t("analyticsTitle")}</h1><span class="hp-muted">${t("analyticsSub")}</span><small>${t("analyticsClickHint")}</small><button type="button" class="hp-button hp-primary" data-generate-report>${lang === "uk" ? "Звіт" : "Raport"}</button></div><div class="hp-range-tabs" role="group" aria-label="${t("analyticsTitle")}">${[
         [1, t("day")],
         [7, t("week")],
         [30, t("month")],
@@ -1498,7 +1510,7 @@ import {
           ? `<div class="hp-empty">${t("loading")}</div>`
           : statsError
             ? `<div class="hp-empty">${t("error")}</div>`
-            : `<div class="hp-stat-grid">${metrics.map(metric).join("")}</div><div class="hp-stat-sections">${breakdownPanel("destinations", list(destinations, destinationLabel))}${breakdownPanel(
+            : `${reportOpen ? renderAdminReport(reportMetrics(events)) : ""}<div class="hp-stat-grid">${metrics.map(metric).join("")}</div><div class="hp-stat-sections">${breakdownPanel("destinations", list(destinations, destinationLabel))}${breakdownPanel(
                 "topProducts",
                 list(
                   top,
@@ -1990,7 +2002,8 @@ import {
     statsRange = 7,
     statsMetric = "",
     statsLoading = false,
-    statsError = false;
+    statsError = false,
+    reportOpen = false;
   if (!["uk", "pl"].includes(lang)) lang = "uk";
   if (!Array.isArray(cart)) cart = [];
   if (!Array.isArray(compare)) compare = [];
@@ -2598,8 +2611,15 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
       q("#hp-search").value = "";
       render();
       window.scrollTo(0,0);
+    } else if (b.dataset.generateReport !== undefined) {
+      reportOpen = true;
+      render();
+    } else if (b.dataset.closeReport !== undefined) {
+      reportOpen = false;
+      render();
     } else if (b.dataset.statsRange) {
       statsRange = Number(b.dataset.statsRange);
+      reportOpen = false;
       await loadAnalytics();
     } else if (b.id === "hp-save-picks") {
       await run(async () => {
