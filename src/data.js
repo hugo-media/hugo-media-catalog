@@ -236,22 +236,15 @@ async function readAnalyticsSince(client, since) {
   }
   return rows;
 }
-export async function listAnalyticsComparison(days = 7) {
+export async function getAnalyticsReport(days = 7) {
   if (!(await isAdmin())) throw Error("notAdmin");
   const c = await connect();
   const normalizedDays = [1, 7, 30].includes(Number(days)) ? Number(days) : 7;
-  const currentStart = new Date();
-  currentStart.setHours(0, 0, 0, 0);
-  currentStart.setDate(currentStart.getDate() - (normalizedDays - 1));
-  const previousStart = new Date(currentStart);
-  previousStart.setDate(previousStart.getDate() - normalizedDays);
-  const rows = await readAnalyticsSince(c, previousStart.toISOString());
-  const boundary = currentStart.getTime();
-  return {
-    current: rows.filter(row => new Date(row.created_at).getTime() >= boundary),
-    previous: rows.filter(row => new Date(row.created_at).getTime() < boundary),
-  };
+  const { data, error } = await c.rpc("hmg_catalog_analytics_report", { p_days: normalizedDays });
+  if (error) throw error;
+  return data;
 }
+
 export async function listReviews() {
   const c = await connect();
   const { data, error } = await c
