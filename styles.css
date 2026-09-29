@@ -3973,3 +3973,6 @@ body {
 #hugo-preview .hp-report-findings span { color: var(--hp-muted); }
 #hugo-preview .hp-report-note { margin-top: 12px; }
 @media (max-width: 700px) { #hugo-preview .hp-stats-head { align-items: stretch; flex-direction: column; } #hugo-preview .hp-stats-head > div:first-child { align-items: flex-start; } #hugo-preview .hp-report-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } #hugo-preview .hp-report-heading { align-items: center; } }
+
+#hugo-preview .hp-report-metrics small { color: var(--hp-muted); font-size: 12px; line-height: 1.35; }
+#hugo-preview .hp-report-findings li { overflow-wrap: anywhere; }

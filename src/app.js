@@ -2,7 +2,7 @@ import { productPath, catalogPath, categories, visibleSeoContent } from './seo-c
 import { updateSeo, currentRoute } from './seo-client.js';
 import { adminUpgrades, configPanel } from './configurator.js';
 import { configuration } from './core.js';
-import { safeSearch, reportMetrics } from './insights-core.js';
+import { safeSearch, compareReportMetrics } from './insights-core.js';
 import { createStorefront, normalizedSpec, specLabel, filterValues } from "./storefront.js";
 import { createEnhancements } from "./enhancements.js";
 import * as db from "./data.js";
@@ -1142,17 +1142,23 @@ import {
     });
     return [...counts].sort((a, b) => b[1] - a[1]);
   }
-  function renderAdminReport(summary) {
-    const source = summary.topSource ? summary.topSource[0] : "", top = summary.topProduct ? products.find((p) => Number(p.id) === summary.topProduct[0])?.name || ("HMG-" + summary.topProduct[0]) : "", rate = summary.productSessions ? Math.round(summary.contactSessions / summary.productSessions * 100) : 0, uk = lang === "uk";
-    const findings = [];
-    if (summary.visitors && source) findings.push("<li><b>" + (uk ? "Працює: джерело трафіку" : "Działa: źródło ruchu") + "</b><span>" + esc(source) + " — " + summary.topSource[1] + (uk ? " переходів" : " wejść") + "</span></li>");
-    if (top) findings.push("<li><b>" + (uk ? "Популярний товар" : "Popularny produkt") + "</b><span>" + esc(top) + " — " + summary.topProduct[1] + (uk ? " переглядів" : " wyświetleń") + "</span></li>");
-    if (summary.productSessions >= 10) findings.push("<li class=\"" + (rate >= 5 ? "hp-report-good" : "hp-report-attention") + "\"><b>" + (rate >= 5 ? (uk ? "Добре: інтерес до товарів" : "Dobrze: zainteresowanie produktami") : (uk ? "Увага: мало звернень після перегляду" : "Uwaga: mało kontaktów po wyświetleniu")) + "</b><span>" + rate + "% " + (uk ? "сесій із переглядом товару завершилися кліком звернення." : "sesji z wyświetleniem produktu zakończyło się kliknięciem kontaktu.") + "</span></li>");
-    if (summary.noResultSearches) findings.push("<li class=\"hp-report-attention\"><b>" + (uk ? "Перевір пошук" : "Sprawdź wyszukiwanie") + "</b><span>" + summary.noResultSearches + (uk ? " пошуків без результату" : " wyszukiwań bez wyników") + (summary.topSearch ? ": «" + esc(summary.topSearch) + "»" : "") + (uk ? ". Перевір наявність товару." : ". Sprawdź dostępność produktu.") + "</span></li>");
-    if (summary.productSessions < 10 && summary.visitors) findings.push("<li><b>" + (uk ? "Поки мало даних для оцінки конверсії" : "Za mało danych do oceny konwersji") + "</b><span>" + (uk ? "Відкрий звіт за тиждень або місяць, щоб набрати більше спостережень." : "Wybierz tydzień lub miesiąc, aby zebrać więcej obserwacji.") + "</span></li>");
-    if (!summary.visitors) findings.push("<li><b>" + (uk ? "Даних поки немає" : "Brak danych") + "</b><span>" + (uk ? "Аналітика рахує лише відвідування після згоди на її збір." : "Analityka liczy wizyty po wyrażeniu zgody na jej zbieranie.") + "</span></li>");
+  function renderAdminReport(previousEvents) {
+    const comparison = compareReportMetrics(analyticsEvents, previousEvents), summary = comparison.current, changes = comparison.changes, source = summary.topSource ? (summary.topSource[0] === "direct" ? (lang === "uk" ? "Прямі переходи" : "Wejścia bezpośrednie") : summary.topSource[0]) : "", top = summary.topProduct ? products.find((p) => Number(p.id) === summary.topProduct[0])?.name || ("HMG-" + summary.topProduct[0]) : "", weak = summary.weakProduct ? products.find((p) => Number(p.id) === summary.weakProduct.id)?.name || ("HMG-" + summary.weakProduct.id) : "", rate = summary.productSessions ? Math.round(summary.contactSessions / summary.productSessions * 100) : 0, uk = lang === "uk";
+    const findings = [], metrics = [["visitors",uk?"Відвідувачі":"Odwiedzający"],["pageViews",uk?"Перегляди":"Wyświetlenia"],["productViews",uk?"Перегляди товарів":"Wyświetlenia produktów"],["contactClicks",uk?"Кліки звернення":"Kliknięcia kontaktu"],["cartAdds",uk?"Додали до кошика":"Dodania do koszyka"]];
+    const deltaText = key => changes[key] === null ? (uk ? "нові" : "nowe") : (changes[key] > 0 ? "+" : "") + changes[key] + "%";
+    const metricHtml = metrics.map(([key,label]) => "<span>" + label + "<b>" + summary[key] + "</b><small>" + (uk ? "до минулого періоду: " : "wobec poprzedniego okresu: ") + comparison.previous[key] + " · " + deltaText(key) + "</small></span>").join("");
+    if (changes.pageViews > 0) findings.push("<li class=\"hp-report-good\"><b>" + (uk ? "Трафік зростає" : "Ruch rośnie") + "</b><span>" + (uk ? "Переглядів більше на " : "Wyświetleń więcej o ") + changes.pageViews + "% " + (uk ? "проти попереднього періоду." : "niż w poprzednim okresie.") + "</span></li>");
+    if (changes.pageViews < 0) findings.push("<li class=\"hp-report-attention\"><b>" + (uk ? "Трафік просів" : "Ruch spadł") + "</b><span>" + (uk ? "Переглядів менше на " : "Wyświetleń mniej o ") + Math.abs(changes.pageViews) + "%. " + (uk ? "Перевір останні публікації та посилання на сайт." : "Sprawdź ostatnie publikacje i linki do strony.") + "</span></li>");
+    if (summary.visitors && source) findings.push("<li><b>" + (uk ? "Найкраще джерело" : "Najlepsze źródło") + "</b><span>" + esc(source) + " — " + summary.topSource[1] + (uk ? " переходів." : " wejść.") + "</span></li>");
+    if (top) findings.push("<li><b>" + (uk ? "Найпопулярніший товар" : "Najpopularniejszy produkt") + "</b><span>" + esc(top) + " — " + summary.topProduct[1] + (uk ? " переглядів." : " wyświetleń.") + "</span></li>");
+    if (summary.productSessions >= 10 && rate >= 5) findings.push("<li class=\"hp-report-good\"><b>" + (uk ? "Перегляди приводять до звернень" : "Wyświetlenia prowadzą do kontaktów") + "</b><span>" + rate + "% " + (uk ? "сесій із переглядом товару завершилися кліком звернення." : "sesji z wyświetleniem produktu zakończyło się kliknięciem kontaktu.") + "</span></li>");
+    if (summary.productSessions >= 10 && rate < 5) findings.push("<li class=\"hp-report-attention\"><b>" + (uk ? "Мало звернень після перегляду" : "Mało kontaktów po wyświetleniu") + "</b><span>" + rate + "%. " + (uk ? "Перевір, чи помітна кнопка замовлення та чи зрозумілі умови доставки." : "Sprawdź widoczność przycisku zamówienia i jasność dostawy.") + "</span></li>");
+    if (weak) findings.push("<li class=\"hp-report-attention\"><b>" + (uk ? "Товар переглядають, але рідко питають" : "Produkt jest oglądany, ale rzadko wybierany") + "</b><span>" + esc(weak) + ": " + summary.weakProduct.sessions + (uk ? " сесій, " : " sesji, ") + summary.weakProduct.contactSessions + (uk ? " звернень. Перевір ціну, фото, стан і наявність." : " kontaktów. Sprawdź cenę, zdjęcia, stan i dostępność.") + "</span></li>");
+    if (summary.noResultSearches) findings.push("<li class=\"hp-report-attention\"><b>" + (uk ? "Пошук без результату" : "Wyszukiwanie bez wyników") + "</b><span>" + summary.noResultSearches + (uk ? " пошуків" : " wyszukiwań") + (summary.topSearch ? ": «" + esc(summary.topSearch) + "»" : "") + (uk ? ". Перевір наявність і назву товару." : ". Sprawdź dostępność i nazwę produktu.") + "</span></li>");
+    if (summary.productSessions < 10 && summary.visitors) findings.push("<li><b>" + (uk ? "Поки мало даних для оцінки конверсії" : "Za mało danych do oceny konwersji") + "</b><span>" + (uk ? "Дивись звіт за тиждень або місяць." : "Sprawdź raport tygodniowy lub miesięczny.") + "</span></li>");
+    if (!summary.visitors) findings.push("<li><b>" + (uk ? "Даних поки немає" : "Brak danych") + "</b><span>" + (uk ? "Аналітика рахує відвідування після згоди на її збір." : "Analityka zapisuje wizyty po wyrażeniu zgody.") + "</span></li>");
     const period = statsRange === 1 ? (uk ? "день" : "dzień") : statsRange === 7 ? (uk ? "7 днів" : "7 dni") : (uk ? "30 днів" : "30 dni");
-    return "<section class=\"hp-stat-panel hp-admin-report\" role=\"status\"><div class=\"hp-report-heading\"><div><h2>" + (uk ? "Короткий звіт" : "Krótki raport") + "</h2><p>" + (uk ? "Період: " : "Okres: ") + period + "</p></div><button type=\"button\" class=\"hp-button\" data-close-report>" + (uk ? "Закрити" : "Zamknij") + "</button></div><div class=\"hp-report-metrics\"><span>" + (uk ? "Відвідувачі" : "Odwiedzający") + "<b>" + summary.visitors + "</b></span><span>" + (uk ? "Перегляди" : "Wyświetlenia") + "<b>" + summary.pageViews + "</b></span><span>" + (uk ? "Товари" : "Produkty") + "<b>" + summary.productViews + "</b></span><span>" + (uk ? "Кліки звернення" : "Kliknięcia kontaktu") + "<b>" + summary.contactClicks + "</b></span><span>" + (uk ? "Додали до кошика" : "Dodania do koszyka") + "<b>" + summary.cartAdds + "</b></span></div><ul class=\"hp-report-findings\">" + findings.join("") + "</ul><p class=\"hp-report-note\">" + (uk ? "Це кліки та анонімні сесії, а не підтверджені замовлення." : "To kliknięcia i anonimowe sesje, a nie potwierdzone zamówienia.") + "</p></section>";
+    return "<section class=\"hp-stat-panel hp-admin-report\" role=\"status\"><div class=\"hp-report-heading\"><div><h2>" + (uk ? "Короткий звіт" : "Krótki raport") + "</h2><p>" + (uk ? "Період: " : "Okres: ") + period + " · " + (uk ? "порівняння з попереднім таким самим періодом" : "porównanie z poprzednim takim samym okresem") + "</p></div><button type=\"button\" class=\"hp-button\" data-close-report>" + (uk ? "Закрити" : "Zamknij") + "</button></div><div class=\"hp-report-metrics\">" + metricHtml + "</div><ul class=\"hp-report-findings\">" + findings.join("") + "</ul><p class=\"hp-report-note\">" + (uk ? "Це анонімні відвідування та кліки, а не підтверджені замовлення. Звіт враховує лише дані після згоди на аналітику." : "To anonimowe wizyty i kliknięcia, a nie potwierdzone zamówienia. Raport uwzględnia dane po zgodzie na analitykę.") + "</p></section>";
   }
   function renderAnalytics() {
     const events = analyticsEvents,
@@ -1496,7 +1502,7 @@ import {
       return `<div class="hp-stat-modal-backdrop"><section class="hp-stat-modal" role="dialog" aria-modal="true" aria-labelledby="hp-chart-title"><button type="button" class="hp-stat-modal-close" id="hp-stat-close" aria-label="${t("chartClose")}">${icon("x")}</button><div class="hp-kicker">${t("analytics")}</div><h2 id="hp-chart-title">${esc(label)}</h2><p>${esc(description)}</p><div class="hp-chart-summary"><span>${t("chartTotal")}</span><strong>${value}</strong></div>${graphTitle ? `<h3>${graphTitle}</h3>` : ""}${graph}</section></div>`;
     };
     q("#hp-content").innerHTML =
-      `${adminNav("stats")}<div class="hp-intro hp-stats-head"><div><h1>${t("analyticsTitle")}</h1><span class="hp-muted">${t("analyticsSub")}</span><small>${t("analyticsClickHint")}</small><button type="button" class="hp-button hp-primary" data-generate-report>${lang === "uk" ? "Звіт" : "Raport"}</button></div><div class="hp-range-tabs" role="group" aria-label="${t("analyticsTitle")}">${[
+      `${adminNav("stats")}<div class="hp-intro hp-stats-head"><div><h1>${t("analyticsTitle")}</h1><span class="hp-muted">${t("analyticsSub")}</span><small>${t("analyticsClickHint")}</small><button type="button" class="hp-button hp-primary" data-generate-report ${statsLoading || reportLoading ? "disabled" : ""}>${lang === "uk" ? "Звіт" : "Raport"}</button></div><div class="hp-range-tabs" role="group" aria-label="${t("analyticsTitle")}">${[
         [1, t("day")],
         [7, t("week")],
         [30, t("month")],
@@ -1510,7 +1516,7 @@ import {
           ? `<div class="hp-empty">${t("loading")}</div>`
           : statsError
             ? `<div class="hp-empty">${t("error")}</div>`
-            : `${reportOpen ? renderAdminReport(reportMetrics(events)) : ""}<div class="hp-stat-grid">${metrics.map(metric).join("")}</div><div class="hp-stat-sections">${breakdownPanel("destinations", list(destinations, destinationLabel))}${breakdownPanel(
+            : `${reportOpen ? (reportLoading ? `<section class="hp-stat-panel">${t("loading")}</section>` : reportError ? `<section class="hp-stat-panel">${t("error")}</section>` : renderAdminReport(reportPreviousEvents)) : ""}<div class="hp-stat-grid">${metrics.map(metric).join("")}</div><div class="hp-stat-sections">${breakdownPanel("destinations", list(destinations, destinationLabel))}${breakdownPanel(
                 "topProducts",
                 list(
                   top,
@@ -1999,6 +2005,9 @@ import {
     loadError = false,
     passwordSetup = db.authCallback,
     analyticsEvents = [],
+    reportPreviousEvents = [],
+    reportLoading = false,
+    reportError = false,
     statsRange = 7,
     statsMetric = "",
     statsLoading = false,
@@ -2613,13 +2622,26 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
       window.scrollTo(0,0);
     } else if (b.dataset.generateReport !== undefined) {
       reportOpen = true;
+      reportLoading = true;
+      reportError = false;
       render();
+      try {
+        const comparison = await db.listAnalyticsComparison(statsRange);
+        analyticsEvents = comparison.current;
+        reportPreviousEvents = comparison.previous;
+      } catch {
+        reportError = true;
+      } finally {
+        reportLoading = false;
+        render();
+      }
     } else if (b.dataset.closeReport !== undefined) {
       reportOpen = false;
       render();
     } else if (b.dataset.statsRange) {
       statsRange = Number(b.dataset.statsRange);
       reportOpen = false;
+      reportPreviousEvents = [];
       await loadAnalytics();
     } else if (b.id === "hp-save-picks") {
       await run(async () => {
