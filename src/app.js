@@ -1073,8 +1073,7 @@ import {
   }
   async function loadAnalytics() {
     statsLoading = true;
-    statsError = false,
-    reportOpen = false;
+    statsError = false;
     render();
     try {
       analyticsEvents = await db.listAnalytics(statsRange);
@@ -2003,7 +2002,8 @@ import {
     statsRange = 7,
     statsMetric = "",
     statsLoading = false,
-    statsError = false;
+    statsError = false,
+    reportOpen = false;
   if (!["uk", "pl"].includes(lang)) lang = "uk";
   if (!Array.isArray(cart)) cart = [];
   if (!Array.isArray(compare)) compare = [];
