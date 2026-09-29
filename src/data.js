@@ -219,14 +219,14 @@ export async function listAnalytics(days = 7) {
   const sinceDate = new Date();
   sinceDate.setHours(0, 0, 0, 0);
   sinceDate.setDate(sinceDate.getDate() - (normalizedDays - 1));
-  const since = sinceDate.toISOString();
+  return readAnalyticsSince(c, sinceDate.toISOString());
+}
+async function readAnalyticsSince(client, since) {
   const rows = [];
   for (let start = 0; ; start += 1000) {
-    const { data, error } = await c
+    const { data, error } = await client
       .from("hmg_catalog_events")
-      .select(
-        "created_at,visitor_id,session_id,event_type,product_id,path,referrer_host,traffic_source,device_type,destination,placement",
-      )
+      .select("created_at,visitor_id,session_id,event_type,product_id,path,referrer_host,traffic_source,device_type,destination,placement")
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .range(start, start + 999);
@@ -235,6 +235,22 @@ export async function listAnalytics(days = 7) {
     if (data.length < 1000) break;
   }
   return rows;
+}
+export async function listAnalyticsComparison(days = 7) {
+  if (!(await isAdmin())) throw Error("notAdmin");
+  const c = await connect();
+  const normalizedDays = [1, 7, 30].includes(Number(days)) ? Number(days) : 7;
+  const currentStart = new Date();
+  currentStart.setHours(0, 0, 0, 0);
+  currentStart.setDate(currentStart.getDate() - (normalizedDays - 1));
+  const previousStart = new Date(currentStart);
+  previousStart.setDate(previousStart.getDate() - normalizedDays);
+  const rows = await readAnalyticsSince(c, previousStart.toISOString());
+  const boundary = currentStart.getTime();
+  return {
+    current: rows.filter(row => new Date(row.created_at).getTime() >= boundary),
+    previous: rows.filter(row => new Date(row.created_at).getTime() < boundary),
+  };
 }
 export async function listReviews() {
   const c = await connect();
