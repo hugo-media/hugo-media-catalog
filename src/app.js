@@ -2,7 +2,7 @@ import { productPath, catalogPath, categories, visibleSeoContent } from './seo-c
 import { updateSeo, currentRoute } from './seo-client.js';
 import { adminUpgrades, configPanel } from './configurator.js';
 import { configuration } from './core.js';
-import { safeSearch, compareReportMetrics } from './insights-core.js';
+import { safeSearch } from './insights-core.js';
 import { createStorefront, normalizedSpec, specLabel, filterValues } from "./storefront.js";
 import { createEnhancements } from "./enhancements.js";
 import * as db from "./data.js";
@@ -1142,8 +1142,8 @@ import {
     });
     return [...counts].sort((a, b) => b[1] - a[1]);
   }
-  function renderAdminReport(previousEvents) {
-    const comparison = compareReportMetrics(analyticsEvents, previousEvents), summary = comparison.current, changes = comparison.changes, source = summary.topSource ? (summary.topSource[0] === "direct" ? (lang === "uk" ? "Прямі переходи" : "Wejścia bezpośrednie") : summary.topSource[0]) : "", top = summary.topProduct ? products.find((p) => Number(p.id) === summary.topProduct[0])?.name || ("HMG-" + summary.topProduct[0]) : "", weak = summary.weakProduct ? products.find((p) => Number(p.id) === summary.weakProduct.id)?.name || ("HMG-" + summary.weakProduct.id) : "", rate = summary.productSessions ? Math.round(summary.contactSessions / summary.productSessions * 100) : 0, uk = lang === "uk";
+  function renderAdminReport(report) {
+    const summary = report.current, comparison = report, changes = report.changes, source = summary.topSource ? (summary.topSource[0] === "direct" ? (lang === "uk" ? "Прямі переходи" : "Wejścia bezpośrednie") : summary.topSource[0]) : "", top = summary.topProduct ? products.find((p) => Number(p.id) === summary.topProduct[0])?.name || ("HMG-" + summary.topProduct[0]) : "", weak = summary.weakProduct ? products.find((p) => Number(p.id) === summary.weakProduct.id)?.name || ("HMG-" + summary.weakProduct.id) : "", rate = summary.productSessions ? Math.round(summary.contactSessions / summary.productSessions * 100) : 0, uk = lang === "uk";
     const findings = [], metrics = [["visitors",uk?"Відвідувачі":"Odwiedzający"],["pageViews",uk?"Перегляди":"Wyświetlenia"],["productViews",uk?"Перегляди товарів":"Wyświetlenia produktów"],["contactClicks",uk?"Кліки звернення":"Kliknięcia kontaktu"],["cartAdds",uk?"Додали до кошика":"Dodania do koszyka"]];
     const deltaText = key => changes[key] === null ? (uk ? "нові" : "nowe") : (changes[key] > 0 ? "+" : "") + changes[key] + "%";
     const metricHtml = metrics.map(([key,label]) => "<span>" + label + "<b>" + summary[key] + "</b><small>" + (uk ? "до минулого періоду: " : "wobec poprzedniego okresu: ") + comparison.previous[key] + " · " + deltaText(key) + "</small></span>").join("");
@@ -1516,7 +1516,7 @@ import {
           ? `<div class="hp-empty">${t("loading")}</div>`
           : statsError
             ? `<div class="hp-empty">${t("error")}</div>`
-            : `${reportOpen ? (reportLoading ? `<section class="hp-stat-panel">${t("loading")}</section>` : reportError ? `<section class="hp-stat-panel">${t("error")}</section>` : renderAdminReport(reportPreviousEvents)) : ""}<div class="hp-stat-grid">${metrics.map(metric).join("")}</div><div class="hp-stat-sections">${breakdownPanel("destinations", list(destinations, destinationLabel))}${breakdownPanel(
+            : `${reportOpen ? (reportLoading ? `<section class="hp-stat-panel">${t("loading")}</section>` : reportError ? `<section class="hp-stat-panel">${t("error")}</section>` : renderAdminReport(analyticsReport)) : ""}<div class="hp-stat-grid">${metrics.map(metric).join("")}</div><div class="hp-stat-sections">${breakdownPanel("destinations", list(destinations, destinationLabel))}${breakdownPanel(
                 "topProducts",
                 list(
                   top,
@@ -2005,7 +2005,7 @@ import {
     loadError = false,
     passwordSetup = db.authCallback,
     analyticsEvents = [],
-    reportPreviousEvents = [],
+    analyticsReport = null,
     reportLoading = false,
     reportError = false,
     statsRange = 7,
@@ -2626,9 +2626,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
       reportError = false;
       render();
       try {
-        const comparison = await db.listAnalyticsComparison(statsRange);
-        analyticsEvents = comparison.current;
-        reportPreviousEvents = comparison.previous;
+        analyticsReport = await db.getAnalyticsReport(statsRange);
       } catch {
         reportError = true;
       } finally {
@@ -2641,7 +2639,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
     } else if (b.dataset.statsRange) {
       statsRange = Number(b.dataset.statsRange);
       reportOpen = false;
-      reportPreviousEvents = [];
+      analyticsReport = null;
       await loadAnalytics();
     } else if (b.id === "hp-save-picks") {
       await run(async () => {
