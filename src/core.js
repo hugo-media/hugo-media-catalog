@@ -36,7 +36,7 @@ export function validateProduct(p){
  if(!String(p.brand||'').trim()||String(p.brand).length>80)invalid('brand');
  if(!Number.isFinite(Number(p.price))||Number(p.price)<0||Number(p.price)>10000000)invalid('price');
  if(!Number.isInteger(Number(p.cat))||Number(p.cat)<0||Number(p.cat)>5)invalid('cat');
- if(!Number.isInteger(Number(p.status))||Number(p.status)<0||Number(p.status)>3)invalid('status');
+ if(!Number.isInteger(Number(p.status))||Number(p.status)<0||Number(p.status)>4)invalid('status');
  if(!DISCOUNTS.includes(Number(p.discount||0)))invalid('discount');
  if(!['','true'].includes(String(p.newArrival||'')))invalid('newArrival');
  if(!['','true'].includes(String(p.bestseller||'')))invalid('bestseller');

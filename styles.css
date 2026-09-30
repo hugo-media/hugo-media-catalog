@@ -3976,3 +3976,13 @@ body {
 
 #hugo-preview .hp-report-metrics small { color: var(--hp-muted); font-size: 12px; line-height: 1.35; }
 #hugo-preview .hp-report-findings li { overflow-wrap: anywhere; }
+
+#hugo-preview .hp-card-badges .hp-badge-out,
+#hugo-preview .hp-detail-badges .hp-badge-out {
+  background: #5f5965;
+  color: #fff;
+}
+#hugo-preview .hp-stock-unavailable {
+  background: #f1edf4;
+  color: #5f5965;
+}
