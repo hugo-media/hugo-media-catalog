@@ -79,3 +79,23 @@ test('out-of-stock catalog cards show status and disable ordering',()=>{
  assert.match(html,/Немає в наявності/);
  assert.match(html,/<button[^>]*hp-card-order[^>]*disabled/);
 });
+
+
+test('sold products display the sold-out label and cannot be ordered',()=>{
+ const view=createStorefront({
+  lang:'uk',
+  esc:value=>escapeHtml(String(value??'')),
+  t:key=>key==='statuses'?['У наявності','Заброньовано','Розпродано','Чернетка','Немає в наявності']:{outOfStock:'Немає в наявності',cardDetails:'Детальніше',compare:'Порівняти'}[key]||key,
+  icon:()=>'<svg></svg>',
+  photo:()=>'<div class="hp-photo"></div>',
+  productTitle:p=>p.name,
+  localizedValue:value=>value,
+  priceBlock:()=>'<div class="hp-money">100 zł</div>',
+  stockQty:p=>Number(p.quantity||1),
+  compare:[],
+ });
+ const html=view.card({id:45,name:'Dell Latitude',brand:'Dell',cat:0,status:2,quantity:'0',price:100});
+ assert.match(html,/hp-badge-out/);
+ assert.match(html,/Розпродано/);
+ assert.match(html,/<button[^>]*hp-card-order[^>]*disabled/);
+});
