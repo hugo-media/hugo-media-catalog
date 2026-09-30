@@ -101,7 +101,7 @@ test('sold products display the sold-out label and cannot be ordered',()=>{
 });
 
 
-test('expected products show their status and disable ordering',()=>{
+test('expected products show a ready Telegram availability request instead of an order button',()=>{
  const view=createStorefront({
   lang:'uk',
   esc:value=>escapeHtml(String(value??'')),
@@ -113,9 +113,19 @@ test('expected products show their status and disable ordering',()=>{
   priceBlock:()=>'<div class="hp-money">100 zł</div>',
   stockQty:p=>Number(p.quantity||1),
   compare:[],
+  origin:'https://www.hugomedia.pl',
  });
  const html=view.card({id:46,name:'Dell Latitude',brand:'Dell',cat:0,status:5,quantity:'0',price:100});
  assert.match(html,/hp-badge-out/);
  assert.match(html,/Очікується/);
- assert.match(html,/<button[^>]*hp-card-order[^>]*disabled/);
+ assert.match(html,/Повідомити про наявність/);
+ assert.match(html,/data-track-target="telegram_stock_request"/);
+ assert.doesNotMatch(html,/<button[^>]*hp-card-order[^>]*disabled/);
+ const href=html.match(/<a[^>]*hp-card-order[^>]*href="([^"]+)"/)?.[1];
+ assert.ok(href);
+ const link=new URL(href.replaceAll('&amp;','&'));
+ assert.equal(link.hostname,'t.me');
+ assert.equal(link.pathname,'/HGM_Manager');
+ assert.match(link.searchParams.get('text'),/HMG-046/);
+ assert.match(link.searchParams.get('text'),/https:\/\/www\.hugomedia\.pl/);
 });
