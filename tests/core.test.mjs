@@ -11,7 +11,7 @@ test('bundle choices are deduplicated and included in order total',()=>{assert.d
 test('existing JSON formatted product purposes are readable',()=>{assert.deepEqual(csv('["study", "office", "study"]'),['study','office']);});
 test('charger contents roundtrip through product specs without inventing a value for old products',()=>{for(const charger of ['adapter','cable','none'])assert.equal(fromRow(toRow({...p,charger})).charger,charger);assert.equal(fromRow(toRow(p)).charger,'');});
 test('SEO fields persist in product specs and enforce safe limits',()=>{const mapped=toRow({...p,seoTitleUk:'Ноутбук для роботи',seoDescriptionPl:'Laptop do pracy i nauki'});assert.equal(fromRow(mapped).seoTitleUk,'Ноутбук для роботи');assert.equal(fromRow(mapped).seoDescriptionPl,'Laptop do pracy i nauki');assert.throws(()=>toRow({...p,seoTitleUk:'x'.repeat(81)}),e=>e.field==='seoTitleUk');assert.throws(()=>toRow({...p,seoDescriptionPl:'x'.repeat(301)}),e=>e.field==='seoDescriptionPl');});
-test('invalid product cannot reach data API mapping',()=>{for(const patch of [{price:-1},{price:NaN},{cat:6},{status:5},{discount:7},{newArrival:'yes'},{bestseller:'yes'},{charger:'unknown'},{telegramPost:'https://evil.test/post'},{name:' '},{brand:''},{images:Array(9).fill('x')}])assert.throws(()=>toRow({...p,...patch}));});
+test('invalid product cannot reach data API mapping',()=>{for(const patch of [{price:-1},{price:NaN},{cat:6},{status:6},{discount:7},{newArrival:'yes'},{bestseller:'yes'},{charger:'unknown'},{telegramPost:'https://evil.test/post'},{name:' '},{brand:''},{images:Array(9).fill('x')}])assert.throws(()=>toRow({...p,...patch}));});
 test('invalid product names the field that blocks saving',()=>{
  for(const [field,patch] of [['price',{price:-1}],['telegramPost',{telegramPost:'https://t.me/another_channel/123'}],['ram16Enabled',{ram16Enabled:'true',ram:'16',ram16Price:'399'}]]){
   assert.throws(()=>toRow({...p,...patch}),error=>error.message==='validation'&&error.field===field);
@@ -27,4 +27,11 @@ test('out-of-stock products validate and round-trip through database rows',()=>{
  assert.equal(row.status,4);
  assert.equal(fromRow({id:2,...row}).status,4);
  assert.equal(fromRow({id:2,...row}).quantity,'0');
+});
+
+
+test('expected products validate and round-trip through database rows',()=>{
+ const row=toRow({...p,status:5});
+ assert.equal(row.status,5);
+ assert.equal(fromRow({id:3,...row}).status,5);
 });
