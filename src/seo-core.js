@@ -38,6 +38,16 @@ export function imageUrl(path,base) {
   return `${base}/storage/v1/object/public/${BUCKET}/${String(path).split('/').map(encodeURIComponent).join('/')}`;
 }
 export function categoryHasStock(products,cat) { return (products||[]).some(p=>Number(p.cat)===Number(cat)&&Number(p.status)===0&&(p.quantity===''||p.quantity==null?1:Number(p.quantity))>0); }
+export function productAvailability(product={}) {
+  const quantity=product.quantity===''||product.quantity==null?1:Number(product.quantity);
+  return 'https://schema.org/'+(Number(product.status)===0&&Number.isFinite(quantity)&&quantity>0?'InStock':'OutOfStock');
+}
+export function productItemCondition(value='') {
+  const condition=String(value||'').toLowerCase();
+  if(/refurb|renew|відновлен|восстановлен|odnow|rekondycj/.test(condition)) return 'https://schema.org/RefurbishedCondition';
+  if(/(^|[^a-z])(?:new|nowy|nowa|nowe)([^a-z]|$)|нов(?:ий|а|е|і)/i.test(condition)) return 'https://schema.org/NewCondition';
+  return 'https://schema.org/UsedCondition';
+}
 export function metadata({lang='uk',view='home',cat=-1,product,base='',noindex=false,emptyCategory=false,seo={}}) {
   const pl=lang==='pl',path=pagePath({lang,view,cat,product});
   const defaults={
@@ -54,11 +64,10 @@ export function metadata({lang='uk',view='home',cat=-1,product,base='',noindex=f
   const graph=[{'@type':'Organization','@id':ORIGIN+'/#organization',name:'Hugo Media',url:ORIGIN,sameAs:['https://t.me/h_m_g_pl']},
     {'@type':'WebSite','@id':ORIGIN+'/#website',url:ORIGIN,name:'Hugo Media',inLanguage:['uk','pl'],publisher:{'@id':ORIGIN+'/#organization'}}];
   if(product) {
-    const qty=product.quantity===''||product.quantity==null?1:Number(product.quantity);
     const item={'@type':'Product','@id':url+'#product',name:product.name,description,url,sku:`HMG-${String(product.id).padStart(3,'0')}`,
       ...(product.brand?{brand:{'@type':'Brand',name:product.brand}}:{}),
       ...(image?{image:product.images.map(p=>imageUrl(p,base))}:{}),
-      offers:{'@type':'Offer',url,priceCurrency:'PLN',price:effectivePrice(product).toFixed(2),availability:'https://schema.org/'+(Number(product.status)===0&&qty>0?'InStock':'OutOfStock'),seller:{'@id':ORIGIN+'/#organization'}}};
+      offers:{'@type':'Offer',url,priceCurrency:'PLN',price:effectivePrice(product).toFixed(2),availability:productAvailability(product),itemCondition:productItemCondition(product.condition),seller:{'@id':ORIGIN+'/#organization'}}};
     graph.push(item,{'@type':'BreadcrumbList',itemListElement:[
       {'@type':'ListItem',position:1,name:pl?'Katalog':'Каталог',item:ORIGIN+catalogPath(lang)},
       {'@type':'ListItem',position:2,name:labels[lang][product.cat],item:ORIGIN+catalogPath(lang,product.cat)},
@@ -84,7 +93,7 @@ export function sitemap(products) {
   addLocalized(catalogPath('uk'),catalogPath('pl'));
   for(let cat=0;cat<categories.length;cat++) if(categoryHasStock(products,cat))
     addLocalized(catalogPath('uk',cat),catalogPath('pl',cat));
-  for(const p of products) if([0,1,2].includes(Number(p.status)))
+  for(const p of products) if([0,1,2,4,5].includes(Number(p.status)))
     addLocalized(productPath(p,'uk'),productPath(p,'pl'),p.updated_at);
   const entries=paths.map(({path,date,alternates})=>{
     const links=alternates.map(([lang,alternatePath])=>`<xhtml:link rel="alternate" hreflang="${lang}" href="${escapeHtml(ORIGIN+alternatePath)}"/>`).join('')+

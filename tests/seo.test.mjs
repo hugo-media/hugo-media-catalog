@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {servePage} from '../api/seo.js';
 import {productPath,parseRoute,metadata,sitemap,safeJson,visibleSeoContent} from '../src/seo-core.js';
-const p={id:7,name:'HP EliteBook 850 G8',cat:0,status:0,price:1990,discount:'10',quantity:'1',brand:'HP',descUk:'Ноутбук HP для роботи',descPl:'Laptop HP do pracy',images:['7/photo.jpg'],updated_at:'2026-09-24T00:00:00Z'};
+const p={id:7,name:'HP EliteBook 850 G8',cat:0,status:0,price:1990,discount:'10',quantity:'1',condition:'Ідеальний / Idealny',brand:'HP',descUk:'Ноутбук HP для роботи',descPl:'Laptop HP do pracy',images:['7/photo.jpg'],updated_at:'2026-09-24T00:00:00Z'};
 const template=await readFile(new URL('../index.html',import.meta.url),'utf8');
 const config={supabaseUrl:'https://example.supabase.co',supabaseKey:'sb_publishable_example'};
 const options={template,config,loadProducts:async()=>[p]};
@@ -19,6 +19,25 @@ test('product response contains visible description, current discounted offer an
  assert.match(r.body,/"price":"1791.00"/);assert.match(r.body,/"priceCurrency":"PLN"/);
  assert.match(r.body,/hreflang="uk"/);assert.match(r.body,/hreflang="pl"/);assert.match(r.body,/rel="canonical"/);
 });
+test('Product offer schema mirrors the database price, currency, condition, and availability',()=>{
+ const productSchema=product=>metadata({lang:'uk',view:'detail',product}).schema['@graph'].find(item=>item['@type']==='Product');
+ const offer=product=>productSchema(product).offers;
+ assert.equal(offer(p).price,'1791.00');
+ assert.equal(offer(p).priceCurrency,'PLN');
+ assert.equal(offer(p).availability,'https://schema.org/InStock');
+ assert.equal(offer(p).itemCondition,'https://schema.org/UsedCondition');
+ assert.equal(offer({...p,condition:'Новий / Nowy'}).itemCondition,'https://schema.org/NewCondition');
+ assert.equal(offer({...p,condition:'Refurbished'}).itemCondition,'https://schema.org/RefurbishedCondition');
+ assert.equal(offer({...p,status:5}).availability,'https://schema.org/OutOfStock');
+ assert.equal(offer({...p,quantity:'0'}).availability,'https://schema.org/OutOfStock');
+});
+test('expected products render as server-side OutOfStock product pages',async()=>{
+ const expected={...p,id:12,status:5};
+ const r=await servePage(new URL('https://www.hugomedia.pl'+productPath(expected)),{...options,loadProducts:async()=>[expected]});
+ assert.equal(r.status,200);
+ assert.match(r.body,/Очікується/);
+ assert.match(r.body,/"availability":"https:\/\/schema.org\/OutOfStock"/);
+});
 test('missing products are genuine 404s and DB failures are retryable 503s',async()=>{
  const r=await page('/uk/product/99-missing');assert.equal(r.status,404);assert.match(r.headers['X-Robots-Tag'],/noindex/);assert.doesNotMatch(r.body,/src="\/src\/app.js"/);
  const failure=await servePage(new URL('https://www.hugomedia.pl/uk'),{...options,loadProducts:async()=>{throw Error('offline');}});
@@ -31,10 +50,11 @@ test('admin and auth callback stay accessible, uncached and unindexable without 
  }
 });
 test('sitemap is current, excludes drafts and includes both languages; no invented stock',()=>{
- const xml=sitemap([p,{...p,id:8,status:3}]);assert.match(xml,/\/uk\/product\/7-/);assert.match(xml,/\/pl\/product\/7-/);assert.doesNotMatch(xml,/product\/8-/);assert.doesNotMatch(xml,/admin/);
+ const xml=sitemap([p,{...p,id:8,status:3},{...p,id:9,status:5}]);assert.match(xml,/\/uk\/product\/7-/);assert.match(xml,/\/pl\/product\/7-/);assert.doesNotMatch(xml,/product\/8-/);assert.doesNotMatch(xml,/admin/);assert.ok(xml.includes('/product/9-'));
  assert.equal(metadata({product:{...p,quantity:'0'}}).schema['@graph'][2].offers.availability,'https://schema.org/OutOfStock');
  assert.doesNotMatch(xml,/\/start/);assert.match(xml,/xmlns:xhtml/);assert.match(xml,/hreflang="uk"/);assert.match(xml,/hreflang="pl"/);
  assert.equal(metadata({product:{...p,status:1}}).schema['@graph'][2].offers.availability,'https://schema.org/OutOfStock');
+ assert.equal(metadata({product:{...p,status:5}}).schema['@graph'][2].offers.availability,'https://schema.org/OutOfStock');
 });
 test('untrusted product text cannot break out of HTML or JSON-LD',async()=>{
  const bad={...p,name:'</script><script>alert(1)</script>',descUk:'<img onerror=alert(1)>'};

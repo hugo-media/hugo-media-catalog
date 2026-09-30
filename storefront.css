@@ -456,3 +456,7 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
 @media(max-width:1100px){#hugo-preview.hp-storefront .hm-home-collection:nth-child(2) .hp-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:760px){#hugo-preview.hp-storefront .hm-home-collection:first-child .hp-grid,#hugo-preview.hp-storefront .hm-home-collection:nth-child(2) .hp-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
 @media(max-width:480px){#hugo-preview.hp-storefront .hm-home-collection:first-child .hp-grid,#hugo-preview.hp-storefront .hm-home-collection:nth-child(2) .hp-grid{grid-template-columns:1fr}}
+
+/* Keep the main order action beside the product price. */
+#hugo-preview.hp-storefront .hm-overview-order{display:grid;grid-template-columns:1fr;margin:12px 0 16px}
+#hugo-preview.hp-storefront .hm-overview-order .hp-button{width:100%;min-height:52px;justify-content:center;font-size:18px;font-weight:700}
