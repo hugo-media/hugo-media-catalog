@@ -1,5 +1,5 @@
 import { productPath, visibleSeoContent } from './seo-core.js';
-import { effectivePrice, discountPercent, csv } from './core.js';
+import { effectivePrice, discountPercent, csv, telegramLink, availabilityRequestText } from './core.js';
 
 // Normalize display/filter values without rewriting the source specifications.
 export function normalizedSpec(key, value) {
@@ -56,12 +56,17 @@ export function createStorefront(c) {
     const expected=p.status===5;
     const unavailable=soldOut||p.status===4||expected;
     const unavailableLabel=soldOut?c.t('statuses')[2]:expected?c.t('statuses')[5]:c.t('outOfStock');
+    const siteOrigin=c.origin||globalThis.location?.origin||'';
+    const productUrl=siteOrigin?siteOrigin+productPath(p,c.lang):'';
+    const orderAction=expected
+      ? '<a class="hp-button hp-primary hp-card-order" href="'+E(telegramLink(availabilityRequestText(p,c.lang,productUrl)))+'" target="_blank" rel="noopener noreferrer" data-track-target="telegram_stock_request">'+E(L('Повідомити про наявність','Powiadom o dostępności'))+'</a>'
+      : '<button type="button" class="hp-button hp-primary hp-card-order" data-order-one="'+p.id+'" '+(unavailable ? 'disabled aria-disabled="true"' : '')+'>'+(unavailable ? '' : c.icon('send'))+(unavailable ? E(unavailableLabel) : c.t('cardOrder'))+'</button>';
     if(unavailable)tags.push(`<span class="hp-badge-out">${E(unavailableLabel)}</span>`);
     if(discount)tags.push(`<span class="hp-badge-sale">−${discount}%</span>`);
     if(p.newArrival==='true')tags.push(`<span class="hp-badge-new">${c.t('newArrival')}</span>`);
     else if(p.bestseller==='true')tags.push(`<span class="hp-badge-best">${c.t('bestseller')}</span>`);
     const extras=csv(p.benefits).filter(x=>['touch','keyboard'].includes(x)).map(x=>c.t(x==='touch'?'benefitTouch':'benefitKeyboard'));
-    return `<article class="hp-product"><a class="hp-product-open" href="${productPath(p,c.lang)}" data-detail="${p.id}" aria-label="${E(c.t('detail'))}: ${E(p.name)}"><div class="hp-card-badges">${tags.join('')}</div>${c.photo(p)}<div class="hp-product-body"><div class="hp-product-meta"><span>${E(p.brand)}</span></div><h3 class="hp-product-name">${E(c.productTitle(p))}</h3><p class="hp-specs">${E(specSummary(p))}</p><div class="hm-card-facts">${p.condition?`<span>${E(c.localizedValue(p.condition))}</span>`:''}${p.warranty?`<span>${c.icon('shield-check')}${E(c.localizedValue(p.warranty))}</span>`:''}</div>${extras.length?`<div class="hm-card-extras">${extras.map(E).join(' · ')}</div>`:''}</div></a><div class="hp-product-foot"><div class="hp-price-row">${c.priceBlock(p)}<button type="button" class="hp-compare-add" data-compare="${p.id}" aria-label="${E(c.t('compare'))}: ${E(p.name)}" aria-pressed="${c.compare.includes(p.id)}">${c.icon(c.compare.includes(p.id)?'check':'columns-2')}</button></div><div class="hp-card-cta"><a class="hp-button hp-card-details" href="${productPath(p,c.lang)}" data-detail="${p.id}">${c.t('cardDetails')}</a><button type="button" class="hp-button hp-primary hp-card-order" data-order-one="${p.id}" ${unavailable ? 'disabled aria-disabled="true"' : ""}>${unavailable ? "" : c.icon('send')}${unavailable ? E(unavailableLabel) : c.t('cardOrder')}</button></div></div></article>`;
+    return `<article class="hp-product"><a class="hp-product-open" href="${productPath(p,c.lang)}" data-detail="${p.id}" aria-label="${E(c.t('detail'))}: ${E(p.name)}"><div class="hp-card-badges">${tags.join('')}</div>${c.photo(p)}<div class="hp-product-body"><div class="hp-product-meta"><span>${E(p.brand)}</span></div><h3 class="hp-product-name">${E(c.productTitle(p))}</h3><p class="hp-specs">${E(specSummary(p))}</p><div class="hm-card-facts">${p.condition?`<span>${E(c.localizedValue(p.condition))}</span>`:''}${p.warranty?`<span>${c.icon('shield-check')}${E(c.localizedValue(p.warranty))}</span>`:''}</div>${extras.length?`<div class="hm-card-extras">${extras.map(E).join(' · ')}</div>`:''}</div></a><div class="hp-product-foot"><div class="hp-price-row">${c.priceBlock(p)}<button type="button" class="hp-compare-add" data-compare="${p.id}" aria-label="${E(c.t('compare'))}: ${E(p.name)}" aria-pressed="${c.compare.includes(p.id)}">${c.icon(c.compare.includes(p.id)?'check':'columns-2')}</button></div><div class="hp-card-cta"><a class="hp-button hp-card-details" href="${productPath(p,c.lang)}" data-detail="${p.id}">${c.t('cardDetails')}</a>${orderAction}</div></div></article>`;
   }
   function home(products, picks, seoPage={}) {
     const seoCopy=visibleSeoContent(seoPage,L('Твій наступний ноутбук. За розумну ціну.','Twój kolejny laptop. W rozsądnej cenie.'),E);
