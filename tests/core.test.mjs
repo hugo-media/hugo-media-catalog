@@ -1,8 +1,20 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {orderText,telegramLink,telegramPostUrl,normalizeTelegramPost,reconcileCart,toRow,fromRow,publicConfigValid,effectivePrice,TELEGRAM_CHANNEL,csv,warsawDate,validateDailyPicks} from '../src/core.js';
+import {orderText,availabilityRequestText,telegramLink,telegramPostUrl,normalizeTelegramPost,reconcileCart,toRow,fromRow,publicConfigValid,effectivePrice,TELEGRAM_CHANNEL,csv,warsawDate,validateDailyPicks} from '../src/core.js';
 const p={id:1,name:'Dell & Lenovo? #1',brand:'Dell',cat:0,status:0,price:10.15,images:[],ram:'16',descUk:'Опис',descPl:'Opis'};
 test('Telegram draft preserves Unicode and special characters and uses fixed recipient',()=>{const text=orderText([p,{...p,id:2,price:20.2}],'uk','https://shop.example');const url=new URL(telegramLink(text));assert.equal(url.hostname,'t.me');assert.equal(url.pathname,'/HGM_Manager');assert.equal(url.searchParams.get('text'),text);assert.match(text,/30.35 zł/);assert.match(text,/\?product=2/);});
+test('availability request drafts a bilingual direct Telegram message with product identity and link',()=>{
+ const text=availabilityRequestText({...p,id:46},'uk','https://shop.example/?product=46');
+ assert.match(text,/Повідомте, будь ласка, коли цей товар з’явиться в наявності/);
+ assert.match(text,/HMG-046/);
+ assert.match(text,/https:\/\/shop\.example\/\?product=46/);
+ const url=new URL(telegramLink(text));
+ assert.equal(url.pathname,'/HGM_Manager');
+ assert.equal(url.searchParams.get('text'),text);
+ const polish=availabilityRequestText({...p,id:46},'pl','https://shop.example/pl/produkt/46');
+ assert.match(polish,/gdy ten produkt będzie dostępny/);
+ assert.match(polish,/Dell & Lenovo\? #1/);
+});
 test('cart removes unavailable, missing and duplicate products',()=>{assert.deepEqual(reconcileCart([1,1,2,3,4],[p,{...p,id:2,status:1},{...p,id:3,status:2}]),[1]);});
 test('cart removes products with zero stock',()=>{assert.deepEqual(reconcileCart([1,2],[{...p,quantity:'0'},{...p,id:2,quantity:'1'}]),[2]);});
 test('database mapping roundtrips bilingual text, promotion and Telegram fields without granting injected fields',()=>{const row=toRow({...p,newArrival:'true',bestseller:'true',discount:'15',telegramPost:'https://t.me/h_m_g_pl/123',role:'admin',created_at:'fake'});assert.equal(row.role,undefined);assert.equal(row.created_at,undefined);assert.equal(fromRow(row).descUk,'Опис');assert.equal(fromRow(row).ram,'16');assert.equal(fromRow(row).newArrival,'true');assert.equal(fromRow(row).bestseller,'true');assert.equal(fromRow(row).discount,'15');assert.equal(fromRow(row).telegramPost,'https://t.me/h_m_g_pl/123');});
