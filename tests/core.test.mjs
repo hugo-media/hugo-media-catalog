@@ -11,7 +11,7 @@ test('bundle choices are deduplicated and included in order total',()=>{assert.d
 test('existing JSON formatted product purposes are readable',()=>{assert.deepEqual(csv('["study", "office", "study"]'),['study','office']);});
 test('charger contents roundtrip through product specs without inventing a value for old products',()=>{for(const charger of ['adapter','cable','none'])assert.equal(fromRow(toRow({...p,charger})).charger,charger);assert.equal(fromRow(toRow(p)).charger,'');});
 test('SEO fields persist in product specs and enforce safe limits',()=>{const mapped=toRow({...p,seoTitleUk:'Ноутбук для роботи',seoDescriptionPl:'Laptop do pracy i nauki'});assert.equal(fromRow(mapped).seoTitleUk,'Ноутбук для роботи');assert.equal(fromRow(mapped).seoDescriptionPl,'Laptop do pracy i nauki');assert.throws(()=>toRow({...p,seoTitleUk:'x'.repeat(81)}),e=>e.field==='seoTitleUk');assert.throws(()=>toRow({...p,seoDescriptionPl:'x'.repeat(301)}),e=>e.field==='seoDescriptionPl');});
-test('invalid product cannot reach data API mapping',()=>{for(const patch of [{price:-1},{price:NaN},{cat:6},{status:4},{discount:7},{newArrival:'yes'},{bestseller:'yes'},{charger:'unknown'},{telegramPost:'https://evil.test/post'},{name:' '},{brand:''},{images:Array(9).fill('x')}])assert.throws(()=>toRow({...p,...patch}));});
+test('invalid product cannot reach data API mapping',()=>{for(const patch of [{price:-1},{price:NaN},{cat:6},{status:5},{discount:7},{newArrival:'yes'},{bestseller:'yes'},{charger:'unknown'},{telegramPost:'https://evil.test/post'},{name:' '},{brand:''},{images:Array(9).fill('x')}])assert.throws(()=>toRow({...p,...patch}));});
 test('invalid product names the field that blocks saving',()=>{
  for(const [field,patch] of [['price',{price:-1}],['telegramPost',{telegramPost:'https://t.me/another_channel/123'}],['ram16Enabled',{ram16Enabled:'true',ram:'16',ram16Price:'399'}]]){
   assert.throws(()=>toRow({...p,...patch}),error=>error.message==='validation'&&error.field===field);
@@ -20,3 +20,11 @@ test('invalid product names the field that blocks saving',()=>{
 test('Telegram media link normalizes copied post formats and falls back safely',()=>{assert.equal(telegramPostUrl(''),TELEGRAM_CHANNEL);assert.equal(telegramPostUrl('https://evil.test/post'),TELEGRAM_CHANNEL);assert.equal(normalizeTelegramPost('t.me/h_m_g_pl/123'),'https://t.me/h_m_g_pl/123');assert.equal(normalizeTelegramPost('https://www.t.me/s/h_m_g_pl/123?single'),'https://t.me/h_m_g_pl/123');assert.equal(normalizeTelegramPost('https://telegram.me/h_m_g_pl/123'),'https://t.me/h_m_g_pl/123');});
 test('public config refuses service-role and secret keys and invalid origins',()=>{const jwt=role=>'x.'+Buffer.from(JSON.stringify({role})).toString('base64url')+'.x';const url='https://example.supabase.co';assert.equal(publicConfigValid({supabaseUrl:url,supabaseKey:jwt('service_role')}),false);assert.equal(publicConfigValid({supabaseUrl:url,supabaseKey:'sb_secret_secret'}),false);assert.equal(publicConfigValid({supabaseUrl:url,supabaseKey:jwt('anon')}),true);assert.equal(publicConfigValid({supabaseUrl:'https://example.supabase.co.attacker.test',supabaseKey:jwt('anon')}),false);});
 test('daily picks follow Warsaw calendar day and never exceed two distinct IDs',()=>{assert.equal(warsawDate(new Date('2026-09-22T22:30:00Z')),'2026-09-23');assert.equal(warsawDate(new Date('2026-12-31T23:30:00Z')),'2027-01-01');assert.deepEqual(validateDailyPicks([5,1]),[5,1]);assert.deepEqual(validateDailyPicks([]),[]);for(const ids of [[1,2,3],[1,1],[0],[-1],[1.5],['1'],null])assert.throws(()=>validateDailyPicks(ids));});
+
+
+test('out-of-stock products validate and round-trip through database rows',()=>{
+ const row=toRow({...p,status:4,quantity:'0'});
+ assert.equal(row.status,4);
+ assert.equal(fromRow({id:2,...row}).status,4);
+ assert.equal(fromRow({id:2,...row}).quantity,'0');
+});
