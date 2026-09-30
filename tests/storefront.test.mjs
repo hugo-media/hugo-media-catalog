@@ -59,3 +59,23 @@ test('homepage keeps the localized admin SEO heading and intro visible after hyd
  assert.match(html,/<h1>Używane laptopy w Polsce<\/h1>/);
  assert.match(html,/<section class="hm-seo-copy"><p>Porównaj &lt;modele&gt; i ceny\.<\/p><p>Sprawdź dostępność\.<\/p><\/section>/);
 });
+
+
+test('out-of-stock catalog cards show status and disable ordering',()=>{
+ const view=createStorefront({
+  lang:'uk',
+  esc:value=>escapeHtml(String(value??'')),
+  t:key=>({outOfStock:'Немає в наявності',cardDetails:'Детальніше',compare:'Порівняти'}[key]||key),
+  icon:()=>'<svg></svg>',
+  photo:()=>'<div class="hp-photo"></div>',
+  productTitle:p=>p.name,
+  localizedValue:value=>value,
+  priceBlock:()=>'<div class="hp-money">100 zł</div>',
+  stockQty:p=>Number(p.quantity||1),
+  compare:[],
+ });
+ const html=view.card({id:44,name:'Dell Latitude',brand:'Dell',cat:0,status:4,quantity:'1',price:100});
+ assert.match(html,/hp-badge-out/);
+ assert.match(html,/Немає в наявності/);
+ assert.match(html,/<button[^>]*hp-card-order[^>]*disabled/);
+});
