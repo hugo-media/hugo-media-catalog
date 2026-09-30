@@ -7,7 +7,7 @@ async function publicProducts(config) {
   if(!publicConfigValid(config)) throw Error('Public configuration unavailable');
   const products=[];
   for(let offset=0;;offset+=500) {
-    const response=await fetch(`${config.supabaseUrl}/rest/v1/hmg_catalog_products?select=*&status=in.(0,1,2)&order=id.desc&limit=500&offset=${offset}`,{headers:{apikey:config.supabaseKey},signal:AbortSignal.timeout(6000)});
+    const response=await fetch(`${config.supabaseUrl}/rest/v1/hmg_catalog_products?select=*&status=in.(0,1,2,4,5)&order=id.desc&limit=500&offset=${offset}`,{headers:{apikey:config.supabaseKey},signal:AbortSignal.timeout(6000)});
     if(!response.ok) throw Error('Catalog unavailable');
     const rows=await response.json();
     products.push(...rows.map(fromRow));
@@ -26,7 +26,7 @@ function serverContent(route,products,base,seo={}) {
   const intro=String(page.intro||'').split(/\n{2,}/).map(x=>x.trim()).filter(Boolean).map(x=>`<p>${E(x)}</p>`).join('');
   const categoryLinks=categories.map((slug,i)=>`<li><a href="${catalogPath(lang,i)}">${E(labels[lang][i])}</a></li>`).join('');
   const nav=`<nav class="hp-toprow" aria-label="${pl?'Nawigacja':'Навігація'}"><a href="/${lang}">Hugo Media</a><a href="${catalogPath(lang)}">${pl?'Katalog':'Каталог'}</a><ul aria-label="${pl?'Kategorie':'Категорії'}">${categoryLinks}</ul><a href="${pagePath({...route,lang:lang==='uk'?'pl':'uk'})}">${pl?'Українська':'Polski'}</a></nav>`;
-  if(product) return nav+`<article class="hp-detail"><h1>${E(product.name)}</h1>${meta.image?`<div class="hp-photo"><img src="${E(meta.image)}" alt="${E(product.name)}" fetchpriority="high"></div>`:''}<p>${E(meta.schema['@graph'][2].offers.price)} zł · ${E((pl?['Dostępny','Zarezerwowany','Sprzedany']:['У наявності','Заброньовано','Продано'])[product.status])}</p><p>${E(pl?product.descPl:product.descUk).replace(/\n/g,'<br>')}</p><dl>${['cpu','ram','ssd','gpu','screen','battery','condition','warranty'].filter(k=>product[k]).map(k=>`<dt>${E(k)}</dt><dd>${E(product[k])}</dd>`).join('')}</dl><a href="https://t.me/HGM_Manager">${pl?'Zapytaj w Telegramie':'Запитати в Telegram'}</a></article>`;
+  if(product) return nav+`<article class="hp-detail"><h1>${E(product.name)}</h1>${meta.image?`<div class="hp-photo"><img src="${E(meta.image)}" alt="${E(product.name)}" fetchpriority="high"></div>`:''}<p>${E(meta.schema['@graph'][2].offers.price)} zł · ${E((pl?['Dostępny','Zarezerwowany','Wyprzedany','Szkic','Brak w magazynie','Oczekuje na dostawę']:['У наявності','Заброньовано','Розпродано','Чернетка','Немає в наявності','Очікується'])[product.status])}</p><p>${E(pl?product.descPl:product.descUk).replace(/\n/g,'<br>')}</p><dl>${['cpu','ram','ssd','gpu','screen','battery','condition','warranty'].filter(k=>product[k]).map(k=>`<dt>${E(k)}</dt><dd>${E(product[k])}</dd>`).join('')}</dl><a href="https://t.me/HGM_Manager">${pl?'Zapytaj w Telegramie':'Запитати в Telegram'}</a></article>`;
   if(view==='start') return nav+`<section class="hm-start"><h1>${E(meta.title)}</h1><p>${E(meta.description)}</p><a class="hp-button" href="${catalogPath(lang)}">${pl?'Otwórz katalog':'Відкрити каталог'}</a><a class="hp-button" href="https://t.me/h_m_g_pl">Telegram</a></section>`;
   const list=cat>=0?products.filter(p=>Number(p.cat)===cat):products;
   const displayed=view==='home'?list.filter(p=>Number(p.status)===0&&(p.quantity===''||p.quantity==null?1:Number(p.quantity))>0).slice(0,8):list;
@@ -57,7 +57,7 @@ export async function servePage(url,{template,config,loadProducts=publicProducts
       if(url.searchParams.has('product')) {route.view='detail';route.id=Number(url.searchParams.get('product'));}
       else if(url.searchParams.has('catalog')) route.view='catalog';
       if(route.view==='detail') {
-        route.product=products.find(p=>p.id===route.id && [0,1,2].includes(Number(p.status)));
+        route.product=products.find(p=>p.id===route.id && [0,1,2,4,5].includes(Number(p.status)));
         if(!route.product) route.view='notFound';
       }
       if(route.view==='notFound') {
