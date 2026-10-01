@@ -2079,6 +2079,8 @@ import {
         "",
       )
       .replace(/\s{2,}/g, " ")
+      .trim()
+      .replace(/[\/|·]+$/, "")
       .trim();
     return title || p.name;
   }
