@@ -2040,8 +2040,13 @@ import {
           "'": "&#39;",
         })[c],
     );
-  const money = (n) =>
-    new Intl.NumberFormat(lang === "uk" ? "uk-UA" : "pl-PL").format(n);
+  const money = (n) => {
+    const value = Number(n);
+    return new Intl.NumberFormat(lang === "uk" ? "uk-UA" : "pl-PL", {
+      minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
   const icon = (n) =>
     typeof lucide !== "undefined"
       ? `<i data-lucide="${n}" aria-hidden="true"></i>`
@@ -2273,7 +2278,7 @@ import {
       const seoKey = cat < 0 ? "catalog" : `category:${categories[cat]}`;
       const seoPage = extra.seo?.pages?.[seoKey]?.[lang] || {};
       const seoCopy = visibleSeoContent(seoPage, cat < 0 ? t("all") : t("categories")[cat], esc);
-      content.innerHTML = `<div class="hp-intro"><div><div class="hp-kicker">HUGO CATALOG</div><h1>${esc(seoCopy.title)}</h1><span class="hp-muted">${t("subtitle")}</span>${seoCopy.intro ? `<div class="hp-seo-copy">${seoCopy.intro}</div>` : ""}</div><button type="button" class="hp-button hp-small" data-grow="finder">${lang === "uk" ? "Допомогти з вибором" : "Pomóż mi wybrać"}</button></div><button type="button" class="hp-button hp-mobile-filter" id="hp-filter-toggle" aria-expanded="false">${icon("sliders-horizontal")}${t("filters")}</button><button type="button" class="hp-filter-backdrop" id="hp-filter-backdrop" aria-label="${t("closeFilters")}"></button><div class="hp-shop"><aside class="hp-filters"><button type="button" class="hp-filter-close" id="hp-filter-close">${icon("x")}${t("closeFilters")}</button><h3>${t("filters")}</h3><label class="hp-field">${t("price")}<div class="hp-prices"><input type="number" min="0" data-filter="min" aria-label="${t("min")}" placeholder="${t("min")}" value="${esc(filters.min || "")}"><input type="number" min="0" data-filter="max" aria-label="${t("max")}" placeholder="${t("max")}" value="${esc(filters.max || "")}"></div></label>${selectFilter("brand", t("brand"), vals("brand"))}<label class="hp-field">${t("purpose")}<select data-filter="purpose">${option("", t("any"), filters.purpose || "")}${PURPOSES.map((code) => option(code, t(purposeKey(code)), filters.purpose)).join("")}</select></label>${filterKeys(
+      content.innerHTML = `<div class="hp-intro"><div><div class="hp-kicker">HUGO CATALOG</div><h1>${esc(seoCopy.title)}</h1><span class="hp-muted">${t("subtitle")}</span>${seoCopy.intro ? `<div class="hp-seo-copy">${seoCopy.intro}</div>` : ""}</div>${storefront.finderButton()}</div><button type="button" class="hp-button hp-mobile-filter" id="hp-filter-toggle" aria-expanded="false">${icon("sliders-horizontal")}${t("filters")}</button><button type="button" class="hp-filter-backdrop" id="hp-filter-backdrop" aria-label="${t("closeFilters")}"></button><div class="hp-shop"><aside class="hp-filters"><button type="button" class="hp-filter-close" id="hp-filter-close">${icon("x")}${t("closeFilters")}</button><h3>${t("filters")}</h3><label class="hp-field">${t("price")}<div class="hp-prices"><input type="number" min="0" data-filter="min" aria-label="${t("min")}" placeholder="${t("min")}" value="${esc(filters.min || "")}"><input type="number" min="0" data-filter="max" aria-label="${t("max")}" placeholder="${t("max")}" value="${esc(filters.max || "")}"></div></label>${selectFilter("brand", t("brand"), vals("brand"))}<label class="hp-field">${t("purpose")}<select data-filter="purpose">${option("", t("any"), filters.purpose || "")}${PURPOSES.map((code) => option(code, t(purposeKey(code)), filters.purpose)).join("")}</select></label>${filterKeys(
         cat,
       )
         .map(([key, label]) => selectFilter(key, t(label), vals(key)))
