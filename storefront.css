@@ -551,3 +551,11 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
  #hugo-preview.hp-storefront .hm-hero-actions .hp-finder-highlight{min-width:0}
  #hugo-preview.hp-storefront .hm-home-collection:nth-child(2) .hp-card-cta .hp-button{font-size:14px;min-height:40px}
 }
+
+
+/* Show the Telegram overview action as unavailable until a product post is linked. */
+#hugo-preview.hp-storefront .hm-product-review .hp-channel-button:disabled,
+#hugo-preview.hp-storefront .hm-product-review .hp-channel-button:disabled:hover{
+ background:#eeeaf2;border-color:#dbd3e3;color:#81768e;
+ box-shadow:none;opacity:1;cursor:not-allowed;
+}
