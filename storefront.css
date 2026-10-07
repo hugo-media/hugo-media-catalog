@@ -559,3 +559,138 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
  background:#eeeaf2;border-color:#dbd3e3;color:#81768e;
  box-shadow:none;opacity:1;cursor:not-allowed;
 }
+
+
+/* Mobile storefront: reduce scrolling and keep shopping actions clear. */
+@media(max-width:600px){
+  #hugo-preview.hp-storefront .hp-categories{
+    display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-inline:contain;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;padding:8px 14px;gap:6px
+  }
+  #hugo-preview.hp-storefront .hp-categories::-webkit-scrollbar{display:none}
+  #hugo-preview.hp-storefront .hp-category{flex:0 0 auto;white-space:nowrap}
+  #hugo-preview.hp-storefront .hm-hero{grid-template-columns:minmax(0,1fr);padding:18px 14px;gap:16px;margin-top:4px}
+  #hugo-preview.hp-storefront .hm-hero h1{font-size:clamp(30px,8vw,34px);line-height:1.1;letter-spacing:-.9px;overflow-wrap:normal}
+  #hugo-preview.hp-storefront .hm-hero-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}
+  #hugo-preview.hp-storefront .hm-hero-actions .hp-button{width:100%;min-height:48px;justify-content:center}
+  #hugo-preview.hp-storefront .hm-hero-product{
+    display:grid;grid-template-columns:minmax(92px,32%) minmax(0,1fr);align-items:center;
+    gap:8px 12px;padding:12px;border-radius:14px
+  }
+  #hugo-preview.hp-storefront .hm-hero-product-label{grid-column:1/-1;display:block;margin:0}
+  #hugo-preview.hp-storefront .hm-hero-product .hp-photo{grid-column:1;height:120px;aspect-ratio:auto;padding:4px}
+  #hugo-preview.hp-storefront .hm-hero-product-caption{
+    grid-column:2;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+    gap:6px;min-width:0
+  }
+  #hugo-preview.hp-storefront .hm-hero-product-caption>span{min-width:0}
+  #hugo-preview.hp-storefront .hm-hero-product-caption strong{
+    display:-webkit-box;font-size:15px;line-height:1.25;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
+  }
+  #hugo-preview.hp-storefront .hm-hero-product-caption small:first-of-type{
+    display:-webkit-box;font-size:12px;line-height:1.35;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
+  }
+  #hugo-preview.hp-storefront .hm-hero-product-caption small:last-of-type{display:none}
+  #hugo-preview.hp-storefront .hm-hero-product-caption>b{font-size:17px;white-space:nowrap}
+  #hugo-preview.hp-storefront .hm-quick{
+    margin:0 -2px;padding:9px 0;overflow-x:auto;overscroll-behavior-inline:contain;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none
+  }
+  #hugo-preview.hp-storefront .hm-quick::-webkit-scrollbar{display:none}
+  #hugo-preview.hp-storefront .hm-quick button{flex:0 0 auto;min-height:44px}
+  #hugo-preview.hp-storefront .hp-home-section{margin-top:24px}
+  #hugo-preview.hp-storefront .hm-seo-copy{
+    margin:18px 0 0;padding:12px 13px;background:#fff;border:1px solid var(--line);
+    border-radius:12px;font-size:14px;line-height:1.5
+  }
+}
+@media(max-width:480px){
+  #hugo-preview.hp-storefront .hp-grid,
+  #hugo-preview.hp-storefront .hp-home-products,
+  #hugo-preview.hp-storefront .hp-shop .hp-grid,
+  #hugo-preview.hp-storefront .hp-similar-section .hp-grid,
+  #hugo-preview.hp-storefront .hm-home-collection:first-child .hp-grid,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(2) .hp-grid{
+    grid-template-columns:minmax(0,1fr);gap:10px
+  }
+  #hugo-preview.hp-storefront .hp-product{height:auto;min-height:0;border-radius:14px}
+  #hugo-preview.hp-storefront .hp-product-open,
+  #hugo-preview.hp-storefront .hm-picks .hp-product-open{
+    display:grid;grid-template-columns:104px minmax(0,1fr);align-items:center;min-height:0;height:auto
+  }
+  #hugo-preview.hp-storefront .hp-product-open .hp-card-badges:not(:empty),
+  #hugo-preview.hp-storefront .hm-picks .hp-product-open .hp-card-badges:not(:empty){
+    position:static;grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;
+    min-height:25px;padding:5px 8px 0;gap:4px
+  }
+  #hugo-preview.hp-storefront .hp-product-open .hp-card-badges:empty,
+  #hugo-preview.hp-storefront .hm-picks .hp-product-open .hp-card-badges:empty{display:none}
+  #hugo-preview.hp-storefront .hp-product-open .hp-card-badges span,
+  #hugo-preview.hp-storefront .hm-picks .hp-product-open .hp-card-badges span{font-size:11px;line-height:1.2;padding:3px 6px}
+  #hugo-preview.hp-storefront .hp-product .hp-photo,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-product .hp-photo,
+  #hugo-preview.hp-storefront .hm-picks .hp-product .hp-photo{
+    width:100%;height:108px;min-height:0;aspect-ratio:auto;padding:8px;background:#f8f7fa
+  }
+  #hugo-preview.hp-storefront .hp-product-body,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-product-body,
+  #hugo-preview.hp-storefront .hm-picks .hp-product-body{min-width:0;width:auto;padding:9px 10px}
+  #hugo-preview.hp-storefront .hp-product-meta{font-size:11px;letter-spacing:0;margin-bottom:4px}
+  #hugo-preview.hp-storefront .hp-product .hp-product-name,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-product-name{
+    display:-webkit-box;min-height:0;margin:0 0 5px;font-size:16px;line-height:1.25;
+    overflow-wrap:break-word;word-break:normal;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
+  }
+  #hugo-preview.hp-storefront .hp-product .hp-specs:not(.hp-spec-chips){
+    display:-webkit-box;min-height:0;margin:0 0 6px;font-size:13px;line-height:1.35;
+    -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
+  }
+  #hugo-preview.hp-storefront .hp-product .hp-spec-chips{max-height:40px;overflow:hidden;margin:0 0 6px}
+  #hugo-preview.hp-storefront .hp-product .hm-card-facts{min-height:0;gap:3px 7px;font-size:12px;line-height:1.3}
+  #hugo-preview.hp-storefront .hp-product .hm-card-facts svg{width:12px;height:12px}
+  #hugo-preview.hp-storefront .hp-product .hm-card-extras{
+    display:-webkit-box;margin-top:4px;font-size:12px;line-height:1.3;
+    -webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden
+  }
+  #hugo-preview.hp-storefront .hp-product-foot,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-product-foot,
+  #hugo-preview.hp-storefront .hm-picks .hp-product-foot{
+    display:grid;grid-template-columns:minmax(0,1fr);gap:7px;padding:9px 11px 11px;margin-top:0
+  }
+  #hugo-preview.hp-storefront .hp-price-row,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-price-row,
+  #hugo-preview.hp-storefront .hm-picks .hp-price-row{
+    display:flex;width:100%;min-height:0;align-items:center;justify-content:space-between;margin:0;gap:8px
+  }
+  #hugo-preview.hp-storefront .hp-money,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-money{font-size:22px;letter-spacing:-.4px}
+  #hugo-preview.hp-storefront .hp-compare-add{width:36px;height:36px;flex:0 0 36px}
+  #hugo-preview.hp-storefront .hp-card-cta,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-card-cta,
+  #hugo-preview.hp-storefront .hm-picks .hp-card-cta{
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;width:100%;min-width:0
+  }
+  #hugo-preview.hp-storefront .hp-card-cta .hp-button,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-card-cta .hp-button,
+  #hugo-preview.hp-storefront .hm-picks .hp-card-cta .hp-button{
+    display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:44px;
+    padding:8px 6px;font-size:14px;line-height:1.15;text-align:center;white-space:normal
+  }
+}
+@media(max-width:360px){
+  #hugo-preview.hp-storefront .hp-product-open,
+  #hugo-preview.hp-storefront .hm-picks .hp-product-open{grid-template-columns:88px minmax(0,1fr)}
+  #hugo-preview.hp-storefront .hp-product .hp-photo,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-product .hp-photo,
+  #hugo-preview.hp-storefront .hm-picks .hp-product .hp-photo{height:98px;padding:6px}
+  #hugo-preview.hp-storefront .hp-product .hp-product-name,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-product-name{font-size:15px}
+  #hugo-preview.hp-storefront .hp-product .hp-specs:not(.hp-spec-chips){font-size:12px}
+  #hugo-preview.hp-storefront .hp-product-foot,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-product-foot,
+  #hugo-preview.hp-storefront .hm-picks .hp-product-foot{padding:8px 10px 10px}
+  #hugo-preview.hp-storefront .hp-money,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-money{font-size:20px}
+  #hugo-preview.hp-storefront .hp-card-cta .hp-button,
+  #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-card-cta .hp-button{font-size:13px;padding:7px 4px}
+}
