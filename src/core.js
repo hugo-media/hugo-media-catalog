@@ -3,7 +3,7 @@ export const TABLE = 'hmg_catalog_products';
 export const BUCKET = 'hmg-catalog-photos';
 export const MAX_IMAGES = 8;
 export const SPEC_KEYS = ['cpu','generation','ram','ssd','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','newArrival','bestseller','discount','telegramPost','quantity','seoTitleUk','seoTitlePl','seoDescriptionUk','seoDescriptionPl','purposes','benefits','bundles','charger','photoKind',...Object.keys(UPGRADES).flatMap(k=>[k+'Enabled',k+'Price'])];
-export const DISCOUNTS = [0,5,10,15,20,25,30];
+export const MAX_DISCOUNT_PERCENT = 99;
 export const TELEGRAM_CHANNEL = 'https://t.me/h_m_g_pl';
 export const PURPOSES = ['study','office','programming','editing','gaming','travel'];
 export const BENEFITS = ['tested','metal','battery','keyboard','touch','light','gradeA'];
@@ -22,7 +22,7 @@ export function csv(value=''){
  }
  return [...new Set((Array.isArray(items)?items:String(items||'').split(',')).map(v=>String(v).trim()).filter(Boolean))];
 }
-export function discountPercent(p){const value=Number(p?.discount||0);return DISCOUNTS.includes(value)?value:0;}
+export function discountPercent(p){const value=Number(p?.discount||0);return Number.isInteger(value)&&value>=0&&value<=MAX_DISCOUNT_PERCENT?value:0;}
 export function effectivePrice(p){return Math.round(Number(p.price)*(100-discountPercent(p)))/100;}
 export function normalizeTelegramPost(value=''){
  const raw=String(value||'').trim();if(!raw)return '';
@@ -37,7 +37,7 @@ export function validateProduct(p){
  if(!Number.isFinite(Number(p.price))||Number(p.price)<0||Number(p.price)>10000000)invalid('price');
  if(!Number.isInteger(Number(p.cat))||Number(p.cat)<0||Number(p.cat)>5)invalid('cat');
  if(!Number.isInteger(Number(p.status))||Number(p.status)<0||Number(p.status)>5)invalid('status');
- if(!DISCOUNTS.includes(Number(p.discount||0)))invalid('discount');
+ const discount=Number(p.discount||0);if(!Number.isInteger(discount)||discount<0||discount>MAX_DISCOUNT_PERCENT)invalid('discount');
  if(!['','true'].includes(String(p.newArrival||'')))invalid('newArrival');
  if(!['','true'].includes(String(p.bestseller||'')))invalid('bestseller');
  if(!['','adapter','cable','none'].includes(String(p.charger||'')))invalid('charger');

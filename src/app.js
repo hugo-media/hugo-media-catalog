@@ -13,7 +13,7 @@ import {
   telegramPostUrl,
   reconcileCart,
   MAX_IMAGES,
-  DISCOUNTS,
+  MAX_DISCOUNT_PERCENT,
   discountPercent,
   effectivePrice,
   csv,
@@ -447,8 +447,12 @@ import {
     markNewArrival: "Позначити як нове надходження",
     bestseller: "Бестселер",
     markBestseller: "Позначити як бестселер",
-    discount: "Знижка",
+    discount: "Знижка, %",
     noDiscount: "Без знижки",
+    discountResult: "Ціна після знижки",
+    discountSaving: "економія",
+    discountPriceHint: "Вкажи ціну, щоб побачити результат.",
+    discountRangeHint: "Вкажи знижку від 0 до 99%.",
     yes: "Так",
     no: "Ні",
     regularPrice: "Звичайна ціна",
@@ -458,8 +462,12 @@ import {
     markNewArrival: "Oznacz jako nowość",
     bestseller: "Bestseller",
     markBestseller: "Oznacz jako bestseller",
-    discount: "Rabat",
+    discount: "Rabat, %",
     noDiscount: "Bez rabatu",
+    discountResult: "Cena po rabacie",
+    discountSaving: "oszczędzasz",
+    discountPriceHint: "Podaj cenę, aby zobaczyć wynik.",
+    discountRangeHint: "Podaj rabat od 0 do 99%.",
     yes: "Tak",
     no: "Nie",
     regularPrice: "Cena regularna",
@@ -2445,6 +2453,25 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
       choices.unshift(String(value));
     return `<label class="hp-field">${label}<select name="${key}" ${id ? `id="${id}"` : ""} ${required ? "required" : ""}>${required && !value ? '<option value="" selected disabled>—</option>' : ""}${choices.map((v) => option(v, v, value)).join("")}</select></label>`;
   }
+  function updateDiscountPreview(form = q("#hp-form")) {
+    const priceInput = form?.querySelector('[name="price"]');
+    const discountInput = form?.querySelector('[name="discount"]');
+    const preview = form?.querySelector("[data-discount-preview]");
+    if (!priceInput || !discountInput || !preview) return;
+    const price = Number(priceInput.value);
+    const discount = discountInput.value === "" ? 0 : Number(discountInput.value);
+    if (!Number.isFinite(discount) || !Number.isInteger(discount) || discount < 0 || discount > MAX_DISCOUNT_PERCENT) {
+      preview.textContent = t("discountRangeHint");
+      return;
+    }
+    if (priceInput.value === "" || !Number.isFinite(price) || price < 0) {
+      preview.textContent = t("discountPriceHint");
+      return;
+    }
+    const salePrice = effectivePrice({ price, discount: String(discount) });
+    const saving = Math.round((price - salePrice) * 100) / 100;
+    preview.textContent = t("discountResult") + ": " + money(salePrice) + " zł" + (discount ? " · " + t("discountSaving") + ": " + money(saving) + " zł" : "");
+  }
   function renderForm() {
     const p = products.find((p) => p.id === editId) || {
       name: "",
@@ -2477,11 +2504,12 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
         .map((s, i) => option(i, s, p.status))
         .join(
           "",
-        )}</select></label>${choiceField("condition", t("condition"), commonChoices.condition, p.condition, true)}${choiceField("warranty", t("warranty"), commonChoices.warranty, p.warranty, true)}<label class="hp-field">${t("markNewArrival")}<select name="newArrival">${option("", t("no"), p.newArrival || "")}${option("true", t("yes"), p.newArrival || "")}</select></label><label class="hp-field">${t("markBestseller")}<select name="bestseller">${option("", t("no"), p.bestseller || "")}${option("true", t("yes"), p.bestseller || "")}</select></label><label class="hp-field">${t("discount")}<select name="discount">${DISCOUNTS.map((value) => option(value, value ? `-${value}%` : t("noDiscount"), discountPercent(p))).join("")}</select></label>${checkGroup("purposes", t("purpose"), PURPOSES, p.purposes, purposeKey)}${checkGroup("benefits", t("advantages"), BENEFITS, p.benefits, benefitKey)}${checkGroup("bundles", t("bundles"), Object.keys(BUNDLES), p.bundles, bundleKey)}</div></section>${adminUpgrades(p,lang,esc)}<section class="hp-form-section"><h3 class="hp-section-heading">${t("spec")}</h3><div class="hp-form-grid" id="hp-category-fields"></div></section><section class="hp-form-section"><h3 class="hp-section-heading">${t("mediaInfo")}</h3><div class="hp-form-grid"><label class="hp-field hp-wide">${t("telegramPost")}<input type="text" inputmode="url" name="telegramPost" value="${esc(p.telegramPost || "")}" placeholder="https://t.me/h_m_g_pl/123"><span class="hp-muted hp-small">${t("telegramPostHint")}</span></label><label class="hp-field hp-wide">${t("photos")}<input type="file" id="hp-upload" multiple accept="image/jpeg,image/png,image/webp"><span class="hp-muted hp-small">${t("photoHint")}</span><div id="hp-upload-previews" class="hp-toprow"></div></label><label class="hp-field">${t("descUk")}<textarea name="descUk">${esc(p.descUk)}</textarea></label><label class="hp-field">${t("descPl")}<textarea name="descPl">${esc(p.descPl)}</textarea></label></div></section><section class="hp-form-section"><h2>${lang==="uk"?"SEO для пошуку":"SEO w wyszukiwarce"}</h2><p class="hp-muted">${lang==="uk"?"Орієнтири довжини — підказка, не гарантія відображення у Google.":"Zalecana długość to wskazówka, nie gwarancja wyglądu w Google."}</p><div class="hp-form-grid" data-seo-group><label class="hp-field hp-wide">SEO-заголовок українською<input name="seoTitleUk" maxlength="80" value="${esc(p.seoTitleUk||"")}" data-seo-live></label><label class="hp-field hp-wide">SEO-опис українською<textarea name="seoDescriptionUk" maxlength="300" data-seo-live>${esc(p.seoDescriptionUk||"")}</textarea></label><label class="hp-field hp-wide">Tytuł SEO po polsku<input name="seoTitlePl" maxlength="80" value="${esc(p.seoTitlePl||"")}" data-seo-live></label><label class="hp-field hp-wide">Opis SEO po polsku<textarea name="seoDescriptionPl" maxlength="300" data-seo-live>${esc(p.seoDescriptionPl||"")}</textarea></label><p data-seo-status class="hp-muted"></p></div></section>${shareButtons}<div role="alert" id="hp-form-error" class="hp-alert"></div><div class="hp-form-actions"><button type="button" class="hp-button" data-view="admin">${t("cancel")}</button><button type="submit" class="hp-button hp-primary">${t("save")}</button></div></form>`;
+        )}</select></label>${choiceField("condition", t("condition"), commonChoices.condition, p.condition, true)}${choiceField("warranty", t("warranty"), commonChoices.warranty, p.warranty, true)}<label class="hp-field">${t("markNewArrival")}<select name="newArrival">${option("", t("no"), p.newArrival || "")}${option("true", t("yes"), p.newArrival || "")}</select></label><label class="hp-field">${t("markBestseller")}<select name="bestseller">${option("", t("no"), p.bestseller || "")}${option("true", t("yes"), p.bestseller || "")}</select></label><label class="hp-field">${t("discount")}<input name="discount" type="number" inputmode="numeric" min="0" max="${MAX_DISCOUNT_PERCENT}" step="1" value="${discountPercent(p)}" aria-describedby="hp-discount-preview"><small id="hp-discount-preview" class="hp-muted hp-small" data-discount-preview aria-live="polite"></small></label>${checkGroup("purposes", t("purpose"), PURPOSES, p.purposes, purposeKey)}${checkGroup("benefits", t("advantages"), BENEFITS, p.benefits, benefitKey)}${checkGroup("bundles", t("bundles"), Object.keys(BUNDLES), p.bundles, bundleKey)}</div></section>${adminUpgrades(p,lang,esc)}<section class="hp-form-section"><h3 class="hp-section-heading">${t("spec")}</h3><div class="hp-form-grid" id="hp-category-fields"></div></section><section class="hp-form-section"><h3 class="hp-section-heading">${t("mediaInfo")}</h3><div class="hp-form-grid"><label class="hp-field hp-wide">${t("telegramPost")}<input type="text" inputmode="url" name="telegramPost" value="${esc(p.telegramPost || "")}" placeholder="https://t.me/h_m_g_pl/123"><span class="hp-muted hp-small">${t("telegramPostHint")}</span></label><label class="hp-field hp-wide">${t("photos")}<input type="file" id="hp-upload" multiple accept="image/jpeg,image/png,image/webp"><span class="hp-muted hp-small">${t("photoHint")}</span><div id="hp-upload-previews" class="hp-toprow"></div></label><label class="hp-field">${t("descUk")}<textarea name="descUk">${esc(p.descUk)}</textarea></label><label class="hp-field">${t("descPl")}<textarea name="descPl">${esc(p.descPl)}</textarea></label></div></section><section class="hp-form-section"><h2>${lang==="uk"?"SEO для пошуку":"SEO w wyszukiwarce"}</h2><p class="hp-muted">${lang==="uk"?"Орієнтири довжини — підказка, не гарантія відображення у Google.":"Zalecana długość to wskazówka, nie gwarancja wyglądu w Google."}</p><div class="hp-form-grid" data-seo-group><label class="hp-field hp-wide">SEO-заголовок українською<input name="seoTitleUk" maxlength="80" value="${esc(p.seoTitleUk||"")}" data-seo-live></label><label class="hp-field hp-wide">SEO-опис українською<textarea name="seoDescriptionUk" maxlength="300" data-seo-live>${esc(p.seoDescriptionUk||"")}</textarea></label><label class="hp-field hp-wide">Tytuł SEO po polsku<input name="seoTitlePl" maxlength="80" value="${esc(p.seoTitlePl||"")}" data-seo-live></label><label class="hp-field hp-wide">Opis SEO po polsku<textarea name="seoDescriptionPl" maxlength="300" data-seo-live>${esc(p.seoDescriptionPl||"")}</textarea></label><p data-seo-status class="hp-muted"></p></div></section>${shareButtons}<div role="alert" id="hp-form-error" class="hp-alert"></div><div class="hp-form-actions"><button type="button" class="hp-button" data-view="admin">${t("cancel")}</button><button type="submit" class="hp-button hp-primary">${t("save")}</button></div></form>`;
     q('#hp-form select[name="warranty"]')?.closest(".hp-field")?.insertAdjacentHTML("afterend", `<label class="hp-field">${t("charger")}<select name="charger">${option("", t("chargerUnknown"), p.charger || "")}${["adapter", "cable", "none"].map((value) => option(value, chargerLabel(value), p.charger || "")).join("")}</select></label>`);
     formCategory(p.cat, p);
     showUploads();
     extra.formReady(p);
+    updateDiscountPreview();
   }
   function filterKeys(c) {
     return c === 0 || c === -1
@@ -2921,6 +2949,8 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
     } else if (e.target.matches("input[data-filter]")) {
       filters[e.target.dataset.filter] = e.target.value;
       cards();
+    } else if (e.target.matches('#hp-form input[name="price"], #hp-form input[name="discount"]')) {
+      updateDiscountPreview();
     }
   });
   root.addEventListener("change", async (e) => {
