@@ -38,6 +38,34 @@ export function rankLaptops(products, { budget, purpose, size }) {
   return { product:p, eligible:sizeMatch && (tagged || basicFit), reasons:[tagged ? 'purpose' : 'basic', 'budget', ...(Number.isFinite(diagonal) ? ['screen'] : []), ...(ram ? ['ram'] : [])], score:(tagged ? 10:0) + Math.min(ram||0,32)/8 + Math.min(storage||0,1024)/512 };
  }).filter(x=>x.eligible).sort((a,b)=>b.score-a.score || effectivePrice(a.product)-effectivePrice(b.product)).slice(0,3);
 }
+export function laptopHighlights(results, { purpose='', size='any' }={}) {
+ const items=Array.isArray(results)?results.filter(item=>item?.product):[];
+ if(!items.length)return [];
+ if(items.length===1)return [{...items[0],highlights:['match']}];
+ const labels=new Map();
+ const add=(item,key)=>{
+  if(!item?.product)return;
+  const current=labels.get(item.product.id)||[];
+  if(current.length<2&&!current.includes(key))labels.set(item.product.id,[...current,key]);
+ };
+ add(items[0],'match');
+ const compact=size==='compact'||purpose==='travel';
+ const byPrice=[...items].sort((a,b)=>effectivePrice(a.product)-effectivePrice(b.product))[0];
+ if(compact){
+  const smallest=[...items].filter(item=>Number.isFinite(parseFloat(String(item.product.screen||'').replace(',','.'))))
+   .sort((a,b)=>parseFloat(String(a.product.screen).replace(',','.'))-parseFloat(String(b.product.screen).replace(',','.')))[0];
+  add(smallest,'compact');
+ }
+ add(byPrice,'price');
+ const byRamValue=[...items].sort((a,b)=>{
+  const priceA=effectivePrice(a.product),priceB=effectivePrice(b.product);
+  const ramA=parseFloat(a.product.ram)||0,ramB=parseFloat(b.product.ram)||0;
+  return (priceB>0?ramB/priceB:-1)-(priceA>0?ramA/priceA:-1);
+ })[0];
+ add(byRamValue,'ramValue');
+ return items.map(item=>({...item,highlights:[...(labels.get(item.product.id)||[])]}));
+}
+
 export function productIssues(p, now=Date.now()) {
  const issues=consistencyIssues(p);
  if (!p.images?.length) issues.push('photos');
