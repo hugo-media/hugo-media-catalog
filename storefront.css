@@ -128,14 +128,14 @@
 #hugo-preview.hp-storefront .hp-detail-badges{margin:10px 0;gap:6px}
 #hugo-preview.hp-storefront .hp-detail-badges .hp-demo-status{background:#eaf2ed;color:#346046}
 #hugo-preview.hp-storefront .hp-stock{font-size:14px;color:#83705b;background:none;padding:0;margin:8px 0}
-#hugo-preview.hp-storefront .hp-detail-price{padding:0;margin:19px 0 16px;border:0;background:none}
+#hugo-preview.hp-storefront .hp-detail-price{padding:0;margin:19px 0 12px;border:0;background:none}
 #hugo-preview.hp-storefront .hp-sale-price{font-size:39px;line-height:1.1;letter-spacing:-1px;color:var(--ink)}
 #hugo-preview.hp-storefront .hp-detail-price:has(.hp-old-price) .hp-sale-price{color:#a32e51}
 #hugo-preview.hp-storefront .hp-sale-price small{font-size:18px}
-#hugo-preview.hp-storefront .hm-buy-facts{display:grid;grid-template-columns:1fr 1fr;border-block:1px solid var(--line);padding:12px 0;gap:15px;margin:0 0 15px}
+#hugo-preview.hp-storefront .hm-buy-facts{display:grid;grid-template-columns:1fr 1fr;border-block:1px solid var(--line);padding:10px 0;gap:15px;margin:0 0 12px}
 #hugo-preview.hp-storefront .hm-buy-facts small{display:block;color:#807587;font-size:14px}
 #hugo-preview.hp-storefront .hm-buy-facts b{font-size:16px;color:#453b51}
-#hugo-preview.hp-storefront .hp-charger-note{padding:0;background:none;border:0;color:#696170;font-size:14px;margin:8px 0}
+
 #hugo-preview.hp-storefront .hp-purpose-tags{gap:5px;margin:12px 0}
 #hugo-preview.hp-storefront .hp-purpose-tags span{font-size:14px;padding:5px 8px;background:#eeebf3;color:#6b5c7c;border-radius:5px}
 #hugo-preview.hp-storefront .hp-buy-copy{background:none;border:0;padding:0;margin:13px 0;font-size:14px}
@@ -458,7 +458,7 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
 @media(max-width:480px){#hugo-preview.hp-storefront .hm-home-collection:first-child .hp-grid,#hugo-preview.hp-storefront .hm-home-collection:nth-child(2) .hp-grid{grid-template-columns:1fr}}
 
 /* Keep the main order action beside the product price. */
-#hugo-preview.hp-storefront .hm-overview-order{display:grid;grid-template-columns:1fr;margin:12px 0 16px}
+#hugo-preview.hp-storefront .hm-overview-order{display:grid;grid-template-columns:1fr;margin:0 0 16px}
 #hugo-preview.hp-storefront .hm-overview-order .hp-button{width:100%;min-height:52px;justify-content:center;font-size:18px;font-weight:700}
 
 
