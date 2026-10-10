@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {orderText,availabilityRequestText,telegramLink,telegramPostUrl,normalizeTelegramPost,reconcileCart,toRow,fromRow,publicConfigValid,effectivePrice,TELEGRAM_CHANNEL,csv,warsawDate,validateDailyPicks} from '../src/core.js';
+import {orderText,availabilityRequestText,telegramLink,telegramPostUrl,normalizeTelegramPost,reconcileCart,toRow,fromRow,publicConfigValid,effectivePrice,extraStorageLabel,TELEGRAM_CHANNEL,csv,warsawDate,validateDailyPicks} from '../src/core.js';
 const p={id:1,name:'Dell & Lenovo? #1',brand:'Dell',cat:0,status:0,price:10.15,images:[],ram:'16',descUk:'Опис',descPl:'Opis'};
 test('Telegram draft preserves Unicode and special characters and uses fixed recipient',()=>{const text=orderText([p,{...p,id:2,price:20.2}],'uk','https://shop.example');const url=new URL(telegramLink(text));assert.equal(url.hostname,'t.me');assert.equal(url.pathname,'/HGM_Manager');assert.equal(url.searchParams.get('text'),text);assert.match(text,/30.35 zł/);assert.match(text,/\?product=2/);});
 test('availability request drafts a bilingual direct Telegram message with product identity and link',()=>{
@@ -18,6 +18,21 @@ test('availability request drafts a bilingual direct Telegram message with produ
 test('cart removes unavailable, missing and duplicate products',()=>{assert.deepEqual(reconcileCart([1,1,2,3,4],[p,{...p,id:2,status:1},{...p,id:3,status:2}]),[1]);});
 test('cart removes products with zero stock',()=>{assert.deepEqual(reconcileCart([1,2],[{...p,quantity:'0'},{...p,id:2,quantity:'1'}]),[2]);});
 test('database mapping roundtrips bilingual text, promotion and Telegram fields without granting injected fields',()=>{const row=toRow({...p,newArrival:'true',bestseller:'true',discount:'15',telegramPost:'https://t.me/h_m_g_pl/123',role:'admin',created_at:'fake'});assert.equal(row.role,undefined);assert.equal(row.created_at,undefined);assert.equal(fromRow(row).descUk,'Опис');assert.equal(fromRow(row).ram,'16');assert.equal(fromRow(row).newArrival,'true');assert.equal(fromRow(row).bestseller,'true');assert.equal(fromRow(row).discount,'15');assert.equal(fromRow(row).telegramPost,'https://t.me/h_m_g_pl/123');});
+test('additional laptop drive type, capacity, and unit round-trip through product specs',()=>{
+ const laptop={...p,extraStorageType:'HDD',extraStorageCapacity:'700',extraStorageUnit:'GB'};
+ const stored=toRow(laptop);
+ assert.equal(stored.specs.extraStorageType,'HDD');
+ assert.equal(stored.specs.extraStorageCapacity,'700');
+ assert.equal(stored.specs.extraStorageUnit,'GB');
+ const loaded=fromRow({id:1,...stored});
+ assert.equal(extraStorageLabel(loaded),'700 GB HDD');
+ assert.equal(extraStorageLabel({...loaded,cat:1}),'');
+ assert.equal(extraStorageLabel(p),'');
+ assert.throws(()=>toRow({...p,extraStorageType:'SSD'}),e=>e.field==='extraStorageCapacity');
+ assert.throws(()=>toRow({...p,extraStorageType:'SSD',extraStorageCapacity:'700',extraStorageUnit:''}),e=>e.field==='extraStorageUnit');
+ assert.throws(()=>toRow({...p,extraStorageType:'M2',extraStorageCapacity:'700',extraStorageUnit:'GB'}),e=>e.field==='extraStorageType');
+ assert.throws(()=>toRow({...p,cat:1,extraStorageType:'SSD',extraStorageCapacity:'700',extraStorageUnit:'GB'}),e=>e.field==='extraStorageType');
+});
 test('discounted price is rounded to cents and used in Telegram order',()=>{const sale={...p,price:100,discount:'15'};assert.equal(effectivePrice(sale),85);assert.match(orderText([sale],'uk'),/85.00 zł \(-15%\)/);});
 test('custom discount percentages round-trip, calculate, and stay in range',()=>{const sale={...p,price:1299,discount:'17'};assert.equal(fromRow(toRow(sale)).discount,'17');assert.equal(effectivePrice(sale),1078.17);assert.equal(effectivePrice({...sale,discount:'99'}),12.99);assert.throws(()=>toRow({...sale,discount:'100'}),error=>error.field==='discount');});
 test('bundle choices are deduplicated and included in order total',()=>{assert.deepEqual(csv('mouse,office,mouse'),['mouse','office']);const text=orderText([{...p,price:100,bundles:'mouse,office,photoshop,software'}],'uk','',{1:'mouse,office,photoshop,software'});assert.match(text,/Мишка — 45 zł/);assert.match(text,/Microsoft Office — 200 zł/);assert.match(text,/Adobe Photoshop — 200 zł/);assert.match(text,/Інші програми — за запитом/);assert.match(text,/Разом: 545.00 zł/);});
