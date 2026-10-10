@@ -1046,7 +1046,7 @@ import {
     }
     settings.textContent = t("privacySettings");
     panel.hidden = !consentOpen || admin;
-    panel.innerHTML = panel.hidden ? "" : `<div><strong>${t("privacyTitle")}</strong><p>${t("privacyDescription")}</p></div><div class="hp-privacy-actions"><button type="button" class="hp-button" id="hp-privacy-decline">${t("privacyDecline")}</button><button type="button" class="hp-button hp-primary" id="hp-privacy-accept">${t("privacyAccept")}</button></div>`;
+    panel.innerHTML = panel.hidden ? "" : `<div><strong>${t("privacyTitle")}</strong><p>${lang==='uk'?'Дозволиш статистику переглядів і натискань, щоб ми покращували каталог?':'Czy pozwolisz na statystyki wyświetleń i kliknięć, abyśmy mogli ulepszać katalog?'}</p><details class="hp-privacy-details"><summary>${lang==='uk'?'Які дані збираємо':'Jakie dane zbieramy'}</summary><p>${t("privacyDescription")}</p></details></div><div class="hp-privacy-actions"><button type="button" class="hp-button" id="hp-privacy-decline">${t("privacyDecline")}</button><button type="button" class="hp-button hp-primary" id="hp-privacy-accept">${t("privacyAccept")}</button></div>`;
   }
   let entryReferrer = "",
     trafficSource =
@@ -2665,7 +2665,6 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
       if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey||e.button!==0) return;
       e.preventDefault();
     }
-    if (busy) return;
     if (b.id === "hp-privacy-accept" || b.id === "hp-privacy-decline") {
       setAnalyticsConsent(b.id === "hp-privacy-accept");
       return;
@@ -2675,6 +2674,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
       renderConsent();
       return;
     }
+    if (busy) return;
     if (view === "edit" && (b.dataset.view || b.dataset.lang || b.dataset.cat || b.classList.contains("hp-brand"))) {
       await extra.beforeLeave();
       if (extra.dirty && !confirm(lang === "uk" ? "Покинути редактор? Зміни ще не опубліковано. Статус локальної чернетки показано над формою." : "Opuścić edytor? Zmiany nie zostały opublikowane. Status lokalnego szkicu jest nad formularzem.")) return;
