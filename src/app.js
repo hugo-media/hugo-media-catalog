@@ -1046,7 +1046,7 @@ import {
     }
     settings.textContent = t("privacySettings");
     panel.hidden = !consentOpen || admin;
-    panel.innerHTML = panel.hidden ? "" : `<div><strong>${t("privacyTitle")}</strong><p>${t("privacyDescription")}</p></div><div class="hp-privacy-actions"><button type="button" class="hp-button" id="hp-privacy-decline">${t("privacyDecline")}</button><button type="button" class="hp-button hp-primary" id="hp-privacy-accept">${t("privacyAccept")}</button></div>`;
+    panel.innerHTML = panel.hidden ? "" : `<div><strong>${t("privacyTitle")}</strong><p>${lang==='uk'?'Дозволиш статистику переглядів і натискань, щоб ми покращували каталог?':'Czy pozwolisz na statystyki wyświetleń i kliknięć, abyśmy mogli ulepszać katalog?'}</p><details class="hp-privacy-details"><summary>${lang==='uk'?'Які дані збираємо':'Jakie dane zbieramy'}</summary><p>${t("privacyDescription")}</p></details></div><div class="hp-privacy-actions"><button type="button" class="hp-button" id="hp-privacy-decline">${t("privacyDecline")}</button><button type="button" class="hp-button hp-primary" id="hp-privacy-accept">${t("privacyAccept")}</button></div>`;
   }
   let entryReferrer = "",
     trafficSource =
@@ -2307,7 +2307,7 @@ import {
       const seoKey = cat < 0 ? "catalog" : `category:${categories[cat]}`;
       const seoPage = extra.seo?.pages?.[seoKey]?.[lang] || {};
       const seoCopy = visibleSeoContent(seoPage, cat < 0 ? t("all") : t("categories")[cat], esc);
-      content.innerHTML = `<div class="hp-intro"><div><div class="hp-kicker">HUGO CATALOG</div><h1>${esc(seoCopy.title)}</h1><span class="hp-muted">${t("subtitle")}</span>${seoCopy.intro ? `<div class="hp-seo-copy">${seoCopy.intro}</div>` : ""}</div>${storefront.finderButton()}</div><button type="button" class="hp-button hp-mobile-filter" id="hp-filter-toggle" aria-expanded="false">${icon("sliders-horizontal")}${t("filters")}</button><button type="button" class="hp-filter-backdrop" id="hp-filter-backdrop" aria-label="${t("closeFilters")}"></button><div class="hp-shop"><aside class="hp-filters"><button type="button" class="hp-filter-close" id="hp-filter-close">${icon("x")}${t("closeFilters")}</button><h3>${t("filters")}</h3><label class="hp-field">${t("price")}<div class="hp-prices"><input type="number" min="0" data-filter="min" aria-label="${t("min")}" placeholder="${t("min")}" value="${esc(filters.min || "")}"><input type="number" min="0" data-filter="max" aria-label="${t("max")}" placeholder="${t("max")}" value="${esc(filters.max || "")}"></div></label>${selectFilter("brand", t("brand"), vals("brand"))}<label class="hp-field">${t("purpose")}<select data-filter="purpose">${option("", t("any"), filters.purpose || "")}${PURPOSES.map((code) => option(code, t(purposeKey(code)), filters.purpose)).join("")}</select></label>${filterKeys(
+      content.innerHTML = `<div class="hp-intro hm-catalog-hero"><div><div class="hp-kicker">HUGO CATALOG</div><h1>${esc(seoCopy.title)}</h1><span class="hp-muted">${t("subtitle")}</span>${seoCopy.intro ? `<details class="hm-catalog-about"><summary>${lang==='uk'?'Про каталог, стан і доставку':'O katalogu, stanie i dostawie'}</summary><div class="hp-seo-copy">${seoCopy.intro}</div></details>` : ""}</div>${storefront.finderButton()}</div><button type="button" class="hp-button hp-mobile-filter" id="hp-filter-toggle" aria-expanded="false">${icon("sliders-horizontal")}${t("filters")}</button><button type="button" class="hp-filter-backdrop" id="hp-filter-backdrop" aria-label="${t("closeFilters")}"></button><div class="hp-shop"><aside class="hp-filters"><button type="button" class="hp-filter-close" id="hp-filter-close">${icon("x")}${t("closeFilters")}</button><h3>${t("filters")}</h3><label class="hp-field">${t("price")}<div class="hp-prices"><input type="number" min="0" data-filter="min" aria-label="${t("min")}" placeholder="${t("min")}" value="${esc(filters.min || "")}"><input type="number" min="0" data-filter="max" aria-label="${t("max")}" placeholder="${t("max")}" value="${esc(filters.max || "")}"></div></label>${selectFilter("brand", t("brand"), vals("brand"))}<label class="hp-field">${t("purpose")}<select data-filter="purpose">${option("", t("any"), filters.purpose || "")}${PURPOSES.map((code) => option(code, t(purposeKey(code)), filters.purpose)).join("")}</select></label>${filterKeys(
         cat,
       )
         .map(([key, label]) => selectFilter(key, t(label), vals(key)))
@@ -2665,7 +2665,6 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
       if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey||e.button!==0) return;
       e.preventDefault();
     }
-    if (busy) return;
     if (b.id === "hp-privacy-accept" || b.id === "hp-privacy-decline") {
       setAnalyticsConsent(b.id === "hp-privacy-accept");
       return;
@@ -2675,6 +2674,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
       renderConsent();
       return;
     }
+    if (busy) return;
     if (view === "edit" && (b.dataset.view || b.dataset.lang || b.dataset.cat || b.classList.contains("hp-brand"))) {
       await extra.beforeLeave();
       if (extra.dirty && !confirm(lang === "uk" ? "Покинути редактор? Зміни ще не опубліковано. Статус локальної чернетки показано над формою." : "Opuścić edytor? Zmiany nie zostały opublikowane. Status lokalnego szkicu jest nad formularzem.")) return;
