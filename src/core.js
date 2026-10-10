@@ -2,7 +2,7 @@ export const UPGRADES = {ram16:{group:'ram',target:16},ram32:{group:'ram',target
 export const TABLE = 'hmg_catalog_products';
 export const BUCKET = 'hmg-catalog-photos';
 export const MAX_IMAGES = 8;
-export const SPEC_KEYS = ['cpu','generation','ram','ssd','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','newArrival','bestseller','discount','telegramPost','quantity','seoTitleUk','seoTitlePl','seoDescriptionUk','seoDescriptionPl','purposes','benefits','bundles','charger','photoKind',...Object.keys(UPGRADES).flatMap(k=>[k+'Enabled',k+'Price'])];
+export const SPEC_KEYS = ['cpu','generation','ram','ssd','extraStorageType','extraStorageCapacity','extraStorageUnit','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','newArrival','bestseller','discount','telegramPost','quantity','seoTitleUk','seoTitlePl','seoDescriptionUk','seoDescriptionPl','purposes','benefits','bundles','charger','photoKind',...Object.keys(UPGRADES).flatMap(k=>[k+'Enabled',k+'Price'])];
 export const MAX_DISCOUNT_PERCENT = 99;
 export const TELEGRAM_CHANNEL = 'https://t.me/h_m_g_pl';
 export const PURPOSES = ['study','office','programming','editing','gaming','travel'];
@@ -43,6 +43,17 @@ export function validateProduct(p){
  if(!['','adapter','cable','none'].includes(String(p.charger||'')))invalid('charger');
  if(!['','actual','model','mixed'].includes(String(p.photoKind||'')))invalid('photoKind');
  if(!validTelegramPost(p.telegramPost))invalid('telegramPost');
+ const extraStorageType=String(p.extraStorageType||'').trim().toUpperCase();
+ const extraStorageCapacity=String(p.extraStorageCapacity||'').trim();
+ const extraStorageUnit=String(p.extraStorageUnit||'').trim().toUpperCase();
+ if(!['','SSD','HDD'].includes(extraStorageType))invalid('extraStorageType');
+ if(!['','GB','TB'].includes(extraStorageUnit))invalid('extraStorageUnit');
+ if(extraStorageType||extraStorageCapacity||extraStorageUnit){
+  const capacity=Number(extraStorageCapacity.replace(',','.'));
+  if(Number(p.cat)!==0||!extraStorageType)invalid('extraStorageType');
+  if(!extraStorageCapacity||!Number.isFinite(capacity)||capacity<=0)invalid('extraStorageCapacity');
+  if(!extraStorageUnit)invalid('extraStorageUnit');
+ }
  const quantity=p.quantity===''||p.quantity==null?1:Number(p.quantity);if(!Number.isInteger(quantity)||quantity<0||quantity>99)invalid('quantity');
  if(csv(p.purposes).some(v=>!PURPOSES.includes(v)))invalid('purposes');
  if(csv(p.benefits).some(v=>!BENEFITS.includes(v)))invalid('benefits');
@@ -55,6 +66,15 @@ export function validateProduct(p){
 }
 export function toRow(p){validateProduct(p);return {name:p.name.trim(),brand:p.brand.trim(),cat:Number(p.cat),status:Number(p.status),price:Math.round(Number(p.price)*100)/100,condition:String(p.condition||''),warranty:String(p.warranty||''),desc_uk:String(p.descUk||''),desc_pl:String(p.descPl||''),images:p.images||[],specs:Object.fromEntries(SPEC_KEYS.map(k=>[k,k==='telegramPost'?normalizeTelegramPost(p[k]):String(p[k]||'').trim()]))};}
 export function fromRow(r){return {...r,...r.specs,price:Number(r.price),descUk:r.desc_uk||'',descPl:r.desc_pl||'',images:Array.isArray(r.images)?r.images:[]};}
+export function extraStorageLabel(p={}){
+ if(Number(p?.cat)!==0)return '';
+ const type=String(p.extraStorageType||'').trim().toUpperCase();
+ const capacity=String(p.extraStorageCapacity||'').trim();
+ const unit=String(p.extraStorageUnit||'GB').trim().toUpperCase();
+ const amount=Number(capacity.replace(',','.'));
+ if(!['SSD','HDD'].includes(type)||!capacity||!Number.isFinite(amount)||amount<=0||!['GB','TB'].includes(unit))return '';
+ return `${capacity} ${unit} ${type}`;
+}
 export function reconcileCart(ids,products){return [...new Set(ids)].filter(id=>products.some(p=>p.id===id&&p.status===0&&(p.quantity===''||p.quantity==null||Number(p.quantity)>0)));}
 export function capacityGB(value){const text=String(value||'').replace(',','.');const n=parseFloat(text);return /tb|тб/i.test(text)?n*1024:n;}
 export function upgradeOptions(p){

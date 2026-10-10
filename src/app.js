@@ -17,6 +17,7 @@ import {
   MAX_DISCOUNT_PERCENT,
   discountPercent,
   effectivePrice,
+  extraStorageLabel,
   csv,
   PURPOSES,
   BENEFITS,
@@ -55,6 +56,12 @@ import {
       cpu: "Процесор",
       ram: "Оперативна пам’ять",
       ssd: "Накопичувач",
+      extraStorage: "Додатковий накопичувач",
+      extraStorageNone: "Немає",
+      extraStorageType: "Тип додаткового диска",
+      extraStorageCapacity: "Об’єм додаткового накопичувача",
+      extraStorageUnit: "Одиниця виміру",
+      extraStorageHelp: "Наприклад: 700 GB або 1 TB.",
       gpu: "Графіка",
       any: "Усі",
       reset: "Скинути фільтри",
@@ -151,6 +158,12 @@ import {
       cpu: "Procesor",
       ram: "Pamięć RAM",
       ssd: "Dysk",
+      extraStorage: "Dodatkowy dysk",
+      extraStorageNone: "Brak",
+      extraStorageType: "Typ dodatkowego dysku",
+      extraStorageCapacity: "Pojemność dodatkowego dysku",
+      extraStorageUnit: "Jednostka pojemności",
+      extraStorageHelp: "Przykład: 700 GB lub 1 TB.",
       gpu: "Grafika",
       any: "Wszystkie",
       reset: "Wyczyść filtry",
@@ -2305,6 +2318,7 @@ import {
       }
       const specs = [
           ...filterKeys(p.cat).map(([key, label]) => [t(label), specLabel(key, p[key])]),
+          ...(extraStorageLabel(p) ? [[t("extraStorage"), extraStorageLabel(p)]] : []),
           [t("condition"), localizedValue(p.condition) || t("stateValue")],
           [t("warranty"), localizedValue(p.warranty) || t("unknown")],
           ...(p.charger ? [[t("charger"), chargerLabel(p.charger)]] : []),
@@ -2559,7 +2573,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
   function formCategory(c, p = {}) {
     const defs = filterKeys(c);
     if (c === 1 || c === 2) defs.push(["cpu", "cpu"], ["battery", "battery"]);
-    q("#hp-category-fields").innerHTML = defs
+    const categoryFields = defs
       .map(([key, label]) =>
         choiceField(
           key,
@@ -2570,6 +2584,10 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
         ),
       )
       .join("");
+    const extraStorageFields = Number(c) === 0
+      ? `<label class="hp-field">${t("extraStorageType")}<select name="extraStorageType">${option("", t("extraStorageNone"), p.extraStorageType || "")}${["SSD", "HDD"].map((value) => option(value, value, p.extraStorageType || "")).join("")}</select></label><label class="hp-field">${t("extraStorageCapacity")}<input name="extraStorageCapacity" type="number" min="0.1" step="any" inputmode="decimal" value="${esc(p.extraStorageCapacity || "")}" placeholder="700" aria-describedby="hp-extra-storage-help"><small id="hp-extra-storage-help" class="hp-muted hp-small">${t("extraStorageHelp")}</small></label><label class="hp-field">${t("extraStorageUnit")}<select name="extraStorageUnit">${option("", t("chargerUnknown"), p.extraStorageUnit || "")}${["GB", "TB"].map((value) => option(value, value, p.extraStorageUnit || "")).join("")}</select></label>`
+      : "";
+    q("#hp-category-fields").innerHTML = categoryFields + extraStorageFields;
     const brand = q("#hp-brand-field");
     if (brand)
       brand.innerHTML = choiceField(
