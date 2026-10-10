@@ -2233,6 +2233,9 @@ import {
     if (typeof lucide !== "undefined")
       lucide.createIcons({ attrs: { width: 17, height: 17 } });
   }
+  function loadingMarkup(label = t("loading")) {
+    return `<div class="hm-loading-state" role="status" aria-live="polite"><span class="hm-loading-mark" aria-hidden="true"><span>H</span></span><span class="hm-loading-brand">HUGO MEDIA</span><span class="hm-loading-copy">${esc(label)}</span><span class="hm-loading-track" aria-hidden="true"><span></span></span></div>`;
+  }
   function render() {
     const detailOpen = view==='detail' && q('.hm-compact-detail')?.dataset.detailProduct===String(selected)
       ? [...root.querySelectorAll('details[id]')].map(el=>[el.id,el.open]) : [];
@@ -2281,13 +2284,17 @@ import {
       .join("");
     const content = q("#hp-content");
     if (loading && content.dataset.ssr && ["home","catalog","detail","start"].includes(view)) return;
-    if (loading && view === "detail") {content.innerHTML=`<p>${t("loading")}</p>`;return;}
+    if (loading && view === "detail") {content.innerHTML=loadingMarkup();return;}
     delete content.dataset.ssr;
     if (
       (["catalog","home","finder","shared"].includes(view)) &&
       (loading || !db.ready || loadError)
     ) {
-      content.innerHTML = `<div class="hp-empty"><p>${t(loading ? "loading" : !db.ready ? "unconfigured" : "loadError")}</p>${loadError ? `<button class="hp-button" id="hp-retry">${t("retry")}</button>` : ""}</div>`;
+      if (loading) {
+        content.innerHTML = loadingMarkup();
+      } else {
+        content.innerHTML = `<div class="hp-empty"><p>${t(!db.ready ? "unconfigured" : "loadError")}</p>${loadError ? `<button class="hp-button" id="hp-retry">${t("retry")}</button>` : ""}</div>`;
+      }
       return;
     }
     if (view === "start") content.innerHTML = storefront.start();
