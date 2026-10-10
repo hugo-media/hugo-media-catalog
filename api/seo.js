@@ -79,8 +79,9 @@ export async function servePage(url,{template,config,loadProducts=publicProducts
   if(meta.noindex) headers['X-Robots-Tag']='noindex, follow';
   let html=template.replace(/<title>[\s\S]*?<\/title>/,'').replace(/<meta name="description"[^>]*>/,'').replace('<html lang="uk">',`<html lang="${route.lang}">`).replace('</head>',headMarkup(meta)+'</head>');
   html=html.replace(/<main class="hp-main" id="hp-content">[\s\S]*?<\/main>/,()=>`<main class="hp-main" id="hp-content"${body?' data-ssr="true"':''}>${body}</main>`);
-  if(route.view==='start' && status===200) {
-    html=html.replace('<div id="hugo-preview">','<div id="hugo-preview" class="hp-storefront hp-start-mode">');
+  if(!privatePage && status===200) {
+    const classes='hp-storefront'+(route.view==='start'?' hp-start-mode':route.view==='detail'?' hp-detail-mode':'');
+    html=html.replace('<div id="hugo-preview">',`<div id="hugo-preview" class="${classes}">`);
     if(route.lang==='pl') html=html.replace('data-lang="uk" aria-pressed="true"','data-lang="uk" aria-pressed="false"').replace('data-lang="pl" aria-pressed="false"','data-lang="pl" aria-pressed="true"');
   }
   // A real 404 remains a 404; do not turn it into the home page in client routing.
