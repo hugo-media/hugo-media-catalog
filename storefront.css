@@ -458,8 +458,6 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
 @media(max-width:480px){#hugo-preview.hp-storefront .hm-home-collection:first-child .hp-grid,#hugo-preview.hp-storefront .hm-home-collection:nth-child(2) .hp-grid{grid-template-columns:1fr}}
 
 /* Keep the main order action beside the product price. */
-#hugo-preview.hp-storefront .hm-overview-order{display:grid;grid-template-columns:1fr;margin:0 0 16px}
-#hugo-preview.hp-storefront .hm-overview-order .hp-button{width:100%;min-height:52px;justify-content:center;font-size:18px;font-weight:700}
 
 
 /* Prioritize Telegram ordering and surface the guided product finder. */
@@ -1063,3 +1061,6 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
     padding:12px 10px;font-size:15px;
   }
 }
+
+/* Avoid showing the fixed mobile action while its main button is in view. */
+#hugo-preview.hp-storefront .hp-mobile-order-bar[hidden]{display:none}
