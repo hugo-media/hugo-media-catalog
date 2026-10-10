@@ -8,5 +8,3 @@ await rm('dist',{recursive:true,force:true});await mkdir('dist/src',{recursive:t
 for(const f of ['brand.svg','brand-mark.svg','favicon.jpg','brand-start.svg','styles.css','intro.css','src/intro.js','storefront.css','src/seo-core.js','src/seo-client.js','src/storefront.js','src/configurator.js','src/insights.js','src/insights-core.js','src/app.js','src/core.js','src/data.js','src/enhancements.js','src/enhancement-core.js','src/drafts.js'])await copyFile(f,`dist/${f}`);
 await writeFile('dist/config.js','window.HUGO_CONFIG = '+JSON.stringify({supabaseUrl,supabaseKey})+';\n');
 console.log(supabaseUrl?'Build ready with public Supabase configuration.':'Build ready. Supabase not configured; site will show an honest setup state.');
-// Temporary responsive review page; removed before the production merge.
-await copyFile('responsive-review.html','dist/responsive-review.html');
