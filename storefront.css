@@ -694,3 +694,129 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
   #hugo-preview.hp-storefront .hp-card-cta .hp-button,
   #hugo-preview.hp-storefront .hm-home-collection:nth-child(n) .hp-card-cta .hp-button{font-size:13px;padding:7px 4px}
 }
+
+/* One coherent start layout overrides the legacy start/storefront cascade. */
+#hugo-preview.hp-storefront.hp-start-mode{
+  --ink:#f8f5ff;--muted:#b3aabd;--line:#ffffff26;
+  min-height:100svh;
+  background:radial-gradient(ellipse at 50% 20%,#302045 0,#171121 45%,#0c0912 85%);
+  color:var(--ink);
+}
+#hugo-preview.hp-storefront.hp-start-mode .hp-header{
+  position:relative;inset:auto;z-index:5;width:100%;max-width:1040px;
+  min-height:64px;margin:0 auto;padding:8px 24px;border:0;background:transparent;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hp-brand{display:none}
+#hugo-preview.hp-storefront.hp-start-mode .hp-lang{
+  margin-left:auto;gap:4px;padding:4px;border:1px solid var(--line);
+  border-radius:12px;background:#ffffff06;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hp-lang button{
+  min-width:44px;min-height:36px;padding:7px 10px;border-radius:8px;
+  color:#bdb3cb;font-size:13px;font-weight:700;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hp-lang button[aria-pressed="true"]{
+  color:#fff;background:#ffffff1f;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hp-main{
+  display:grid;grid-template-columns:minmax(0,1fr);justify-content:stretch;align-items:start;justify-items:center;align-content:start;
+  width:100%;max-width:none;min-height:calc(100svh - 64px);
+  margin:0;padding:clamp(16px,3vh,32px) 24px 48px;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start{
+  width:100%;max-width:560px;margin:0;padding:0;text-align:center;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-brand{
+  margin:0 auto 22px;width:226px;line-height:0;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-brand img{
+  display:block;width:100%;height:auto;filter:drop-shadow(0 0 28px #b791e521);
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start .hp-kicker{
+  display:block;color:#b8a0dc;font-size:11px;letter-spacing:.2em;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start h1{
+  margin:12px 0 16px;font-size:clamp(30px,3.8vw,42px);
+  line-height:1.12;letter-spacing:-1.4px;color:var(--ink);
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start>p{
+  margin:0 auto 26px;max-width:500px;color:var(--muted);font-size:16px;line-height:1.6;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-main,
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-catalog{
+  display:flex;align-items:center;gap:16px;width:100%;min-height:88px;
+  padding:18px 20px;margin:0 0 12px;border-radius:16px;border:1px solid var(--line);
+  color:var(--ink);background:#ffffff07;text-align:left;cursor:pointer;
+  transition:background .18s,border-color .18s,box-shadow .18s;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-main{
+  background:#1688c2;border-color:#3ca9db;color:#fff;
+  box-shadow:0 8px 32px #008cce24;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-main>span,
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-catalog>span{min-width:0;flex:1}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-main>svg:first-child,
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-catalog>svg:first-child{
+  width:26px;height:26px;flex:0 0 26px;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start strong{
+  font-size:17px;line-height:1.3;letter-spacing:-.15px;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start small{
+  margin-top:5px;font-size:13px;line-height:1.45;opacity:1;color:#b8adc8;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-main small{color:#edf8ff}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-contact{
+  display:inline-flex;align-items:center;justify-content:center;min-height:44px;
+  margin:8px 0 4px;color:#ddd0ef;font-size:14px;text-underline-offset:4px;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-help{
+  max-width:390px;margin:0 auto;color:#a69ab7;font-size:12px;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-help summary{
+  width:fit-content;min-height:36px;margin:auto;padding:8px 0;cursor:pointer;
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-help p{
+  margin:8px 0 0;line-height:1.6;color:var(--muted);
+}
+#hugo-preview.hp-storefront.hp-start-mode .hm-start-help strong{display:inline;font-size:12px}
+@media(hover:hover){
+  #hugo-preview.hp-storefront.hp-start-mode .hm-start-main:hover{
+    background:#1178ac;border-color:#63c7f6;box-shadow:0 10px 36px #008cce3b;
+  }
+  #hugo-preview.hp-storefront.hp-start-mode .hm-start-catalog:hover{
+    background:#ffffff10;border-color:#c5a7ed70;
+  }
+  #hugo-preview.hp-storefront.hp-start-mode .hm-start-contact:hover{color:#fff}
+}
+@media(max-width:600px){
+  #hugo-preview.hp-storefront.hp-start-mode .hp-header{min-height:64px;padding:8px 16px}
+  #hugo-preview.hp-storefront.hp-start-mode .hp-lang button{min-height:36px}
+  #hugo-preview.hp-storefront.hp-start-mode .hp-main{
+    min-height:calc(100svh - 64px);padding:12px 18px 30px;
+  }
+  #hugo-preview.hp-storefront.hp-start-mode .hm-start-brand{width:176px;margin-bottom:18px}
+  #hugo-preview.hp-storefront.hp-start-mode .hm-start h1{
+    font-size:clamp(28px,7.8vw,34px);letter-spacing:-.9px;margin:10px 0 14px;
+  }
+  #hugo-preview.hp-storefront.hp-start-mode .hm-start>p{
+    font-size:14px;line-height:1.55;margin-bottom:22px;
+  }
+  #hugo-preview.hp-storefront.hp-start-mode .hm-start>p br{display:none}
+  #hugo-preview.hp-storefront.hp-start-mode .hm-start-main,
+  #hugo-preview.hp-storefront.hp-start-mode .hm-start-catalog{
+    min-height:82px;gap:12px;padding:16px 15px;border-radius:14px;
+  }
+  #hugo-preview.hp-storefront.hp-start-mode .hm-start strong{font-size:16px}
+  #hugo-preview.hp-storefront.hp-start-mode .hm-start small{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  #hugo-preview.hp-storefront.hp-start-mode .hm-start-main,
+  #hugo-preview.hp-storefront.hp-start-mode .hm-start-catalog{transition:none}
+}
+
+/* The start CTA already presents the channel; avoid a duplicate promotion strip. */
+#hugo-preview.hp-storefront.hp-start-mode #hm-telegram-banner{display:none}
+#hugo-preview.hp-storefront.hp-start-mode #hp-privacy-decline{
+  color:#30283b;background:#fff;border-color:#d6cfe1;
+}
