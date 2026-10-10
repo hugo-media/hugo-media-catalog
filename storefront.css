@@ -704,7 +704,7 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
 }
 #hugo-preview.hp-storefront.hp-start-mode .hp-header{
   position:relative;inset:auto;z-index:5;width:100%;max-width:1040px;
-  min-height:64px;margin:0 auto;padding:12px 24px;border:0;background:transparent;
+  min-height:64px;margin:0 auto;padding:8px 24px;border:0;background:transparent;
 }
 #hugo-preview.hp-storefront.hp-start-mode .hp-brand{display:none}
 #hugo-preview.hp-storefront.hp-start-mode .hp-lang{
@@ -719,7 +719,7 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
   color:#fff;background:#ffffff1f;
 }
 #hugo-preview.hp-storefront.hp-start-mode .hp-main{
-  display:grid;align-items:start;justify-items:center;align-content:start;
+  display:grid;grid-template-columns:minmax(0,1fr);justify-content:stretch;align-items:start;justify-items:center;align-content:start;
   width:100%;max-width:none;min-height:calc(100svh - 64px);
   margin:0;padding:clamp(16px,3vh,32px) 24px 48px;
 }
@@ -790,10 +790,10 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
   #hugo-preview.hp-storefront.hp-start-mode .hm-start-contact:hover{color:#fff}
 }
 @media(max-width:600px){
-  #hugo-preview.hp-storefront.hp-start-mode .hp-header{min-height:60px;padding:8px 16px}
+  #hugo-preview.hp-storefront.hp-start-mode .hp-header{min-height:64px;padding:8px 16px}
   #hugo-preview.hp-storefront.hp-start-mode .hp-lang button{min-height:36px}
   #hugo-preview.hp-storefront.hp-start-mode .hp-main{
-    min-height:calc(100svh - 60px);padding:12px 18px 30px;
+    min-height:calc(100svh - 64px);padding:12px 18px 30px;
   }
   #hugo-preview.hp-storefront.hp-start-mode .hm-start-brand{width:176px;margin-bottom:18px}
   #hugo-preview.hp-storefront.hp-start-mode .hm-start h1{
@@ -813,4 +813,10 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
 @media(prefers-reduced-motion:reduce){
   #hugo-preview.hp-storefront.hp-start-mode .hm-start-main,
   #hugo-preview.hp-storefront.hp-start-mode .hm-start-catalog{transition:none}
+}
+
+/* The start CTA already presents the channel; avoid a duplicate promotion strip. */
+#hugo-preview.hp-storefront.hp-start-mode #hm-telegram-banner{display:none}
+#hugo-preview.hp-storefront.hp-start-mode #hp-privacy-decline{
+  color:#30283b;background:#fff;border-color:#d6cfe1;
 }
