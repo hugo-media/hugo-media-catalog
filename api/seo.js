@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { fromRow, publicConfigValid } from '../src/core.js';
+import { createStorefront } from '../src/storefront.js';
 import { ORIGIN, categories, labels, parseRoute, pagePath, catalogPath, productPath, categoryHasStock, metadata, headMarkup, sitemap, escapeHtml as E, imageUrl } from '../src/seo-core.js';
 const templatePromise=readFile(new URL('../index.html',import.meta.url),'utf8');
 const configPromise=readFile(new URL('../public-config.json',import.meta.url),'utf8').then(JSON.parse);
@@ -27,7 +28,7 @@ function serverContent(route,products,base,seo={}) {
   const categoryLinks=categories.map((slug,i)=>`<li><a href="${catalogPath(lang,i)}">${E(labels[lang][i])}</a></li>`).join('');
   const nav=`<nav class="hp-toprow" aria-label="${pl?'Nawigacja':'Навігація'}"><a href="/${lang}">Hugo Media</a><a href="${catalogPath(lang)}">${pl?'Katalog':'Каталог'}</a><ul aria-label="${pl?'Kategorie':'Категорії'}">${categoryLinks}</ul><a href="${pagePath({...route,lang:lang==='uk'?'pl':'uk'})}">${pl?'Українська':'Polski'}</a></nav>`;
   if(product) return nav+`<article class="hp-detail"><h1>${E(product.name)}</h1>${meta.image?`<div class="hp-photo"><img src="${E(meta.image)}" alt="${E(product.name)}" fetchpriority="high"></div>`:''}<p>${E(meta.schema['@graph'][2].offers.price)} zł · ${E((pl?['Dostępny','Zarezerwowany','Wyprzedany','Szkic','Brak w magazynie','Oczekuje na dostawę']:['У наявності','Заброньовано','Розпродано','Чернетка','Немає в наявності','Очікується'])[product.status])}</p><p>${E(pl?product.descPl:product.descUk).replace(/\n/g,'<br>')}</p><dl>${['cpu','ram','ssd','gpu','screen','battery','condition','warranty'].filter(k=>product[k]).map(k=>`<dt>${E(k)}</dt><dd>${E(product[k])}</dd>`).join('')}</dl><a href="https://t.me/HGM_Manager">${pl?'Zapytaj w Telegramie':'Запитати в Telegram'}</a></article>`;
-  if(view==='start') return nav+`<section class="hm-start"><h1>${E(meta.title)}</h1><p>${E(meta.description)}</p><a class="hp-button" href="${catalogPath(lang)}">${pl?'Otwórz katalog':'Відкрити каталог'}</a><a class="hp-button" href="https://t.me/h_m_g_pl">Telegram</a></section>`;
+  if(view==='start') return createStorefront({lang,icon:name=>`<i data-lucide="${name}" aria-hidden="true"></i>`}).start();
   const list=cat>=0?products.filter(p=>Number(p.cat)===cat):products;
   const displayed=view==='home'?list.filter(p=>Number(p.status)===0&&(p.quantity===''||p.quantity==null?1:Number(p.quantity))>0).slice(0,8):list;
   const h1=String(meta.title).replace(/\s+(?:\||—|-)\s+Hugo Media$/i,'');
@@ -78,6 +79,10 @@ export async function servePage(url,{template,config,loadProducts=publicProducts
   if(meta.noindex) headers['X-Robots-Tag']='noindex, follow';
   let html=template.replace(/<title>[\s\S]*?<\/title>/,'').replace(/<meta name="description"[^>]*>/,'').replace('<html lang="uk">',`<html lang="${route.lang}">`).replace('</head>',headMarkup(meta)+'</head>');
   html=html.replace(/<main class="hp-main" id="hp-content">[\s\S]*?<\/main>/,()=>`<main class="hp-main" id="hp-content"${body?' data-ssr="true"':''}>${body}</main>`);
+  if(route.view==='start' && status===200) {
+    html=html.replace('<div id="hugo-preview">','<div id="hugo-preview" class="hp-storefront hp-start-mode">');
+    if(route.lang==='pl') html=html.replace('data-lang="uk" aria-pressed="true"','data-lang="uk" aria-pressed="false"').replace('data-lang="pl" aria-pressed="false"','data-lang="pl" aria-pressed="true"');
+  }
   // A real 404 remains a 404; do not turn it into the home page in client routing.
   if(status===404) html=html.replace('<script type="module" src="/src/app.js"></script>','');
   return send(status,html);
