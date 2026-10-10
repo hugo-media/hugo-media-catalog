@@ -3211,7 +3211,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
     q('#hp-search').value=search;render();window.scrollTo(0,state?.scroll||0);
   });
   const extra = createEnhancements({
-    root, db, esc, readLocal, writeLocal, t, productCard, stockQty, notify, run, refresh, render, adminNav, formCategory, showUploads,
+    root, db, esc, icon, readLocal, writeLocal, t, productCard, stockQty, notify, run, refresh, render, adminNav, formCategory, showUploads,
     get lang(){return lang;}, get view(){return view;}, get products(){return products;}, get reviews(){return reviews;},
     get admin(){return admin;}, get selected(){return selected;}, get editId(){return editId;}, get images(){return formImages;},
     get cart(){return cart;}, get analyticsEvents(){return analyticsEvents;}, get statsLoading(){return statsLoading;}, get statsError(){return statsError;},

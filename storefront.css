@@ -1025,3 +1025,41 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
   #hugo-preview.hp-storefront .hp-privacy-actions{margin-top:8px;gap:8px}
   #hugo-preview.hp-storefront .hp-privacy-actions .hp-button{padding:10px 8px;flex:1;font-size:13px}
 }
+
+/* Product channel benefit: a clear offer and a separate, touch-friendly CTA. */
+#hugo-preview.hp-storefront .hm-product-checkout .hp-product-subscribe{
+  display:grid;gap:12px;margin-top:16px;padding:16px;
+  border:1px solid #a2cee7;border-left:4px solid #0875ae;border-radius:13px;
+  background:linear-gradient(135deg,#edf8ff,#e7f1fb);color:#24435b;line-height:1.45;
+}
+#hugo-preview.hp-storefront .hp-product-subscribe-copy{
+  display:grid;gap:5px;min-width:0;
+}
+#hugo-preview.hp-storefront .hp-product-subscribe-copy strong{
+  color:#153b57;font-size:17px;line-height:1.3;
+}
+#hugo-preview.hp-storefront .hp-product-subscribe-copy>span{
+  color:#36556d;font-size:14px;
+}
+#hugo-preview.hp-storefront .hm-product-checkout .hp-product-subscribe>a.hp-product-subscribe-cta{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;min-height:48px;padding:12px 14px;border:1px solid #0875ae;border-radius:10px;
+  background:#0875ae;color:#fff;font-size:16px;font-weight:700;line-height:1.35;text-decoration:none;
+}
+#hugo-preview.hp-storefront .hp-product-subscribe-cta>span{min-width:0;text-align:center}
+#hugo-preview.hp-storefront .hp-product-subscribe-cta>svg{width:20px;height:20px;flex:0 0 20px}
+#hugo-preview.hp-storefront .hp-product-subscribe-cta:focus-visible{
+  outline:3px solid #0875ae;outline-offset:3px;
+}
+@media(hover:hover){
+  #hugo-preview.hp-storefront .hm-product-checkout .hp-product-subscribe>a.hp-product-subscribe-cta:hover{
+    background:#065d8b;border-color:#065d8b;
+  }
+}
+@media(max-width:760px){
+  #hugo-preview.hp-storefront .hm-product-checkout .hp-product-subscribe{padding:13px;gap:10px}
+  #hugo-preview.hp-storefront .hp-product-subscribe-copy strong{font-size:16px}
+  #hugo-preview.hp-storefront .hm-product-checkout .hp-product-subscribe>a.hp-product-subscribe-cta{
+    padding:12px 10px;font-size:15px;
+  }
+}
