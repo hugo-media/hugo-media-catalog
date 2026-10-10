@@ -37,21 +37,21 @@
   const previousFocus = document.activeElement;
   const previousOverflow = document.body.style.overflow;
   const skip = overlay.querySelector('.hmg-skip');
-  let root = null, previousInert = false, removed = false;
+  let root = null, previousInert = false, removed = false, rootObserver;
   let exitTimer, endTimer;
   const startedAt = performance.now();
   const deadline = startedAt + 5000;
   function connectRoot() {
-    if (removed) return;
+    if (removed || root) return;
     root = document.getElementById('hugo-preview');
-    if (root) { previousInert = root.inert; root.inert = true; }
-    if (document.activeElement === document.body || document.activeElement === previousFocus) skip.focus({preventScroll: true});
+    if (root) { previousInert = root.inert; root.inert = true; rootObserver?.disconnect(); }
   }
   function finish() {
     if (removed) return;
     removed = true;
     clearTimeout(exitTimer);
     clearTimeout(endTimer);
+    rootObserver?.disconnect();
     document.removeEventListener('DOMContentLoaded', connectRoot);
     document.removeEventListener('keydown', keydown, true);
     document.removeEventListener('visibilitychange', visibility);
@@ -76,10 +76,14 @@
   function motionChange(event) { if (event.matches) finish(); }
 
   // Install the cleanup deadline before mounting: errors cannot trap the visitor.
-  endTimer = setTimeout(finish, 5000);
+  endTimer = setTimeout(finish, Math.max(0, deadline - performance.now()));
   try {
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
+    skip.focus({preventScroll: true});
+    rootObserver = new MutationObserver(connectRoot);
+    rootObserver.observe(document.body, {childList: true, subtree: true});
+    connectRoot();
     window.__HMG_INTRO_STARTED = true;
     try { sessionStorage.setItem(sessionKey, 'seen'); } catch {}
     skip.addEventListener('click', finish);
