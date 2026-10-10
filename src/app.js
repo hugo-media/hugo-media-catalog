@@ -2659,7 +2659,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
           (view === "detail" ? "telegram_product" : "telegram_contact"),
         link.dataset.trackPlacement || "",
       );
-    const b = e.target.closest("button, a[data-detail], a[data-cat]");
+    const b = e.target.closest("button, a[data-detail], a[data-cat], a[data-start-catalog]");
     if (!b) return;
     if (b.tagName === "A") {
       if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey||e.button!==0) return;
@@ -2743,8 +2743,9 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
       view = "catalog";
       cat = -1;
       const campaign = new URLSearchParams(location.search);
-      history.replaceState(null, "", `/${campaign.size ? `?${campaign}` : ""}`);
+      history.replaceState(null, "", `${catalogPath(lang)}${campaign.size ? `?${campaign}` : ""}`);
       render();
+      window.scrollTo(0,0);
     } else if (b.dataset.view) {
       if (view === "edit") clearPictures();
       view = b.dataset.view;
