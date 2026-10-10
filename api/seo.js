@@ -77,7 +77,7 @@ export async function servePage(url,{template,config,loadProducts=publicProducts
   const meta=metadata({...route,base:config.supabaseUrl,noindex:privatePage||preview||status!==200,emptyCategory,seo});
   if(meta.noindex) headers['X-Robots-Tag']='noindex, follow';
   let html=template.replace(/<title>[\s\S]*?<\/title>/,'').replace(/<meta name="description"[^>]*>/,'').replace('<html lang="uk">',`<html lang="${route.lang}">`).replace('</head>',headMarkup(meta)+'</head>');
-  html=html.replace('<main class="hp-main" id="hp-content"></main>',`<main class="hp-main" id="hp-content"${body?' data-ssr="true"':''}>${body}</main>`);
+  html=html.replace(/<main class="hp-main" id="hp-content">[\s\S]*?<\/main>/,()=>`<main class="hp-main" id="hp-content"${body?' data-ssr="true"':''}>${body}</main>`);
   // A real 404 remains a 404; do not turn it into the home page in client routing.
   if(status===404) html=html.replace('<script type="module" src="/src/app.js"></script>','');
   return send(status,html);
