@@ -462,11 +462,11 @@ begin
   where id=1 and enabled and updated_at=p_config_updated_at) then return false;end if;
  if p_status not in ('sending','sent','retry','failed','uncertain') then raise exception 'invalid delivery status';end if;
  if p_error is not null and p_error !~ '^[a-z0-9_]{1,80}$' then raise exception 'invalid delivery error';end if;
- update public.hmg_catalog_report_deliveries set status=p_status,
+ update public.hmg_catalog_report_deliveries set status=case when p_status='retry' and attempts>=5 then 'failed' else p_status end,
   last_error=p_error,telegram_message_id=coalesce(p_message_id,telegram_message_id),
   sent_at=case when p_status='sent' then now() else sent_at end,
   lease_until=case when p_status='sending' then now()+interval '5 minutes' else null end,
-  next_attempt_at=case when p_status='retry' then now()+make_interval(secs=>greatest(60,least(coalesce(p_retry_after,900),86400))) else null end,
+  next_attempt_at=case when p_status='retry' and attempts<5 then now()+make_interval(secs=>greatest(60,least(coalesce(p_retry_after,900),86400))) else null end,
   updated_at=now()
   where report_date=p_report_date and lease_id=p_lease_id
    and status in ('preparing','sending') and lease_until>now()
@@ -480,6 +480,8 @@ grant execute on function public.hmg_catalog_finish_daily_report(date,uuid,text,
 
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
+-- pg_net queues contain authorization headers; keep transport metadata server-only.
+revoke select on net.http_request_queue,net._http_response from public,anon,authenticated;
 do $$
 begin
  if not exists(select 1 from vault.secrets where name='hmg_catalog_report_cron_secret') then
