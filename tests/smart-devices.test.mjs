@@ -15,7 +15,7 @@ test('exact promotional prices agree in persistence, configuration and Telegram 
   assert.equal(configuration(saved).total,sale);
   assert.ok(orderText([saved],'uk').includes(sale.toFixed(2)+' zł'));
  }
- assert.equal(discountBadge(product),'≈ -29%');
+ assert.equal(discountBadge(product),'-29%');
  assert.equal(discountBadge({...product,price:250,salePrice:'200'}),'-20%');
  assert.equal(effectivePrice({...product,salePrice:'',discount:'29'}),249);
 });
@@ -61,7 +61,7 @@ test('Smart Devices has localized routes, sitemap entries and correct product of
 test('watch and device cards summarize useful specifications and label rounded discounts',()=>{
  const ui=createStorefront({lang:'uk',esc:escapeHtml,t:k=>k,icon:()=>'',photo:()=>'',productTitle:p=>p.name,localizedValue:v=>v,priceBlock:()=>'',stockQty:()=>1,compare:[]});
  const watch=ui.card({...product,screen:'1.57',compatibility:'Android + iPhone',battery:'3–6 днів'});
- assert.match(watch,/1.57″/);assert.match(watch,/Android \+ iPhone/);assert.match(watch,/≈ −29%/);
+ assert.match(watch,/1.57″/);assert.match(watch,/Android \+ iPhone/);assert.match(watch,/−29%/);
  const device=ui.card({...product,cat:6,type:'Розумні окуляри',compatibility:'Android + iPhone',bluetooth:'5.2'});
  assert.match(device,/Bluetooth 5.2/);assert.match(device,/Розумні окуляри/);
 });
