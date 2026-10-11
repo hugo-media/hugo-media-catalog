@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizedSpec,specLabel,filterValues,homeSelection,homeCollections,createStorefront} from '../src/storefront.js';
+import {normalizedSpec,specLabel,filterValues,homeSelection,homeCollections,createStorefront,displayBrand,availabilityRank,matchesAvailability,catalogSort,comparisonSelection,comparisonRows} from '../src/storefront.js';
 import {escapeHtml} from '../src/seo-core.js';
 test('mixed existing screen and capacity formats produce usable sorted filters',()=>{
  assert.deepEqual(filterValues([{ram:'16'},{ram:'8 GB'},{ram:'32'},{ram:'8'}],'ram'),['8','16','32']);
@@ -128,4 +128,58 @@ test('expected products show a ready Telegram availability request instead of an
  assert.equal(link.pathname,'/HGM_Manager');
  assert.match(link.searchParams.get('text'),/HMG-046/);
  assert.match(link.searchParams.get('text'),/https:\/\/www\.hugomedia\.pl/);
+});
+
+test('availability prioritizes orderable stock and places sold products last for every sort',()=>{
+ const records=[
+  {id:1,status:2,quantity:'0',price:1},
+  {id:2,status:4,quantity:'0',price:2},
+  {id:3,status:5,quantity:'0',price:3},
+  {id:4,status:1,quantity:'1',price:4},
+  {id:5,status:0,quantity:'0',price:5},
+  {id:6,status:0,quantity:'1',price:100},
+  {id:7,status:0,quantity:'',price:50},
+  {id:8,status:3,quantity:'1',price:1},
+ ];
+ assert.deepEqual(records.map(availabilityRank),[4,3,2,1,3,0,0,5]);
+ assert.deepEqual(records.filter(p=>matchesAvailability(p,'in-stock')).map(p=>p.id),[6,7]);
+ assert.deepEqual(records.filter(p=>matchesAvailability(p,'out-of-stock')).map(p=>p.id),[2,5]);
+ assert.deepEqual(records.filter(p=>matchesAvailability(p,'reserved')).map(p=>p.id),[4]);
+ assert.equal(records.filter(p=>matchesAvailability(p)).length,7);
+ assert.deepEqual([...records].filter(p=>matchesAvailability(p)).sort((a,b)=>catalogSort(a,b,'cheap')).map(p=>p.id),[7,6,4,3,2,5,1]);
+ assert.deepEqual([...records].filter(p=>matchesAvailability(p)).sort((a,b)=>catalogSort(a,b,'expensive')).map(p=>p.id),[6,7,4,3,5,2,1]);
+ assert.equal(records[0].id,1);
+});
+
+test('cards disable reserved and zero-stock orders while keeping contextual badges and useful text',()=>{
+ const c={lang:'uk',esc:value=>escapeHtml(String(value??'')),t:key=>key==='statuses'?['У наявності','Заброньовано','Розпродано','Чернетка','Немає в наявності','Очікується']:{outOfStock:'Немає в наявності',bestseller:'Бестселер',newArrival:'Нове'}[key]||key,icon:()=>'',photo:()=>'<div class="hp-photo"></div>',productTitle:p=>p.name,localizedValue:value=>value,priceBlock:()=>'',stockQty:p=>p.quantity===''||p.quantity==null?1:Number(p.quantity),compare:[]};
+ const view=createStorefront(c);
+ for(const p of [{id:60,status:1,quantity:'1'},{id:61,status:0,quantity:'0'}]){
+  const html=view.card({...p,name:'Test product',brand:'Не вказано / Nie podano',cat:6,type:'Розумні окуляри',compatibility:'Bluetooth',bluetooth:'5.2',newArrival:'true',bestseller:'true',price:200},{compact:true,collection:'best'});
+  assert.match(html,/<button[^>]*hp-card-order[^>]*disabled/);
+  assert.match(html,/hp-badge-best/);
+  assert.doesNotMatch(html,/hp-badge-new|Не вказано|Nie podano|Bluetooth · Bluetooth/);
+  assert.equal((html.match(/Bluetooth 5.2/g)||[]).length,1);
+ }
+ assert.equal(displayBrand('Nie podano'),'');
+ assert.equal(displayBrand('Dell'),'Dell');
+ assert.equal(displayBrand('Hewlett-Packard'),'Hewlett-Packard');
+});
+
+test('comparison keeps one category and normalizes capacities before selecting differences',()=>{
+ const products=[{id:1,cat:0,status:0,price:1000,ram:'8 GB',ssd:'1 TB'},{id:2,cat:1,status:0,price:500,ram:'8'},{id:3,cat:0,status:0,price:1200,ram:'8',ssd:'1024'},{id:4,cat:0,status:3,price:1000}];
+ const selected=comparisonSelection(products,[1,2,3,4,99]);
+ assert.deepEqual(selected.map(p=>p.id),[1,3]);
+ const definitions=[['price','Price'],['ram','RAM'],['ssd','SSD'],['gpu','GPU']];
+ assert.deepEqual(comparisonRows(selected,definitions,false).map(row=>row[0]),['price','ram','ssd']);
+ assert.deepEqual(comparisonRows(selected,definitions,true).map(row=>row[0]),['price']);
+ assert.deepEqual(comparisonRows([{...selected[0],price:1200},selected[1]],definitions,true),[]);
+});
+
+test('home does not repeat its chosen hero in the daily recommendation cards',()=>{
+ const p={id:1,cat:0,status:0,quantity:'1',price:1000,name:'Hero laptop',images:['hero.webp']};
+ const c={lang:'uk',esc:escapeHtml,t:key=>key,icon:()=>'',stockQty:()=>1,reviewsBlock:()=>'',compare:[],homepage:{featuredProductId:1},photo:()=>'<div class="hp-photo"></div>',productTitle:p=>p.name,priceBlock:()=>'',localizedValue:value=>value,money:String};
+ const html=createStorefront(c).home([p],[p]);
+ assert.match(html,/hm-hero-product/);
+ assert.doesNotMatch(html,/hm-daily/);
 });
