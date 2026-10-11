@@ -4,6 +4,7 @@ import { adminUpgrades, configPanel } from './configurator.js';
 import { configuration } from './core.js';
 import { safeSearch, startFunnel } from './insights-core.js';
 import { validateAnalyticsDates, presetAnalyticsDates, analyticsBuckets, dailyAnalytics, analyticsDateLabel, analyticsPeriodLabel } from './analytics-core.js';
+import { renderAnalyticsOverview, ANALYTICS_TREND_KEYS } from './analytics-chart.js';
 import { createAdminCatalog } from './admin-catalog.js';
 import { createStorefront, normalizedSpec, specLabel, filterValues, displayBrand, matchesAvailability, catalogSort, comparisonSelection, comparisonRows, productMediaUrl } from "./storefront.js";
 import { createEnhancements } from "./enhancements.js";
@@ -1506,7 +1507,7 @@ import {
           ? `<div class="hp-empty">${t("loading")}</div>`
           : statsError
             ? `<div class="hp-empty">${t("error")}</div>`
-            : `${reportOpen ? (reportLoading ? `<section class="hp-stat-panel">${t("loading")}</section>` : reportError ? `<section class="hp-stat-panel">${t("error")}</section>` : renderAdminReport(analyticsReport)) : ""}<div class="hp-stat-grid">${metrics.map(metric).join("")}</div><section class="hp-stat-panel hp-daily-stats"><h2>${lang === "uk" ? "Статистика за днями" : "Statystyki dzienne"}</h2><p class="hp-stat-panel-desc">${lang === "uk" ? "Натисни дату, щоб подивитися лише цей день. Звернення — кліки контакту чи замовлення, не підтверджені покупки." : "Kliknij datę, aby zobaczyć tylko ten dzień. Kontakty to kliknięcia kontaktu lub zamówienia, nie potwierdzone zakupy."}</p><div class="hp-daily-stats-scroll"><table><thead><tr><th>${lang === "uk" ? "Дата" : "Data"}</th><th>${t("visitors")}</th><th>${lang === "uk" ? "Перегляди сайту" : "Wyświetlenia strony"}</th><th>${t("productViews")}</th><th>${lang === "uk" ? "Звернення в Telegram" : "Kontakty w Telegramie"}</th></tr></thead><tbody>${dailyAnalytics(events,statsDates).reverse().map(day=>`<tr><th><button type="button" class="hp-button" data-stats-date="${day.date}">${analyticsDateLabel(day.date,lang)}</button></th><td>${day.visitors}</td><td>${day.pageViews}</td><td>${day.productViews}</td><td>${day.contactClicks}</td></tr>`).join("")}</tbody></table></div></section><div class="hp-stat-sections">${breakdownPanel("destinations", list(destinations, destinationLabel))}${breakdownPanel(
+            : `${renderAnalyticsOverview({events,range:statsDates,metric:statsTrendMetric,lang})}${reportOpen ? (reportLoading ? `<section class="hp-stat-panel">${t("loading")}</section>` : reportError ? `<section class="hp-stat-panel">${t("error")}</section>` : renderAdminReport(analyticsReport)) : ""}<div class="hp-stat-grid">${metrics.map(metric).join("")}</div><section class="hp-stat-panel hp-daily-stats"><h2>${lang === "uk" ? "Статистика за днями" : "Statystyki dzienne"}</h2><p class="hp-stat-panel-desc">${lang === "uk" ? "Натисни дату, щоб подивитися лише цей день. Звернення — кліки контакту чи замовлення, не підтверджені покупки." : "Kliknij datę, aby zobaczyć tylko ten dzień. Kontakty to kliknięcia kontaktu lub zamówienia, nie potwierdzone zakupy."}</p><div class="hp-daily-stats-scroll"><table><thead><tr><th>${lang === "uk" ? "Дата" : "Data"}</th><th>${t("visitors")}</th><th>${lang === "uk" ? "Перегляди сайту" : "Wyświetlenia strony"}</th><th>${t("productViews")}</th><th>${lang === "uk" ? "Звернення в Telegram" : "Kontakty w Telegramie"}</th></tr></thead><tbody>${dailyAnalytics(events,statsDates).reverse().map(day=>`<tr><th><button type="button" class="hp-button" data-stats-date="${day.date}">${analyticsDateLabel(day.date,lang)}</button></th><td>${day.visitors}</td><td>${day.pageViews}</td><td>${day.productViews}</td><td>${day.contactClicks}</td></tr>`).join("")}</tbody></table></div></section><div class="hp-stat-sections">${breakdownPanel("destinations", list(destinations, destinationLabel))}${breakdownPanel(
                 "topProducts",
                 list(
                   top,
@@ -1522,7 +1523,7 @@ import {
                 list(devices, (type) => t(type) || type),
               )}<section class="hp-stat-panel hp-stat-recent"><h3>${t("recentTransitions")}</h3><p class="hp-stat-panel-desc">${t("recentTransitionsDesc")}</p>${journeys}</section></div>${chartModal()}`
       }`;
-    q(".hp-stats-date-panel").insertAdjacentHTML("afterend", `<section class="hp-tracking-links"><strong>${t("trackingLinks")}</strong><p>${t("trackingLinksHint")}</p><div>${["tiktok", "facebook", "telegram"].map((source) => `<button type="button" class="hp-button" data-landing-social="${source}">${icon("copy")}${t("share" + source[0].toUpperCase() + source.slice(1))}</button>`).join("")}</div></section>`);
+    (q(".hp-analytics-overview") || q(".hp-stats-date-panel")).insertAdjacentHTML("afterend", `<section class="hp-tracking-links"><strong>${t("trackingLinks")}</strong><p>${t("trackingLinksHint")}</p><div>${["tiktok", "facebook", "telegram"].map((source) => `<button type="button" class="hp-button" data-landing-social="${source}">${icon("copy")}${t("share" + source[0].toUpperCase() + source.slice(1))}</button>`).join("")}</div></section>`);
     if (!statsLoading && !statsError) q("#hp-content").insertAdjacentHTML("beforeend", `<section class="hp-interest"><button type="button" class="hp-interest-title" data-stat-metric="productInterest"><span><strong>${t("productInterest")}</strong><small>${t("productInterestDesc")}</small></span>${icon("chart-no-axes-column-increasing")}</button><div class="hp-interest-scroll"><table><thead><tr><th>${t("name")}</th><th>${t("interestViews")}</th><th>${t("interestOrders")}</th><th>${t("interestChannel")}</th><th title="${esc(t("interestNoContactDesc"))}">${t("interestNoContact")}</th><th>${t("interestRate")}</th><th>${t("sourceBreakdown")}</th></tr></thead><tbody>${interest.length ? interest.map(({ id, views, orders, media, noContact, rate, sourceCounts }) => `<tr><th><button type="button" class="hp-interest-product" data-stat-metric="product:${id}">${esc(productTitle(products.find((p) => p.id === id) || { name: `HMG-${id}` }))}${icon("chart-no-axes-column-increasing")}</button></th><td>${views}</td><td>${orders}</td><td>${media}</td><td>${noContact}</td><td>${rate}%</td><td>${[...sourceCounts].map(([source, count]) => `${esc(source)} ${count}`).join(" · ") || "—"}</td></tr>`).join("") : `<tr><td colspan="7">${t("noAnalytics")}</td></tr>`}</tbody></table></div></section>`);
     refreshIcons();
   }
@@ -2016,6 +2017,7 @@ import {
     statsRange = 7,
     statsDates = presetAnalyticsDates(7),
     statsMetric = "",
+    statsTrendMetric = "visitors",
     statsLoading = false,
     statsError = false,
     reportOpen = false;
@@ -2715,6 +2717,13 @@ import {
     } else if (b.dataset.closeReport !== undefined) {
       reportOpen = false;
       render();
+    } else if (ANALYTICS_TREND_KEYS.includes(b.dataset.trendMetric)) {
+      statsTrendMetric = b.dataset.trendMetric;
+      const overview = q(".hp-analytics-overview");
+      if (overview) {
+        overview.outerHTML = renderAnalyticsOverview({events:analyticsEvents,range:statsDates,metric:statsTrendMetric,lang});
+        q('[data-trend-metric="'+statsTrendMetric+'"]')?.focus({preventScroll:true});
+      }
     } else if (b.dataset.statsDate) {
       await selectAnalyticsDates({from:b.dataset.statsDate,to:b.dataset.statsDate});
     } else if (b.dataset.statsRange) {
