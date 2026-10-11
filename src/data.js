@@ -217,18 +217,18 @@ export async function listAnalytics(days = 7) {
   if (!(await isAdmin())) throw Error("notAdmin");
   const c = await connect();
   const normalizedDays = [1, 7, 30].includes(Number(days)) ? Number(days) : 7;
-  const sinceDate = new Date();
-  sinceDate.setHours(0, 0, 0, 0);
-  sinceDate.setDate(sinceDate.getDate() - (normalizedDays - 1));
-  return readAnalyticsSince(c, sinceDate.toISOString());
+  const { data: window, error } = await c.rpc("hmg_catalog_analytics_window", { p_days: normalizedDays });
+  if (error) throw error;
+  return readAnalyticsSince(c, window.since, window.until);
 }
-async function readAnalyticsSince(client, since) {
+async function readAnalyticsSince(client, since, until) {
   const rows = [];
   for (let start = 0; ; start += 1000) {
     const { data, error } = await client
       .from("hmg_catalog_events")
       .select("created_at,visitor_id,session_id,event_type,product_id,path,referrer_host,traffic_source,device_type,destination,placement")
       .gte("created_at", since)
+      .lt("created_at", until)
       .order("created_at", { ascending: false })
       .range(start, start + 999);
     if (error) throw error;
@@ -358,3 +358,28 @@ export async function quickUpdateProducts(changes) {
  if(!Array.isArray(data)||data.length!==plan.length||new Set(data.map(row=>Number(row.id))).size!==ids.size||data.some(row=>!ids.has(Number(row.id))))throw Error('saveUnconfirmed');
  return data.map(fromRow);
 }
+
+export async function getTelegramReportSettings() {
+ if (!(await isAdmin())) throw Error('notAdmin');
+ const c=await connect(),{data,error}=await c.rpc('hmg_catalog_telegram_report_settings');
+ if(error)throw error;return data;
+}
+export async function saveTelegramReportSettings({token='',chatId='',enabled=false}={}) {
+ if (!(await isOwner())) throw Error('notOwner');
+ const c=await connect(),{data,error}=await c.rpc('hmg_catalog_save_telegram_report_settings',{
+  p_token:String(token).trim()||null,p_chat_id:String(chatId).trim()||null,p_enabled:!!enabled});
+ if(error)throw error;return data;
+}
+async function telegramReportAction(action) {
+ if (!(await isOwner())) throw Error('notOwner');
+ const c=await connect(),{data,error}=await c.functions.invoke('hmg-daily-report',{body:{action}});
+ if(error){
+  let safe='reportUnavailable';
+  try{const value=await error.context?.json?.();if(value?.error&&/^[a-z_]{1,80}$/.test(value.error))safe=value.error;}catch{}
+  throw Error(safe);
+ }
+ if(data?.ok!==true)throw Error(data?.error&&/^[a-z_]{1,80}$/.test(data.error)?data.error:'reportUnavailable');
+ return data;
+}
+export async function testTelegramReport() {return telegramReportAction('test');}
+export async function sendTelegramReport() {return telegramReportAction('send');}

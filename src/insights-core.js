@@ -33,7 +33,14 @@ export function consistencyIssues(p){
  if(p.status===0&&p.quantity!==''&&p.quantity!=null&&Number(p.quantity)<=0)issues.push('stock');
  for(const [field,re] of [['ram',/(\d+)\s*(?:gb\s*ram|гб\s*(?:ram|озп)|ram)/i],['ssd',/(\d+)\s*(?:gb\s*ssd|гб\s*ssd|ssd)/i],['screen',/(\d+(?:[.,]\d+)?)\s*["″”]/]]){
  const match=String(p.name||'').match(re);const n=parseFloat(String(p[field]||'').replace(',','.'));if(match&&Number.isFinite(n)&&Math.abs(Number(match[1].replace(',','.'))-n)>.01)issues.push('mismatch');
- }return [...new Set(issues)];
+ }
+ for(const description of [p.descUk,p.descPl]){
+  for(const [field,re] of [['ram',/(?:Оперативна пам[’'ʼ]?ять|ОЗП|Pamięć RAM|RAM)\s*:\s*(\d+)\s*(?:ГБ|GB)/i],['ssd',/(?:Накопичувач|Dysk|Pamięć wbudowana)\s*:\s*(?:SSD\s*)?(\d+)\s*(?:ГБ|GB)/i],['screen',/(?:Екран|Дисплей|Ekran|Wyświetlacz)\s*:\s*(\d+(?:[.,]\d+)?)\s*[\"″”]/i]]){
+   const match=String(description||'').match(re),value=parseFloat(String(p[field]||'').replace(',','.'));
+   if(match&&Number.isFinite(value)&&Math.abs(Number(match[1].replace(',','.'))-value)>.01)issues.push('mismatch');
+  }
+ }
+ return [...new Set(issues)];
 }
 
 

@@ -1,5 +1,5 @@
 import { productPath, pagePath, visibleSeoContent } from './seo-core.js';
-import { effectivePrice, discountPercent, discountBadge, csv, telegramLink, availabilityRequestText } from './core.js';
+import { effectivePrice, discountPercent, discountBadge, csv, telegramLink, availabilityRequestText, normalizeTelegramPost } from './core.js';
 
 // Normalize display/filter values without rewriting the source specifications.
 export function normalizedSpec(key, value) {
@@ -45,6 +45,10 @@ export function featuredProduct(products,picks=[],preferredId=null) {
   ||available.find(p=>p.cat===0&&p.bestseller==='true'&&!picks.some(pick=>pick.id===p.id))
   ||available.find(p=>p.cat===0&&!picks.some(pick=>pick.id===p.id))
   ||available.find(p=>p.cat===0)||available[0];
+}
+export function productMediaUrl(value) {
+  const normalized=normalizeTelegramPost(value);
+  return /^https:\/\/t\.me\/h_m_g_pl\/\d+$/.test(normalized||'') ? normalized : null;
 }
 export function displayBrand(value) {
   const text=String(value??'').trim();
