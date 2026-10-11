@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {orderText,availabilityRequestText,telegramLink,telegramPostUrl,normalizeTelegramPost,reconcileCart,toRow,fromRow,publicConfigValid,effectivePrice,extraStorageLabel,TELEGRAM_CHANNEL,csv,warsawDate,validateDailyPicks} from '../src/core.js';
+import {orderText,availabilityRequestText,telegramLink,telegramPostUrl,normalizeTelegramPost,reconcileCart,toRow,fromRow,publicConfigValid,effectivePrice,extraStorageLabel,TELEGRAM_CHANNEL,csv,warsawDate,validateDailyPicks,promotionState,activeHomePromotion,configuredDiscountPercent,discountPercent,configuration,warsawDateTimeToUtc,utcToWarsawDateTime} from '../src/core.js';
 const p={id:1,name:'Dell & Lenovo? #1',brand:'Dell',cat:0,status:0,price:10.15,images:[],ram:'16',descUk:'Опис',descPl:'Opis'};
 test('Telegram draft preserves Unicode and special characters and uses fixed recipient',()=>{const text=orderText([p,{...p,id:2,price:20.2}],'uk','https://shop.example');const url=new URL(telegramLink(text));assert.equal(url.hostname,'t.me');assert.equal(url.pathname,'/HGM_Manager');assert.equal(url.searchParams.get('text'),text);assert.match(text,/30.35 zł/);assert.match(text,/\?product=2/);});
 test('availability request drafts a bilingual direct Telegram message with product identity and link',()=>{
@@ -62,4 +62,75 @@ test('expected products validate and round-trip through database rows',()=>{
  const row=toRow({...p,status:5});
  assert.equal(row.status,5);
  assert.equal(fromRow({id:3,...row}).status,5);
+});
+
+const scheduled={...p,price:1299,discount:'17',promoStartAt:'2026-10-11T10:00:00.000Z',promoEndAt:'2026-10-11T11:00:00.000Z',promoHome:'true'};
+test('scheduled promotions use one absolute shared deadline without changing legacy discounts',()=>{
+ const start=Date.parse(scheduled.promoStartAt),end=Date.parse(scheduled.promoEndAt);
+ for(const cat of [0,1,2,3,4,5,6]){
+  const product={...scheduled,cat};
+  assert.equal(promotionState(product,start-1).status,'upcoming');
+  assert.equal(effectivePrice(product,start-1),1299);
+  assert.equal(discountPercent(product,start-1),0);
+  assert.equal(effectivePrice(product,start),1078);
+  assert.equal(effectivePrice(product,end-1),1078);
+  assert.equal(promotionState(product,end).status,'expired');
+  assert.equal(effectivePrice(product,end),1299);
+  assert.equal(discountPercent(product,end),0);
+  assert.equal(configuredDiscountPercent(product),17);
+ }
+ assert.equal(effectivePrice({...scheduled,promoStartAt:'',promoEndAt:''},end),1078);
+ assert.equal(effectivePrice({...scheduled,salePrice:'999.95'},start),999.95);
+ assert.equal(effectivePrice({...scheduled,salePrice:'999.95'},end),1299);
+});
+test('invalid or partial schedules fail closed and cannot be saved as real promotions',()=>{
+ const now=Date.parse(scheduled.promoStartAt);
+ for(const fields of [{promoEndAt:''},{promoStartAt:'2026-10-11T12:00:00.000Z'},{promoEndAt:'2026-02-30T11:00:00.000Z'},{promoStartAt:'2026-10-11T12:00'}]){
+  const product={...scheduled,...fields};
+  assert.equal(promotionState(product,now).status,'invalid');
+  assert.equal(effectivePrice(product,now),1299);
+  assert.throws(()=>toRow(product));
+ }
+ assert.throws(()=>toRow({...p,promoHome:'true'}),e=>e.field==='promoEndAt');
+ assert.throws(()=>toRow({...scheduled,discount:'0'}),e=>e.field==='discount');
+});
+test('scheduled promotion specs preserve their configured prices and titles during database round trip',()=>{
+ for(const salePrice of ['', '999.95']){
+  const product={...scheduled,salePrice,promoTitleUk:'Акція на ноутбук',promoTitlePl:'Promocja laptopa'};
+  const loaded=fromRow({id:1,...toRow(product)});
+  assert.equal(loaded.promoStartAt,scheduled.promoStartAt);
+  assert.equal(loaded.promoEndAt,scheduled.promoEndAt);
+  assert.equal(loaded.promoHome,'true');
+  assert.equal(loaded.promoTitleUk,product.promoTitleUk);
+  assert.equal(loaded.salePrice,salePrice);
+  assert.equal(Number(loaded.discount),configuredDiscountPercent(product));
+ }
+});
+test('home selects one available real scheduled promotion and hides it on expiry or no stock',()=>{
+ const now=Date.parse(scheduled.promoStartAt);
+ const later={...scheduled,id:2,promoEndAt:'2026-10-11T12:00:00.000Z'};
+ assert.equal(activeHomePromotion([later,scheduled],now).id,1);
+ assert.equal(activeHomePromotion([{...scheduled,status:2},later],now).id,2);
+ for(const patch of [{status:2},{quantity:'0'},{promoHome:''},{discount:'0'},{promoStartAt:''}]){
+  assert.equal(activeHomePromotion([{...scheduled,...patch}],now),null);
+ }
+ assert.equal(activeHomePromotion([scheduled],Date.parse(scheduled.promoEndAt)),null);
+ assert.equal(activeHomePromotion([{...scheduled,promoStartAt:'',promoEndAt:''}],now),null);
+});
+test('Warsaw datetime inputs serialize exact UTC instants including seasonal offsets and reject DST ambiguity',()=>{
+ assert.equal(warsawDateTimeToUtc('2026-07-01T12:30'),'2026-07-01T10:30:00.000Z');
+ assert.equal(warsawDateTimeToUtc('2026-12-01T12:30'),'2026-12-01T11:30:00.000Z');
+ assert.equal(utcToWarsawDateTime('2026-07-01T10:30:00.000Z'),'2026-07-01T12:30');
+ for(const local of ['2026-03-29T02:30','2026-10-25T02:30','2026-02-30T12:00','2026-07-01','invalid'])assert.equal(warsawDateTimeToUtc(local),null);
+});
+test('scheduled expiry produces matching configuration and Telegram totals while extras keep full price',()=>{
+ const product={...scheduled,bundles:'mouse,office'};
+ for(const [now,base,total] of [[Date.parse(scheduled.promoEndAt)-1,1078,1323],[Date.parse(scheduled.promoEndAt),1299,1544]]){
+  assert.equal(configuration(product,'mouse,office',{},'uk',now).total,total);
+  const draft=orderText([product],'uk','',{1:'mouse,office'},{},now);
+  assert.ok(draft.includes(base.toFixed(2)+' zł'));
+  assert.ok(draft.includes('Разом: '+total.toFixed(2)+' zł'));
+  assert.match(draft,/Мишка — 45 zł/);
+  assert.match(draft,/Microsoft Office — 200 zł/);
+ }
 });

@@ -1,7 +1,7 @@
 import { createInsights } from './insights.js';
-import { effectivePrice, csv, TELEGRAM_CHANNEL, fromRow } from './core.js';
+import { effectivePrice, csv, TELEGRAM_CHANNEL, fromRow, promotionState, activeHomePromotion } from './core.js';
 import { categories, labels } from './seo-core.js';
-import { LINK_SLOTS, TRUST_SECTIONS, validateSettings, normalizeInvite, productIssues, rankLaptops, laptopHighlights, selectionIds, shareSelection, availableProduct, publicProduct, draftValues } from './enhancement-core.js';
+import { LINK_SLOTS, TRUST_SECTIONS, validateSettings, normalizeInvite, productIssues, productReadiness, rankLaptops, laptopHighlights, selectionIds, shareSelection, availableProduct, publicProduct, draftValues } from './enhancement-core.js';
 import * as drafts from './drafts.js';
 
 export function createEnhancements(c) {
@@ -11,7 +11,8 @@ export function createEnhancements(c) {
  const slotLabels=()=>({start:L('Стартовий екран','Ekran startowy'),catalog:L('Головна й каталог','Strona główna i katalog'),product:L('Картка товару: підписка','Produkt: subskrypcja'),footer:L('Низ сайту','Stopka'),floating:L('Плаваюча кнопка','Przycisk pływający')});
  const trustLabels=()=>({warranty:L('Гарантія','Gwarancja'),payment:L('Оплата','Płatność'),delivery:L('Доставка','Dostawa'),inspection:L('Перевірка','Sprawdzenie'),returns:L('Повернення й обмін','Zwroty i wymiany')});
  const photoLabels=()=>({'':L('Джерело фото не вказано','Źródło zdjęć niepodane'),actual:L('Фото цього екземпляра','Zdjęcia tego egzemplarza'),model:L('Ілюстративне фото моделі','Zdjęcie poglądowe modelu'),mixed:L('Фото моделі та цього екземпляра','Zdjęcia modelu i tego egzemplarza')});
- let settings={links:{},trust:{}}, settingsError=false;
+ let settings={links:{},trust:{}}, settingsError=false, promotionClock;
+ let telegramReportState={config:null,loading:false,error:false,message:'',preview:''};
  let quiz={budget:'1500',purpose:'study',size:'any'}, quizStep=0, quizResults=false;
  let recent=c.readLocal('hmg-recent-products',[]);if(!Array.isArray(recent))recent=[];
  let shared=selectionIds(new URLSearchParams(location.search).get('selection')||'');
@@ -53,14 +54,15 @@ function seoIssues(t,d,focus,intro){
   return a;
 }
 function renderSeo(){
-  const ps=seoPages(),saved=settings.seo?.pages||{},products=c.products.filter(p=>[0,1,2].includes(p.status));
+  const ps=seoPages(),saved=settings.seo?.pages||{},products=c.products.filter(publicProduct);
   const stockCount=cat=>c.products.filter(p=>Number(p.cat)===Number(cat)&&Number(p.status)===0&&Number(c.stockQty(p))>0).length;
   const items=ps.flatMap(p=>['uk','pl'].map(l=>({p,l,v:saved[p.key]?.[l]||{},available:p.cat===undefined||stockCount(p.cat)>0})));
   const eligible=items.filter(x=>x.p.indexable&&x.available);
   const pageProblems=x=>seoIssues(x.v.title,x.v.description,x.p.indexable?x.v.focus:undefined,x.p.indexable?x.v.intro:undefined);
   const titleCounts=new Map(),descriptionCounts=new Map();
-  for(const x of eligible){const t=seoNormalize(x.v.title),d=seoNormalize(x.v.description);if(t)titleCounts.set(t,(titleCounts.get(t)||0)+1);if(d)descriptionCounts.set(d,(descriptionCounts.get(d)||0)+1);}
-  const issuesForPage=x=>{const a=pageProblems(x);if(x.v.title&&titleCounts.get(seoNormalize(x.v.title))>1)a.push(L('повторюється SEO-заголовок','powtarza się tytuł SEO'));if(x.v.description&&descriptionCounts.get(seoNormalize(x.v.description))>1)a.push(L('повторюється SEO-опис','powtarza się opis SEO'));return a;};
+  const metadataEntries=[...eligible.map(x=>({lang:x.l,title:x.v.title,description:x.v.description})),...products.flatMap(p=>['uk','pl'].map(lang=>({lang,title:p['seoTitle'+(lang==='uk'?'Uk':'Pl')],description:p['seoDescription'+(lang==='uk'?'Uk':'Pl')]})))];
+  for(const x of metadataEntries){const t=seoNormalize(x.title),d=seoNormalize(x.description),prefix=x.lang+'|';if(t)titleCounts.set(prefix+t,(titleCounts.get(prefix+t)||0)+1);if(d)descriptionCounts.set(prefix+d,(descriptionCounts.get(prefix+d)||0)+1);}
+  const issuesForPage=x=>{const a=pageProblems(x);if(x.v.title&&titleCounts.get(x.l+'|'+seoNormalize(x.v.title))>1)a.push(L('повторюється SEO-заголовок','powtarza się tytuł SEO'));if(x.v.description&&descriptionCounts.get(x.l+'|'+seoNormalize(x.v.description))>1)a.push(L('повторюється SEO-опис','powtarza się opis SEO'));return a;};
   const needs=eligible.filter(x=>issuesForPage(x).length).length,ready=eligible.length-needs;
   const hidden=items.filter(x=>x.p.indexable&&!x.available).length,noindex=items.filter(x=>!x.p.indexable).length;
   const pageForms=ps.map(p=>`<details class="hp-form-section"><summary><strong>${E(p[c.lang])}</strong></summary>${['uk','pl'].map(l=>{
@@ -79,6 +81,8 @@ function renderSeo(){
   const productRows=products.map(p=>{
     const issues=['uk','pl'].flatMap(l=>{
       const problems=seoIssues(p['seoTitle'+(l==='uk'?'Uk':'Pl')],p['seoDescription'+(l==='uk'?'Uk':'Pl')]);
+      if(titleCounts.get(l+'|'+seoNormalize(p['seoTitle'+(l==='uk'?'Uk':'Pl')]))>1)problems.push(l.toUpperCase()+': '+L('повторюється SEO-заголовок','powtarza się tytuł SEO'));
+      if(descriptionCounts.get(l+'|'+seoNormalize(p['seoDescription'+(l==='uk'?'Uk':'Pl')]))>1)problems.push(l.toUpperCase()+': '+L('повторюється SEO-опис','powtarza się opis SEO'));
       if(String((l==='uk'?p.descUk:p.descPl)||'').trim().length<180)problems.push(L('короткий опис товару','krótki opis produktu'));
       return problems;
     });
@@ -136,9 +140,23 @@ function renderSeo(){
   let cursor=0;await Promise.all(Array.from({length:4},async()=>{while(cursor<tasks.length){const task=tasks[cursor++];const ok=await new Promise(resolve=>{const img=new Image();const timer=setTimeout(()=>{img.src="";resolve(false);},10000);img.onload=()=>{clearTimeout(timer);resolve(img.naturalWidth>0);};img.onerror=()=>{clearTimeout(timer);resolve(false);};img.src=c.db.photoUrl(task.path);});if(!ok)photoFailures.add(task.id);}}));
   photoChecking=false;photoChecked=true;if(c.view==="quality"&&c.admin)renderQuality();
  }
- function renderQuality(){const labels=issueLabels(), items=c.products.filter(p=>p.status===0||p.status===3).map(p=>({p,issues:[...productIssues(p),...(photoFailures.has(p.id)?["broken"]:[])]})).filter(x=>x.issues.length);
- content().innerHTML=`${c.adminNav('quality')}${sectionHeader(L('Потребує уваги','Wymaga uwagi'),L('Активні товари та чернетки. Підказки допомагають заповнити картки; вони не блокують публікацію.','Aktywne produkty i szkice. Wskazówki pomagają uzupełnić dane; nie blokują publikacji.'))}${button("check-photos",photoChecking?L("Перевіряю фото…","Sprawdzam zdjęcia…"):L("Перевірити завантаження фото","Sprawdź ładowanie zdjęć"),false,photoChecking?"disabled":"")}<p>${photoChecked?L("Перевірку завершено. Помилка завантаження може бути тимчасовою — перевір фото перед заміною.","Sprawdzono. Błąd może być tymczasowy — sprawdź zdjęcie przed wymianą."):L("Фото перевіряються за кнопкою. Позначки характеристик — підказки для ручної перевірки.","Zdjęcia sprawdzamy po kliknięciu. Oznaczenia parametrów wymagają ręcznej weryfikacji.")}</p><div class="hp-quality-summary"><strong>${items.length}</strong><span>${L('карток варто доповнити','kart do uzupełnienia')}</span></div><div class="hp-quality-list">${items.map(({p,issues})=>`<article><div><strong>${E(p.name)}</strong><small>HMG-${p.id} · ${c.t('statuses')[p.status]}</small><div class="hp-issue-tags">${issues.map(k=>`<span>${labels[k]}</span>`).join('')}</div></div><button type="button" class="hp-button" data-edit="${p.id}">${c.t('edit')}</button></article>`).join('')||`<p>${L('Усі картки заповнені.','Wszystkie karty są uzupełnione.')}</p>`}</div>`;
- }
+ function renderQuality(){
+ const labels=issueLabels();
+ const items=c.products.filter(p=>[0,3,4,5].includes(Number(p.status))).map(p=>{
+  const state=productReadiness(p);
+  if(photoFailures.has(p.id))state.issues.push('broken');
+  return {p,...state};
+ });
+ const urgent=items.filter(x=>x.issues.length).sort((a,b)=>b.issues.length-a.issues.length);
+ const advisory=items.filter(x=>x.advisories.length);
+ const row=(item,keys)=>`<article><div><strong>${E(item.p.name)}</strong><small>HMG-${item.p.id} · ${c.t('statuses')[item.p.status]}</small><div class="hp-issue-tags">${keys.map(key=>`<span>${E(labels[key]||key)}</span>`).join('')}</div></div><button type="button" class="hp-button" data-edit="${item.p.id}">${c.t('edit')}</button></article>`;
+ content().innerHTML=`${c.adminNav('quality')}${sectionHeader(L('Готовність товарів','Gotowość produktów'),L('Спочатку виправ ціну, наявність і основні дані. Додаткові підказки винесені окремо.','Najpierw sprawdź cenę, dostępność i podstawowe dane. Dodatkowe wskazówki są osobno.'))}
+ ${button('check-photos',photoChecking?L('Перевіряю фото…','Sprawdzam zdjęcia…'):L('Перевірити завантаження фото','Sprawdź ładowanie zdjęć'),false,photoChecking?'disabled':'')}
+ <p class="hp-muted">${photoChecked?L('Перевірку фото завершено. Тимчасову помилку перевір перед заміною зображення.','Sprawdzono zdjęcia. Przed wymianą potwierdź, czy błąd nie jest chwilowy.'):L('Завантаження фото перевіряється за кнопкою. Джерело фото й посилання на Telegram можна доповнити окремо.','Ładowanie zdjęć sprawdzamy po kliknięciu. Źródło zdjęć i link Telegram możesz uzupełnić osobno.')}</p>
+ <div class="hp-quality-summary"><strong>${urgent.length}</strong><span>${L('карток потребують перевірки основних даних','kart wymaga sprawdzenia podstawowych danych')}</span></div>
+ <div class="hp-quality-list">${urgent.map(item=>row(item,item.issues)).join('')||`<p>${L('Основні дані заповнені.','Podstawowe dane są uzupełnione.')}</p>`}</div>
+ <details class="hp-form-section"><summary><strong>${L('Додаткові підказки','Dodatkowe wskazówki')} · ${advisory.length}</strong></summary><p class="hp-muted">${L('Ці підказки допомагають доповнити картки. Вони не означають помилку ціни чи наявності.','Te wskazówki pomagają uzupełnić karty. Nie oznaczają błędnej ceny ani dostępności.')}</p><div class="hp-quality-list">${advisory.map(item=>row(item,item.advisories)).join('')||`<p>${L('Немає додаткових підказок.','Brak dodatkowych wskazówek.')}</p>`}</div></details>`;
+}
  function renderSettings(){const slots=slotLabels(), trusts=trustLabels();
  const selectedId=Number(settings.homepage?.featuredProductId)||null;
  const eligible=c.products.filter(p=>availableProduct(p)&&p.images?.length).sort((a,b)=>a.name.localeCompare(b.name));
@@ -179,17 +197,73 @@ function renderSeo(){
   banner.setAttribute('aria-label',L('Переваги Telegram-каналу','Korzyści kanału Telegram'));
   banner.innerHTML=`<a href="${E(channelUrl(slot))}" target="_blank" rel="noopener noreferrer" data-track-target="telegram_channel" data-track-placement="${slot}"><svg class="hm-banner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg><span class="hm-banner-copy"><strong>${L('Унікальні пропозиції та безкоштовна доставка','Wyjątkowe oferty i bezpłatna dostawa')}</strong><span>${L('Для підписників нашого Telegram-каналу','Dla subskrybentów naszego kanału Telegram')}</span></span><span class="hm-banner-cta">${L('Підписатися','Dołącz do kanału')} <span aria-hidden="true">↗</span></span></a>`;
  }
+ function renderTelegramReportPanel(){
+ const state=telegramReportState,config=state.config,ready=!!config&&!state.loading&&!state.error;
+ const status=state.loading?L('Завантажую стан…','Wczytuję status…'):state.error?L('Не вдалося завантажити стан. Повтори перевірку.','Nie udało się wczytać statusu. Spróbuj ponownie.'):config?.configured?(!config.recipientVerified?L('Налаштовано · перевір підключення','Skonfigurowano · sprawdź połączenie'):config.enabled?L('Налаштовано · щодня о 09:00','Skonfigurowano · codziennie o 09:00'):L('Налаштовано · відправка вимкнена','Skonfigurowano · wysyłka wyłączona')):L('Не налаштовано','Nie skonfigurowano');
+ const last=config?.lastDelivery,date=last?.sentAt?new Intl.DateTimeFormat(c.lang==='pl'?'pl-PL':'uk-UA',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Warsaw'}).format(new Date(last.sentAt)):'';
+ const canConfigure=ready&&config.canConfigure!==false;
+ return `<section id="hm-telegram-report-settings" class="hp-form-section"><h2>${L('Щоденний звіт у Telegram','Codzienny raport Telegram')}</h2><p>${L('Короткий звіт за завершений учорашній день: трафік, перегляди товарів, кліки замовлення, головний товар і підказки. Час — Europe/Warsaw.','Krótki raport za zakończony wczorajszy dzień: ruch, wyświetlenia produktów, kliknięcia zamówień, główny produkt i wskazówki. Czas — Europe/Warsaw.')}</p><p role="status"><strong>${E(status)}</strong></p>${config?.botUsername&&/^[A-Za-z0-9_]{5,32}$/.test(config.botUsername)?`<p><a class="hp-button" href="https://t.me/${E(config.botUsername)}" target="_blank" rel="noopener noreferrer">${L('Відкрити свого бота','Otwórz swojego bota')} ↗</a></p>`:''}${last?`<p class="hp-muted">${L('Остання доставка','Ostatnia wysyłka')}: ${E(last.reportDate||'')} · ${E(last.status||'')}${date?' · '+E(date):''}${last.lastError?' · '+E(last.lastError):''}</p>`:''}
+ ${canConfigure?`<form id="hm-telegram-report-form" class="hp-form"><div class="hp-form-grid"><label class="hp-field">${L('Токен твого Telegram-бота','Token Twojego bota Telegram')}<input type="password" name="telegram_report_token" autocomplete="new-password" maxlength="160" placeholder="${config.configured?L('Залиш порожнім, щоб зберегти поточний','Pozostaw puste, aby zachować obecny'):'123456789:…'}"></label><label class="hp-field">${L('ID твого приватного чату з ботом','ID Twojego prywatnego czatu z botem')}<input type="text" name="telegram_report_chat" inputmode="numeric" autocomplete="off" maxlength="30" placeholder="${config.configured?L('Порожнє поле збереже поточний ID','Puste pole zachowa obecne ID'):'123456789'}"></label></div><p class="hp-muted">${L('Створи власного бота через @BotFather, відкрий його приватний чат і натисни Start. Внеси токен та ID свого чату. Збережені значення не показуються в адмінці.','Utwórz własnego bota przez @BotFather, otwórz jego prywatny czat i naciśnij Start. Wpisz token i ID swojego czatu. Zapisane wartości nie są wyświetlane w panelu.')}</p><label class="hp-check"><input type="checkbox" name="telegram_report_enabled" ${config.enabled?'checked':''}><span>${L('Надсилати щодня о 09:00 за часом Варшави','Wysyłaj codziennie o 09:00 czasu Warszawy')}</span></label><button type="submit" class="hp-button hp-primary">${L('Зберегти налаштування звіту','Zapisz ustawienia raportu')}</button></form><div class="hp-form-actions">${button('telegram-report-test',L('Перевірити підключення','Sprawdź połączenie'),false,config.configured?'':'disabled')}${button('telegram-report-send',L('Надіслати звіт за вчора','Wyślij raport za wczoraj'),false,config.configured&&config.recipientVerified?'':'disabled')}</div>`:ready?`<p class="hp-muted">${L('Налаштування бота доступні власнику магазину.','Ustawienia bota są dostępne właścicielowi sklepu.')}</p>`:''}
+ ${button('telegram-report-reload',L('Оновити стан','Odśwież status'),false,state.loading?'disabled':'')}<p id="hm-telegram-report-message" role="status">${E(state.message||'')}</p>${state.preview?`<details class="hp-form-section" open><summary>${L('Попередній перегляд звіту','Podgląd raportu')}</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${E(state.preview)}</pre></details>`:''}</section>`;
+}
+ async function refreshTelegramReport(){
+ if(!c.admin||c.view!=='settings')return;
+ telegramReportState.loading=true;telegramReportState.error=false;
+ q('#hm-telegram-report-settings')?.outerHTML&&(q('#hm-telegram-report-settings').outerHTML=renderTelegramReportPanel());
+ try{telegramReportState.config=await c.db.getTelegramReportSettings();}
+ catch{telegramReportState.error=true;}
+ finally{telegramReportState.loading=false;if(c.admin&&c.view==='settings'&&q('#hm-telegram-report-settings'))q('#hm-telegram-report-settings').outerHTML=renderTelegramReportPanel();}
+}
+ async function runTelegramReport(action){
+ if(!c.admin)return;
+ telegramReportState.message='';telegramReportState.preview='';
+ await c.run(async()=>{
+  try{
+   const result=action==='test'?await c.db.testTelegramReport():await c.db.sendTelegramReport();
+   telegramReportState.message=action==='test'?L('Підключення перевірено. Попередній перегляд нижче.','Połączenie sprawdzone. Podgląd znajduje się poniżej.'):L('Запит на звіт виконано. Перевір останню доставку нижче.','Żądanie raportu wykonane. Sprawdź ostatnią wysyłkę poniżej.');
+   if(action==='test'&&typeof result?.preview==='string')telegramReportState.preview=result.preview.slice(0,6000);
+  }catch{telegramReportState.message=L('Не вдалося виконати запит. Перевір токен, приватний чат із ботом і стан доставки.','Nie udało się wykonać żądania. Sprawdź token, prywatny czat z botem i status wysyłki.');}
+ });
+}
+ function renderPromotion(){
+ const p=activeHomePromotion(c.products);
+ if(!p)return '';
+ const state=promotionState(p),price=effectivePrice(p),money=value=>new Intl.NumberFormat(c.lang==='pl'?'pl-PL':'uk-UA',{maximumFractionDigits:0}).format(value);
+ const title=c.lang==='pl'?p.promoTitlePl:p.promoTitleUk;
+ const date=new Intl.DateTimeFormat(c.lang==='pl'?'pl-PL':'uk-UA',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Warsaw'}).format(state.endsAt);
+ return `<section class="hp-home-section hm-weekly-offer" aria-labelledby="hm-weekly-offer-title" data-promo-id="${p.id}"><div class="hm-weekly-offer-copy"><span class="hp-kicker">${L('ОБМЕЖЕНА ПРОПОЗИЦІЯ','OFERTA CZASOWA')}</span><h2 id="hm-weekly-offer-title">${E(title||L('Пропозиція тижня','Oferta tygodnia'))}</h2><h3>${E(p.name)}</h3><div class="hm-weekly-offer-prices"><del>${money(Number(p.price))} zł</del><strong>${money(price)} zł</strong></div><p class="hm-weekly-offer-saving">${L('Економія','Oszczędzasz')}: ${money(Number(p.price)-price)} zł</p><div class="hm-weekly-offer-countdown"><span>${L('Акція до','Oferta do')} <time datetime="${E(new Date(state.endsAt).toISOString())}">${E(date)}</time> · ${L('час Варшави','czas Warszawy')}</span><strong data-promo-countdown aria-label="${L('До завершення акції','Do końca oferty')}"></strong></div><button type="button" class="hp-button hm-telegram-order" data-order-one="${p.id}">${c.icon('send')}${L('Замовити в Telegram','Zamów w Telegramie')}</button><button type="button" class="hp-button" data-detail="${p.id}">${L('Детальніше про товар','Szczegóły produktu')}</button></div><div class="hm-weekly-offer-media"><div class="hp-photo">${p.images?.[0]?`<img src="${E(c.db.photoUrl(p.images[0]))}" alt="${E(p.name)}" width="640" height="480" loading="lazy" decoding="async">`:''}</div></div></section>`;
+}
+ function startPromotionClock(){
+ clearInterval(promotionClock);
+ if(!['home','catalog','detail','cart','compare','finder','shared'].includes(c.view))return;
+ const scheduled=c.products.filter(p=>['upcoming','active'].includes(promotionState(p).status));
+ if(!scheduled.length)return;
+ const snapshot=()=>scheduled.map(p=>`${p.id}:${promotionState(p).status}`).join('|');
+ const baseline=snapshot();
+ const tick=()=>{
+  if(snapshot()!==baseline){clearInterval(promotionClock);if(!document.hidden)c.render();return;}
+  const offer=q('[data-promo-id]'),timer=q('[data-promo-countdown]');
+  if(!offer||!timer)return;
+  const p=scheduled.find(item=>Number(item.id)===Number(offer.dataset.promoId)),state=p&&promotionState(p);
+  if(!state||state.status!=='active'){offer.hidden=true;return;}
+  const seconds=Math.max(0,Math.ceil(state.remainingMs/1000)),days=Math.floor(seconds/86400),hours=Math.floor(seconds%86400/3600),minutes=Math.floor(seconds%3600/60),secs=seconds%60;
+  timer.textContent=`${days?`${days} ${L('дн.','dni')} `:''}${[hours,minutes,secs].map(v=>String(v).padStart(2,'0')).join(':')}`;
+ };
+ tick();
+ promotionClock=setInterval(tick,1000);
+}
  function afterRender(){
  const view=c.view;
  renderTelegramBanner();
  if(['quality','settings','seo','drafts','versions'].includes(view)&&!c.admin)return;
- if(view==='quality')renderQuality();if(view==='settings')renderSettings();if(view==='seo')renderSeo();if(view==='drafts')renderDraftList();if(view==='versions')renderVersions();
+ if(view==='quality')renderQuality();if(view==='settings'){renderSettings();content().insertAdjacentHTML('beforeend',renderTelegramReportPanel());void refreshTelegramReport();}if(view==='seo')renderSeo();if(view==='drafts')renderDraftList();if(view==='versions')renderVersions();
  if(view==='finder')renderFinder();if(view==='shared')renderShared();
  if(c.admin&&['admin','picks','quality','settings','seo','drafts','versions','reviews','stats','activity'].includes(view)){q('.hp-admin-tabs')?.insertAdjacentHTML('afterend',adminTabs());}
- if(view==='admin'){const count=c.products.filter(p=>[0,3].includes(p.status)&&productIssues(p).length).length;q('.hp-intro')?.insertAdjacentHTML('afterend',`<aside class="hp-admin-health"><span>${L('Картки, які варто доповнити','Karty do uzupełnienia')}: <b>${count}</b></span>${button('quality',L('Перевірити','Sprawdź'))}${button('drafts',L('Мої чернетки','Moje szkice'))}</aside>`);}
+ if(view==='admin'){const count=c.products.filter(p=>[0,3,4,5].includes(Number(p.status))&&productReadiness(p).issues.length).length;q('.hp-intro')?.insertAdjacentHTML('afterend',`<aside class="hp-admin-health"><span>${L('Основні дані для перевірки','Podstawowe dane do sprawdzenia')}: <b>${count}</b></span>${button('quality',L('Перевірити','Sprawdź'))}${button('drafts',L('Мої чернетки','Moje szkice'))}</aside>`);}
  if(view==='reviews'){const complete=c.reviews.filter(r=>r.is_published&&r.image_path&&r.purchased_model&&r.customer_name).length;q('.hp-intro')?.insertAdjacentHTML('afterend',`<aside class="hp-admin-health"><div><strong>${L('Повні відгуки зі скрином і моделлю','Pełne opinie ze zrzutem i modelem')}: ${complete}</strong><p>${L('Рекомендовано 4–6 реальних відгуків. Додай ім’я, придбану модель і текст клієнта. Перед публікацією приховай особисті контакти на скриншоті.','Warto dodać 4–6 prawdziwych opinii: imię, kupiony model i tekst klienta. Przed publikacją ukryj prywatne dane na zrzucie.')}</p></div></aside>`);}
  if(view==='stats'&&!c.statsLoading&&!c.statsError)content().insertAdjacentHTML('beforeend',renderPlacements()+insights.render());
- if(view==='home')q('#hm-home-terms')?.insertAdjacentHTML('beforeend',trustBlock());
+ if(view==='home'){q('#hm-home-terms')?.insertAdjacentHTML('beforeend',trustBlock());const offer=renderPromotion();if(offer)q('.hm-selection')?.insertAdjacentHTML('beforebegin',offer);}
+ startPromotionClock();
 
  if(view==='detail'){const p=c.products.find(p=>p.id===c.selected);if(p){remember(p.id);q('.hm-compact-detail')?.insertAdjacentHTML('afterend',trustBlock());q('.hp-buy-panel')?.insertAdjacentHTML('beforeend',`<div class="hp-product-subscribe"><div class="hp-product-subscribe-copy"><strong>${L('Безкоштовна доставка','Bezpłatna dostawa')}</strong><span>${L('Для підписників нашого Telegram-каналу. Плюс спеціальні пропозиції.','Dla subskrybentów naszego kanału Telegram. Do tego oferty specjalne.')}</span></div><a class="hp-product-subscribe-cta" href="${E(channelUrl('product'))}" data-track-target="telegram_channel" data-track-placement="product" target="_blank" rel="noopener noreferrer">${c.icon('send')}<span>${L('Підписатися в Telegram','Dołącz do Telegrama')}</span>${c.icon('arrow-up-right')}</a></div>`);}}
  if(['home','catalog','detail'].includes(view))content().insertAdjacentHTML('beforeend',recentBlock());
@@ -200,6 +274,8 @@ function renderSeo(){
  }
  async function handleClick(b){
  const action=b.dataset.grow;if(!action)return false;
+ if(action==='telegram-report-reload'){if(c.admin)await refreshTelegramReport();return true;}
+ if(action==='telegram-report-test'||action==='telegram-report-send'){if(c.admin)await runTelegramReport(action==='telegram-report-test'?'test':'send');return true;}
  if(action==="check-photos"){if(c.admin)await checkPhotos();return true;}
  if(['quality','settings','seo','drafts','versions','open-draft','delete-draft','restore-version','resume-draft','discard-draft','preview','reload-settings'].includes(action)&&!c.admin)return true;
  if(['quality','settings','seo','drafts','finder'].includes(action)){await beforeLeave();navigate(action);}
@@ -222,6 +298,7 @@ function renderSeo(){
  return true;
  }
  async function handleSubmit(form){if(form.id==='hp-form'&&draftPending){c.notify(L('Спочатку віднови або відкинь попередню чернетку.','Najpierw przywróć lub odrzuć poprzedni szkic.'));return true;}if(form.id==='hp-quiz-form'){Object.assign(quiz,Object.fromEntries(new FormData(form)));if(quizStep<2)quizStep++;else quizResults=true;c.render();window.scrollTo(0,0);return true;}
+ if(form.id==='hm-telegram-report-form'){if(!c.admin)return true;const d=new FormData(form);await c.run(async()=>{try{await c.db.saveTelegramReportSettings({token:String(d.get('telegram_report_token')||'').trim(),chatId:String(d.get('telegram_report_chat')||'').trim(),enabled:d.has('telegram_report_enabled')});telegramReportState.message=L('Налаштування збережено. Перевір підключення перед першою відправкою.','Ustawienia zapisane. Sprawdź połączenie przed pierwszą wysyłką.');telegramReportState.preview='';}catch{telegramReportState.message=L('Не вдалося зберегти. Перевір токен, числовий ID приватного чату й доступ власника.','Nie udało się zapisać. Sprawdź token, liczbowy ID prywatnego czatu i uprawnienia właściciela.');}});return true;}
  if(form.id==='hp-settings-form'){if(!c.admin)return true;const d=Object.fromEntries(new FormData(form));await c.run(async()=>{try{const value=validateSettings({homepage:{featuredProductId:d.home_featured_product,featuredLabel:{uk:d.home_label_uk,pl:d.home_label_pl}},links:Object.fromEntries(LINK_SLOTS.map(k=>[k,d['link_'+k]])),trust:Object.fromEntries(TRUST_SECTIONS.map(k=>[k,Object.fromEntries(['uk','pl'].map(l=>[l,d['trust_'+k+'_'+l]]))]))});await c.db.saveSettings({...value,updated_at:settings.updated_at});await reloadSettings();if(settingsError)throw Error('saveUnconfirmed');c.render();for(const el of c.root.querySelectorAll('#hp-settings-message,#hp-home-settings-message'))el.textContent=L('Збережено. Зміни вже використовуються на сайті.','Zapisano. Zmiany są już używane na stronie.');}catch(err){for(const el of c.root.querySelectorAll('#hp-settings-message,#hp-home-settings-message'))el.textContent=message(err);}});return true;}if(form.id==='hp-seo-form'){
     if(!c.admin)return true;
     const d=Object.fromEntries(new FormData(form)),seo={...(settings.seo||{}),pages:{...(settings.seo?.pages||{})}};
@@ -248,6 +325,7 @@ function renderSeo(){
     }catch(err){if(q('#hp-seo-message'))q('#hp-seo-message').textContent=message(err);}});
     return true;
   }return false;}
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&['home','catalog','detail','cart','compare','finder','shared'].includes(c.view)&&c.products.some(p=>promotionState(p).scheduled))c.render();});
  c.root.addEventListener('input',e=>{if(e.target.closest('#hp-form'))changed();});
  c.root.addEventListener('change',e=>{if(e.target.closest('#hp-form')&&e.target.type!=='file')changed();});
  c.root.addEventListener('input',e=>{

@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {rankLaptops, laptopHighlights, selectionIds, shareSelection, normalizeInvite, validateSettings, productIssues, publicProduct} from '../src/enhancement-core.js';
+import {rankLaptops, laptopHighlights, selectionIds, shareSelection, normalizeInvite, validateSettings, productIssues, productReadiness, publicProduct} from '../src/enhancement-core.js';
 const p={id:1,cat:0,status:0,price:1500,ram:'16',ssd:'256',screen:'14',quantity:'1',purposes:'study,office'};
 test('finder respects final discounted price, stock and screen; never silently increases budget',()=>{
  const rows=[p,{...p,id:2,price:1600,discount:'10'},{...p,id:3,price:999,status:3},{...p,id:4,quantity:'0'},{...p,id:5,screen:'15.6'}];
@@ -33,3 +33,7 @@ test('homepage settings normalize automatic selection and reject invalid product
  for(const id of ['-1','1.2','Infinity','1<script>',Number.MAX_SAFE_INTEGER+1])assert.throws(()=>validateSettings({homepage:{featuredProductId:id}}),/validation/);
  assert.throws(()=>validateSettings({homepage:{featuredLabel:{uk:'a'.repeat(81)}}}),/validation/);
 });
+
+test('public unavailable and expected products remain readable while drafts and archives stay private',()=>{for(const status of [0,1,2,4,5])assert.equal(publicProduct({...p,status}),true);for(const status of [3,6,-1])assert.equal(publicProduct({...p,status}),false);});
+
+test('quality separates optional provenance and Telegram links from invalid price and missing purchase facts',()=>{const complete={...p,images:['photo.webp'],condition:'A',warranty:'12',charger:'included',descUk:'Опис',descPl:'Opis',updated_at:new Date().toISOString()};const state=productReadiness(complete);assert.deepEqual(state.issues,[]);assert.deepEqual(state.advisories,['post','photoKind']);assert(productReadiness({...complete,price:0}).issues.includes('price'));assert(productReadiness({...complete,images:[]}).issues.includes('photos'));});

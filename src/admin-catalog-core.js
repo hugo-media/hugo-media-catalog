@@ -1,4 +1,4 @@
-import {MAX_DISCOUNT_PERCENT,discountPercent,effectivePrice} from './core.js';
+import {MAX_DISCOUNT_PERCENT,configuredDiscountPercent,effectivePrice} from './core.js';
 
 export function normalizeQuickFields(fields) {
  const fail=field=>{const e=Error('validation');e.field=field;throw e;};
@@ -20,7 +20,7 @@ export function normalizeQuickFields(fields) {
 
 export function quickValue(product,key) {
  if(key==='quantity')return product.quantity===''||product.quantity==null?1:Number(product.quantity);
- if(key==='discount')return discountPercent(product);
+ if(key==='discount')return configuredDiscountPercent(product);
  if(key==='newArrival'||key==='bestseller')return product[key]==='true'?'true':'';
  return Number(product[key]);
 }
@@ -50,7 +50,7 @@ export function filterAdminProducts(products,filters={}) {
   if(filters.status!==''&&filters.status!=null&&Number(p.status)!==Number(filters.status))return false;
   if(filters.mark==='new'&&p.newArrival!=='true')return false;
   if(filters.mark==='best'&&p.bestseller!=='true')return false;
-  if(filters.mark==='discount'&&!discountPercent(p))return false;
+  if(filters.mark==='discount'&&!configuredDiscountPercent(p))return false;
   if(filters.mark==='empty'&&quickValue(p,'quantity')>0)return false;
   const haystack=normalized([p.name,p.brand,String(p.id),'HMG-'+String(p.id).padStart(3,'0')].join(' '));
   return terms.every(term=>haystack.includes(term));

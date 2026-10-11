@@ -1,6 +1,8 @@
-// Five-second, once-per-session brand intro. The destination and app load normally.
+// Five-second, once-per-session brand intro only on the dedicated start entry.
 (() => {
   const url = new URL(location.href);
+  // Shopping and shared product links stay immediately usable.
+  if (!/^\/(?:uk\/|pl\/)?start\/?$/.test(url.pathname)) return;
   const privateKeys = ['admin', 'finder', 'selection', 'code', 'error', 'type'];
   const hash = new URLSearchParams(url.hash.replace(/^#/, ''));
   if (privateKeys.some(key => url.searchParams.has(key)) ||
@@ -63,7 +65,7 @@
     if (root) root.inert = previousInert;
     if (restoreFocus) {
       const target = previousFocus?.isConnected && previousFocus !== document.body && previousFocus !== document.documentElement
-        ? previousFocus : root?.querySelector('.hp-brand');
+        ? previousFocus : root?.querySelector('.hm-start-main') || root?.querySelector('.hp-brand');
       target?.focus({preventScroll: true});
     }
   }
