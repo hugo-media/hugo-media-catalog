@@ -24,14 +24,18 @@ create table if not exists public.hmg_catalog_products (
  id bigint generated always as identity primary key,
  name text not null check (char_length(btrim(name)) between 1 and 180),
  brand text not null check (char_length(btrim(brand)) between 1 and 80),
- cat smallint not null check (cat between 0 and 5),
+ cat smallint not null check (cat between 0 and 6),
  status smallint not null default 3 check (status between 0 and 3),
  price numeric(12,2) not null check (price between 0 and 10000000),
  condition text not null default '',
  warranty text not null default '',
  desc_uk text not null default '' check (char_length(desc_uk)<=10000),
  desc_pl text not null default '' check (char_length(desc_pl)<=10000),
- specs jsonb not null default '{}'::jsonb check (jsonb_typeof(specs)='object'),
+ specs jsonb not null default '{}'::jsonb check (jsonb_typeof(specs)='object') constraint hmg_catalog_products_sale_price_check check (case
+ when not (specs ? 'salePrice') or specs->>'salePrice' is null or btrim(specs->>'salePrice') = '' then true
+ when jsonb_typeof(specs->'salePrice') in ('string','number') and specs->>'salePrice' ~ '^[0-9]+([.][0-9]{1,2})?$' then
+  (specs->>'salePrice')::numeric >= price / 100 and (specs->>'salePrice')::numeric < price
+ else false end),
  images text[] not null default '{}'::text[] check (cardinality(images)<=8),
  created_at timestamptz not null default now(),
  updated_at timestamptz not null default now()

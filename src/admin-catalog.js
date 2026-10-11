@@ -1,5 +1,5 @@
 import {discountPercent,effectivePrice} from './core.js';
-import {filterAdminProducts,normalizeQuickFields,planQuickChanges,quickValue} from './admin-catalog-core.js';
+import {filterAdminProducts,normalizeQuickFields,planQuickChanges,quickValue,quickPricePreview} from './admin-catalog-core.js';
 
 export function createAdminCatalog(c) {
  const E=c.esc,L=(u,p)=>c.lang==='pl'?p:u;
@@ -15,7 +15,7 @@ export function createAdminCatalog(c) {
  function dirty(id){const d=drafts.get(id);if(!d)return false;try{return planQuickChanges([d.base],[id],d.fields).length>0;}catch{return true;}}
  function productRow(p){
   const d=drafts.get(p.id),fields=d?.fields||rawFields(p),changed=dirty(p.id),stale=d&&d.base.updated_at!==p.updated_at;
-  let final=effectivePrice(p);try{const parsed=normalizeQuickFields(fields);final=effectivePrice({...p,...parsed});}catch{final=null;}
+  let final=effectivePrice(p);try{const parsed=normalizeQuickFields(fields);final=effectivePrice(quickPricePreview(p,parsed));}catch{final=null;}
   const title=E(p.name),id=`HMG-${String(p.id).padStart(3,'0')}`,disabled=busy?'disabled':'';
   return `<article class="hm-admin-product ${changed?'is-dirty':''}" data-admin-row="${p.id}">
    <div class="hm-admin-product-head"><label class="hm-admin-checkbox"><input type="checkbox" data-admin-select="${p.id}" aria-label="${E(L('Обрати','Wybierz'))} ${title}" ${selected.has(p.id)?'checked':''} ${disabled}></label>${p.images?.[0]?`<img class="hm-admin-thumb" src="${E(c.photoUrl(p.images[0]))}" alt="" loading="lazy">`:''}<div><h3>${title}</h3><p>${id} · ${E(c.t('categories')[p.cat])} · ${E(p.brand)}</p><div class="hm-admin-badges">${p.newArrival==='true'?`<span>${E(c.t('newArrival'))}</span>`:''}${p.bestseller==='true'?`<span>${E(c.t('bestseller'))}</span>`:''}</div></div></div>
@@ -29,7 +29,7 @@ export function createAdminCatalog(c) {
   return `<select id="hm-admin-bulk-value">${option('true',L('Так','Tak'),bulkValue)}${option('',L('Ні','Nie'),bulkValue)}</select>`;
  }
  function formatValue(p,field,value){
-  if(field==='discount')return `${value}% · ${c.money(effectivePrice({...p,discount:value}))} zł`;
+  if(field==='discount')return `${value}% · ${c.money(effectivePrice(quickPricePreview(p,{discount:value})))} zł`;
   if(field==='status')return c.t('statuses')[Number(value)];
   return value==='true'?L('Так','Tak'):L('Ні','Nie');
  }
@@ -69,7 +69,7 @@ export function createAdminCatalog(c) {
    const d=drafts.get(id)||{base:{...p},fields:rawFields(p)};d.fields[el.name]=el.value;drafts.set(id,d);preview=null;
    const changed=dirty(id),stale=d.base.updated_at!==p.updated_at;if(!changed&&!stale)drafts.delete(id);form.closest('[data-admin-row]').classList.toggle('is-dirty',changed);
    form.querySelector('[data-admin-save-button]').disabled=!changed||stale;form.querySelector('[data-admin-reset]').disabled=!changed&&!stale;
-   let final=null;try{final=effectivePrice({...p,...normalizeQuickFields(d.fields)});}catch{}
+   let final=null;try{final=effectivePrice(quickPricePreview(p,d.fields));}catch{}
    form.querySelector('[data-admin-final]').innerHTML=`${E(L('Після знижки','Po rabacie'))}: <strong>${final===null?'—':E(c.money(final))+' zł'}</strong>`;
    sync();return true;
   }

@@ -1,9 +1,9 @@
 import { effectivePrice, BUCKET } from './core.js';
 export const ORIGIN = 'https://www.hugomedia.pl';
-export const categories = ['laptops','phones','tablets','headphones','smartwatches','monitors'];
+export const categories = ['laptops','phones','tablets','headphones','smartwatches','monitors','smart-devices'];
 export const labels = {
-  uk: ['Ноутбуки','Телефони','Планшети','Навушники','Смартгодинники','Монітори'],
-  pl: ['Laptopy','Telefony','Tablety','Słuchawki','Smartwatche','Monitory'],
+  uk: ['Ноутбуки','Телефони','Планшети','Навушники','Смартгодинники','Монітори','Смартдевайси'],
+  pl: ['Laptopy','Telefony','Tablety','Słuchawki','Smartwatche','Monitory','Smart gadżety'],
 };
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function visibleSeoContent(page={},fallbackTitle='',escape=escapeHtml) {
@@ -44,6 +44,7 @@ export function productAvailability(product={}) {
 }
 export function productItemCondition(value='') {
   const condition=String(value||'').toLowerCase();
+  if(/уточню|do ustalenia|не вказано|nie podano/.test(condition)) return null;
   if(/refurb|renew|відновлен|восстановлен|odnow|rekondycj/.test(condition)) return 'https://schema.org/RefurbishedCondition';
   if(/(^|[^a-z])(?:new|nowy|nowa|nowe)([^a-z]|$)|нов(?:ий|а|е|і)/i.test(condition)) return 'https://schema.org/NewCondition';
   return 'https://schema.org/UsedCondition';
@@ -65,9 +66,9 @@ export function metadata({lang='uk',view='home',cat=-1,product,base='',noindex=f
     {'@type':'WebSite','@id':ORIGIN+'/#website',url:ORIGIN,name:'Hugo Media',inLanguage:['uk','pl'],publisher:{'@id':ORIGIN+'/#organization'}}];
   if(product) {
     const item={'@type':'Product','@id':url+'#product',name:product.name,description,url,sku:`HMG-${String(product.id).padStart(3,'0')}`,
-      ...(product.brand?{brand:{'@type':'Brand',name:product.brand}}:{}),
+      ...(product.brand&&!/не вказано|nie podano/i.test(product.brand)?{brand:{'@type':'Brand',name:product.brand}}:{}),
       ...(image?{image:product.images.map(p=>imageUrl(p,base))}:{}),
-      offers:{'@type':'Offer',url,priceCurrency:'PLN',price:effectivePrice(product).toFixed(2),availability:productAvailability(product),itemCondition:productItemCondition(product.condition),seller:{'@id':ORIGIN+'/#organization'}}};
+      offers:{'@type':'Offer',url,priceCurrency:'PLN',price:effectivePrice(product).toFixed(2),availability:productAvailability(product),...(productItemCondition(product.condition)?{itemCondition:productItemCondition(product.condition)}:{}),seller:{'@id':ORIGIN+'/#organization'}}};
     graph.push(item,{'@type':'BreadcrumbList',itemListElement:[
       {'@type':'ListItem',position:1,name:pl?'Katalog':'Каталог',item:ORIGIN+catalogPath(lang)},
       {'@type':'ListItem',position:2,name:labels[lang][product.cat],item:ORIGIN+catalogPath(lang,product.cat)},

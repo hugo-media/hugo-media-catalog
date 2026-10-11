@@ -25,6 +25,12 @@ export function quickValue(product,key) {
  return Number(product[key]);
 }
 
+export function quickPricePreview(product,fields) {
+ const normalized=normalizeQuickFields(fields);
+ const changesPrice=['price','discount'].some(key=>Object.hasOwn(normalized,key)&&normalized[key]!==quickValue(product,key));
+ return {...product,...normalized,...(changesPrice?{salePrice:''}:{})};
+}
+
 export function planQuickChanges(products,ids,fields) {
  const normalized=normalizeQuickFields(fields);
  if(!Array.isArray(ids)||!ids.length||ids.length>100||new Set(ids).size!==ids.length||ids.some(id=>!Number.isSafeInteger(id)||id<1))throw Error('validation');

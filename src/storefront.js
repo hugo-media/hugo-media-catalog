@@ -1,5 +1,5 @@
 import { productPath, pagePath, visibleSeoContent } from './seo-core.js';
-import { effectivePrice, discountPercent, csv, telegramLink, availabilityRequestText } from './core.js';
+import { effectivePrice, discountPercent, discountBadge, csv, telegramLink, availabilityRequestText } from './core.js';
 
 // Normalize display/filter values without rewriting the source specifications.
 export function normalizedSpec(key, value) {
@@ -49,7 +49,7 @@ export function featuredProduct(products,picks=[],preferredId=null) {
 export function createStorefront(c) {
   const L = (uk, pl) => c.lang === 'pl' ? pl : uk;
   const E = c.esc;
-  const specSummary = p => (p.cat===3 ? [p.noise, p.connection] : p.cat===5 ? [specLabel('screen',p.screen),p.resolution,p.refreshRate] : [p.cpu,p.ram && `${specLabel('ram',p.ram)} RAM`,p.ssd && `${specLabel('ssd',p.ssd)}${p.cat===0?' SSD':''}`, p.cat===0 && specLabel('screen',p.screen),p.cat===0 && /^(NVIDIA|AMD)/i.test(p.gpu||'') && p.gpu]).filter(Boolean).join(' · ');
+  const specSummary = p => (p.cat===3 ? [p.noise, p.connection] : p.cat===4 ? [specLabel('screen',p.screen),c.localizedValue(p.compatibility),c.localizedValue(p.battery)] : p.cat===6 ? [c.localizedValue(p.type),c.localizedValue(p.compatibility),p.bluetooth&&`Bluetooth ${p.bluetooth}`] : p.cat===5 ? [specLabel('screen',p.screen),p.resolution,p.refreshRate] : [p.cpu,p.ram && `${specLabel('ram',p.ram)} RAM`,p.ssd && `${specLabel('ssd',p.ssd)}${p.cat===0?' SSD':''}`, p.cat===0 && specLabel('screen',p.screen),p.cat===0 && /^(NVIDIA|AMD)/i.test(p.gpu||'') && p.gpu]).filter(Boolean).join(' · ');
   function card(p, options={}) {
     const compact=Boolean(options&&typeof options==='object'&&options.compact);
     const summary=specSummary(p);
@@ -67,7 +67,7 @@ export function createStorefront(c) {
       ? '<a class="hp-button hp-primary hp-card-order" href="'+E(telegramLink(availabilityRequestText(p,c.lang,productUrl)))+'" target="_blank" rel="noopener noreferrer" data-track-target="telegram_stock_request">'+E(L('Повідомити про наявність','Powiadom o dostępności'))+'</a>'
       : '<button type="button" class="hp-button hp-primary hp-card-order" data-order-one="'+p.id+'" '+(unavailable ? 'disabled aria-disabled="true"' : '')+'>'+(unavailable ? '' : c.icon('send'))+(unavailable ? E(unavailableLabel) : c.t('cardOrder'))+'</button>';
     if(unavailable)tags.push(`<span class="hp-badge-out">${E(unavailableLabel)}</span>`);
-    if(discount)tags.push(`<span class="hp-badge-sale">−${discount}%</span>`);
+    if(discount)tags.push(`<span class="hp-badge-sale">${E(discountBadge(p,'−'))}</span>`);
     if(p.newArrival==='true')tags.push(`<span class="hp-badge-new">${c.t('newArrival')}</span>`);
     else if(p.bestseller==='true')tags.push(`<span class="hp-badge-best">${c.t('bestseller')}</span>`);
     const extras=csv(p.benefits).filter(x=>['touch','keyboard'].includes(x)).map(x=>c.t(x==='touch'?'benefitTouch':'benefitKeyboard'));
