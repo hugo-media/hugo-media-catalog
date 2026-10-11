@@ -4,7 +4,7 @@ import { adminUpgrades, configPanel } from './configurator.js';
 import { configuration } from './core.js';
 import { safeSearch, startFunnel } from './insights-core.js';
 import { createAdminCatalog } from './admin-catalog.js';
-import { createStorefront, normalizedSpec, specLabel, filterValues, displayBrand, matchesAvailability, catalogSort, comparisonSelection, comparisonRows } from "./storefront.js";
+import { createStorefront, normalizedSpec, specLabel, filterValues, displayBrand, matchesAvailability, catalogSort, comparisonSelection, comparisonRows, productMediaUrl } from "./storefront.js";
 import { createEnhancements } from "./enhancements.js";
 import * as db from "./data.js";
 import {
@@ -2368,7 +2368,7 @@ import {
       const availabilityLabel=lang==='uk'?'Повідомити про наявність':'Powiadom o dostępności';
       const mediaReviewLabel=lang==='uk'?'Фото та відеоогляд у Telegram':'Zdjęcia i prezentacja w Telegramie';
       const mediaReviewHint=lang==='uk'?'Посилання на огляд ще не додано':'Nie dodano jeszcze linku do prezentacji';
-      const mediaReviewUrl=normalizeTelegramPost(p.telegramPost);
+      const mediaReviewUrl=productMediaUrl(p.telegramPost);
       const mediaReviewContent=icon('play-circle')+'<span>'+mediaReviewLabel+'</span>'+icon('arrow-up-right');
       const mediaReviewAction=mediaReviewUrl
         ? '<a class="hp-button hp-channel-button" href="'+esc(mediaReviewUrl)+'" target="_blank" rel="noopener noreferrer">'+mediaReviewContent+'</a>'

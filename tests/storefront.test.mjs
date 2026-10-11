@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizedSpec,specLabel,filterValues,homeSelection,homeCollections,createStorefront,displayBrand,availabilityRank,matchesAvailability,catalogSort,comparisonSelection,comparisonRows} from '../src/storefront.js';
+import {normalizedSpec,specLabel,filterValues,homeSelection,homeCollections,createStorefront,displayBrand,availabilityRank,matchesAvailability,catalogSort,comparisonSelection,comparisonRows,productMediaUrl} from '../src/storefront.js';
 import {escapeHtml} from '../src/seo-core.js';
 test('mixed existing screen and capacity formats produce usable sorted filters',()=>{
  assert.deepEqual(filterValues([{ram:'16'},{ram:'8 GB'},{ram:'32'},{ram:'8'}],'ram'),['8','16','32']);
@@ -182,4 +182,11 @@ test('home does not repeat its chosen hero in the daily recommendation cards',()
  const html=createStorefront(c).home([p],[p]);
  assert.match(html,/hm-hero-product/);
  assert.doesNotMatch(html,/hm-daily/);
+});
+
+test('product media requires a real post path rather than a channel-only URL',()=>{
+ for(const value of ['', 'https://t.me/h_m_g_pl', 'https://t.me/h_m_g_pl/', 'https://t.me/other_channel/123', 'not a link'])assert.equal(productMediaUrl(value),null);
+ assert.equal(productMediaUrl('https://t.me/h_m_g_pl/123'),'https://t.me/h_m_g_pl/123');
+ assert.equal(productMediaUrl('https://telegram.me/s/h_m_g_pl/123?single'),'https://t.me/h_m_g_pl/123');
+ assert.equal(productMediaUrl(' https://t.me/h_m_g_pl/123?single '),'https://t.me/h_m_g_pl/123');
 });
