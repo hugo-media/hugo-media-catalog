@@ -18,7 +18,7 @@ export const catalogPath = (lang='uk',cat=-1) => `/${lang}/catalog${categories[c
 export function parseRoute(pathname) {
   const parts=pathname.split('/').filter(Boolean);
   const lang=['uk','pl'].includes(parts[0]) ? parts.shift() : null;
-  if (!lang) return {lang:null,view:pathname==='/'?'home':pathname==='/start'?'start':'notFound',cat:-1};
+  if (!lang) return {lang:null,view:pathname==='/'||pathname==='/start'?'start':'notFound',cat:-1};
   if (!parts.length) return {lang,view:'home',cat:-1};
   if (parts.length===1 && parts[0]==='start') return {lang,view:'start',cat:-1};
   if (parts[0]==='catalog' && parts.length<=2 && (!parts[1]||categories.includes(parts[1]))) return {lang,view:'catalog',cat:parts[1]?categories.indexOf(parts[1]):-1};

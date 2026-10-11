@@ -63,7 +63,6 @@ test('untrusted product text cannot break out of HTML or JSON-LD',async()=>{
 });
 
 test('home canonical does not redirect back to a trailing slash',async()=>{
- const root=await page('/');assert.equal(root.headers.Location,'/uk');
  const home=await page('/uk');assert.equal(home.status,200);assert.equal(home.headers.Location,undefined);
  assert.match(home.body,/href="https:\/\/www.hugomedia.pl\/uk"/);
 });
@@ -105,4 +104,30 @@ test('admin SEO copy can safely supply a visible heading and readable paragraphs
  const copy=visibleSeoContent({title:'Używane laptopy biznesowe w Polsce | Hugo Media',intro:'Porównaj <modele> i ceny.\n\nSprawdź dostępność.'});
  assert.equal(copy.title,'Używane laptopy biznesowe w Polsce');
  assert.equal(copy.intro,'<p>Porównaj &lt;modele&gt; i ceny.</p><p>Sprawdź dostępność.</p>');
+});
+
+test('root opens the brand start page before the catalog without an inventory dependency',async()=>{
+ assert.deepEqual(parseRoute('/'),{lang:null,view:'start',cat:-1});
+ const noInventory={...options,loadProducts:async()=>{throw Error('entry must not load inventory');}};
+ const root=await servePage(new URL('https://www.hugomedia.pl/?utm_source=tiktok&utm_campaign=launch'),noInventory);
+ assert.equal(root.status,308);
+ assert.equal(root.headers.Location,'/uk/start?utm_source=tiktok&utm_campaign=launch');
+ for(const lang of ['uk','pl']) {
+  const start=await servePage(new URL('https://www.hugomedia.pl/'+lang+'/start'),noInventory);
+  assert.equal(start.status,200);
+  assert.equal(start.headers.Location,undefined);
+  assert.match(start.body,/class="hp-storefront hp-start-mode"/);
+  assert.match(start.body,/class="hm-start"/);
+  assert.ok(start.body.includes('href="/'+lang+'/catalog"'));
+  assert.match(start.body,/data-start-catalog/);
+ }
+});
+test('explicit legacy catalog links still bypass the start page',async()=>{
+ const catalog=await page('/?catalog&utm_source=tiktok');
+ assert.equal(catalog.status,308);
+ assert.equal(catalog.headers.Location,'/uk/catalog?utm_source=tiktok');
+ const direct=await page('/uk/catalog');
+ assert.equal(direct.status,200);
+ assert.equal(direct.headers.Location,undefined);
+ assert.match(direct.body,/HP EliteBook 850 G8/);
 });
