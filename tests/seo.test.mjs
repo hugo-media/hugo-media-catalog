@@ -106,7 +106,7 @@ test('admin SEO copy can safely supply a visible heading and readable paragraphs
  assert.equal(copy.intro,'<p>Porównaj &lt;modele&gt; i ceny.</p><p>Sprawdź dostępność.</p>');
 });
 
-test('root opens the brand start page before the catalog without an inventory dependency',async()=>{
+test('root opens the brand start page before the shop home without an inventory dependency',async()=>{
  assert.deepEqual(parseRoute('/'),{lang:null,view:'start',cat:-1});
  const noInventory={...options,loadProducts:async()=>{throw Error('entry must not load inventory');}};
  const root=await servePage(new URL('https://www.hugomedia.pl/?utm_source=tiktok&utm_campaign=launch'),noInventory);
@@ -118,8 +118,11 @@ test('root opens the brand start page before the catalog without an inventory de
   assert.equal(start.headers.Location,undefined);
   assert.match(start.body,/class="hp-storefront hp-start-mode"/);
   assert.match(start.body,/class="hm-start"/);
-  assert.ok(start.body.includes('href="/'+lang+'/catalog"'));
-  assert.match(start.body,/data-start-catalog/);
+  const shopLink=start.body.match(/<a href="([^"]+)" class="hm-start-catalog" data-start-catalog/);
+  assert.equal(shopLink?.[1],'/'+lang);
+  const home=await page(shopLink[1]);
+  assert.equal(home.status,200);
+  assert.equal(home.headers.Location,undefined);
  }
 });
 test('explicit legacy catalog links still bypass the start page',async()=>{
