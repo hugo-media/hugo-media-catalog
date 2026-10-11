@@ -1,4 +1,4 @@
-import { productPath, catalogPath, categories, visibleSeoContent } from './seo-core.js';
+import { productPath, catalogPath, pagePath, categories, visibleSeoContent } from './seo-core.js';
 import { updateSeo, currentRoute } from './seo-client.js';
 import { adminUpgrades, configPanel } from './configurator.js';
 import { configuration } from './core.js';
@@ -2752,10 +2752,10 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
     } else if (b.hasAttribute("data-start-catalog")) {
       recordEvent("catalog_click", null, "catalog");
       savePublicHistory();
-      view = "catalog";
+      view = "home";
       cat = -1;
       const campaign = new URLSearchParams(location.search);
-      history.pushState({hmg:true,view,selected,cat,search,sort,filters:{...filters},catalogScroll,scroll:0}, "", `${catalogPath(lang)}${campaign.size ? `?${campaign}` : ""}`);
+      history.pushState({hmg:true,view,selected,cat,search,sort,filters:{...filters},catalogScroll,scroll:0}, "", `${pagePath({lang,view})}${campaign.size ? `?${campaign}` : ""}`);
       render();
       window.scrollTo(0,0);
     } else if (b.dataset.view) {
