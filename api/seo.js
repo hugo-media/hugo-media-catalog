@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { fromRow, publicConfigValid } from '../src/core.js';
+import { fromRow, publicConfigValid, promotionState } from '../src/core.js';
 import { createStorefront } from '../src/storefront.js';
 import { ORIGIN, categories, labels, parseRoute, pagePath, catalogPath, productPath, categoryHasStock, metadata, headMarkup, sitemap, escapeHtml as E, imageUrl } from '../src/seo-core.js';
 const templatePromise=readFile(new URL('../index.html',import.meta.url),'utf8');
@@ -74,6 +74,8 @@ export async function servePage(url,{template,config,loadProducts=publicProducts
     status=503;headers['Retry-After']='60';headers['Cache-Control']='no-store';
     body='<h1>Hugo Media</h1><p>Каталог тимчасово недоступний. Спробуйте оновити сторінку. / Katalog chwilowo niedostępny. Odśwież stronę.</p>';
   }
+  // Scheduled prices must not survive their exact start/end boundary in the CDN.
+  if(products.some(p=>promotionState(p).scheduled))headers['Cache-Control']='private, no-store';
   const emptyCategory=route.view==='catalog'&&route.cat>=0&&!categoryHasStock(products,route.cat);
   const meta=metadata({...route,base:config.supabaseUrl,noindex:privatePage||preview||status!==200,emptyCategory,seo});
   if(meta.noindex) headers['X-Robots-Tag']='noindex, follow';

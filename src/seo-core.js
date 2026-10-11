@@ -1,4 +1,4 @@
-import { effectivePrice, BUCKET } from './core.js';
+import { effectivePrice, promotionState, warsawDate, BUCKET } from './core.js';
 export const ORIGIN = 'https://www.hugomedia.pl';
 export const categories = ['laptops','phones','tablets','headphones','smartwatches','monitors','smart-devices'];
 export const labels = {
@@ -49,7 +49,7 @@ export function productItemCondition(value='') {
   if(/(^|[^a-z])(?:new|nowy|nowa|nowe)([^a-z]|$)|нов(?:ий|а|е|і)/i.test(condition)) return 'https://schema.org/NewCondition';
   return 'https://schema.org/UsedCondition';
 }
-export function metadata({lang='uk',view='home',cat=-1,product,base='',noindex=false,emptyCategory=false,seo={}}) {
+export function metadata({lang='uk',view='home',cat=-1,product,base='',noindex=false,emptyCategory=false,seo={},now=Date.now()}) {
   const pl=lang==='pl',path=pagePath({lang,view,cat,product});
   const defaults={
     description:product ? String((pl?product.descPl:product.descUk)||product.name).replace(/\s+/g,' ').trim().slice(0,170)
@@ -68,7 +68,7 @@ export function metadata({lang='uk',view='home',cat=-1,product,base='',noindex=f
     const item={'@type':'Product','@id':url+'#product',name:product.name,description,url,sku:`HMG-${String(product.id).padStart(3,'0')}`,
       ...(product.brand&&!/не вказано|nie podano/i.test(product.brand)?{brand:{'@type':'Brand',name:product.brand}}:{}),
       ...(image?{image:product.images.map(p=>imageUrl(p,base))}:{}),
-      offers:{'@type':'Offer',url,priceCurrency:'PLN',price:effectivePrice(product).toFixed(2),availability:productAvailability(product),...(productItemCondition(product.condition)?{itemCondition:productItemCondition(product.condition)}:{}),seller:{'@id':ORIGIN+'/#organization'}}};
+      offers:{'@type':'Offer',url,priceCurrency:'PLN',price:effectivePrice(product,now).toFixed(2),...(promotionState(product,now).status==='active'?{priceValidUntil:warsawDate(new Date(promotionState(product,now).endsAt))}:{}),availability:productAvailability(product),...(productItemCondition(product.condition)?{itemCondition:productItemCondition(product.condition)}:{}),seller:{'@id':ORIGIN+'/#organization'}}};
     graph.push(item,{'@type':'BreadcrumbList',itemListElement:[
       {'@type':'ListItem',position:1,name:pl?'Katalog':'Каталог',item:ORIGIN+catalogPath(lang)},
       {'@type':'ListItem',position:2,name:labels[lang][product.cat],item:ORIGIN+catalogPath(lang,product.cat)},

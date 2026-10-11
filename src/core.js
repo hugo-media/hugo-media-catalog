@@ -2,7 +2,8 @@ export const UPGRADES = {ram16:{group:'ram',target:16},ram32:{group:'ram',target
 export const TABLE = 'hmg_catalog_products';
 export const BUCKET = 'hmg-catalog-photos';
 export const MAX_IMAGES = 8;
-export const SPEC_KEYS = ['cpu','generation','ram','ssd','extraStorageType','extraStorageCapacity','extraStorageUnit','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','bluetooth','weight','dimensions','newArrival','bestseller','discount','salePrice','telegramPost','quantity','seoTitleUk','seoTitlePl','seoDescriptionUk','seoDescriptionPl','purposes','benefits','bundles','charger','photoKind',...Object.keys(UPGRADES).flatMap(k=>[k+'Enabled',k+'Price'])];
+export const PROMOTION_KEYS = ['promoStartAt','promoEndAt','promoHome','promoTitleUk','promoTitlePl'];
+export const SPEC_KEYS = ['cpu','generation','ram','ssd','extraStorageType','extraStorageCapacity','extraStorageUnit','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','bluetooth','weight','dimensions','newArrival','bestseller','discount','salePrice','telegramPost','quantity','seoTitleUk','seoTitlePl','seoDescriptionUk','seoDescriptionPl','purposes','benefits','bundles','charger','photoKind',...PROMOTION_KEYS,...Object.keys(UPGRADES).flatMap(k=>[k+'Enabled',k+'Price'])];
 export const MAX_DISCOUNT_PERCENT = 99;
 export const TELEGRAM_CHANNEL = 'https://t.me/h_m_g_pl';
 export const PURPOSES = ['study','office','programming','editing','gaming','travel'];
@@ -22,22 +23,71 @@ export function csv(value=''){
  }
  return [...new Set((Array.isArray(items)?items:String(items||'').split(',')).map(v=>String(v).trim()).filter(Boolean))];
 }
+
+const warsawTimeFormat = new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Warsaw',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+function timeParts(date){return Object.fromEntries(warsawTimeFormat.formatToParts(date).filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));}
+function utcInstant(value){
+ const raw=String(value||'').trim();
+ if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(raw))return null;
+ const ms=Date.parse(raw),canonical=raw.includes('.')?raw:raw.replace('Z','.000Z');
+ return Number.isFinite(ms)&&new Date(ms).toISOString()===canonical?ms:null;
+}
+export function utcToWarsawDateTime(value){
+ const ms=utcInstant(value);if(ms===null)return '';
+ const p=timeParts(new Date(ms));return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+export function warsawDateTimeToUtc(value){
+ const raw=String(value||'').trim(),match=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(raw);
+ if(!match)return null;
+ const [year,month,day,hour,minute]=match.slice(1).map(Number);
+ if(year<2020||year>2100||month<1||month>12||hour>23||minute>59)return null;
+ const naive=Date.UTC(year,month-1,day,hour,minute);
+ if(new Date(naive).toISOString().slice(0,16)!==raw)return null;
+ const offsets=new Set();
+ for(const delta of [-86400000,0,86400000]){
+  const sample=naive+delta,p=timeParts(new Date(sample));
+  offsets.add(Date.UTC(Number(p.year),Number(p.month)-1,Number(p.day),Number(p.hour),Number(p.minute))-sample);
+ }
+ const candidates=[...offsets].map(offset=>naive-offset).filter(ms=>utcToWarsawDateTime(new Date(ms).toISOString())===raw);
+ // Reject nonexistent and ambiguous DST times rather than silently shifting the deadline.
+ return candidates.length===1?new Date(candidates[0]).toISOString():null;
+}
+export function promotionState(p={},now=Date.now()){
+ const start=String(p.promoStartAt||'').trim(),end=String(p.promoEndAt||'').trim();
+ if(!start&&!end)return {scheduled:false,status:'none',startsAt:null,endsAt:null,remainingMs:0};
+ const startsAt=utcInstant(start),endsAt=utcInstant(end),time=Number(now);
+ if(startsAt===null||endsAt===null||startsAt>=endsAt||!Number.isFinite(time))return {scheduled:true,status:'invalid',startsAt,endsAt,remainingMs:0};
+ const status=time<startsAt?'upcoming':time>=endsAt?'expired':'active';
+ return {scheduled:true,status,startsAt,endsAt,remainingMs:status==='active'?endsAt-time:0};
+}
+export function activeHomePromotion(products=[],now=Date.now()){
+ return products.filter(p=>{
+  const quantity=p.quantity===''||p.quantity==null?1:Number(p.quantity);
+  return p.promoHome==='true'&&Number(p.status)===0&&Number.isFinite(quantity)&&quantity>0&&promotionState(p,now).status==='active'&&effectivePrice(p,now)<Number(p.price);
+ }).sort((a,b)=>promotionState(a,now).endsAt-promotionState(b,now).endsAt||Number(a.id)-Number(b.id))[0]||null;
+}
+
 export function fixedSalePrice(p){
  const raw=String(p?.salePrice??'').trim();if(!/^\d+(?:\.\d{1,2})?$/.test(raw))return null;
  const base=Number(p?.price),value=Number(raw);
  return Number.isFinite(base)&&base>0&&Number.isFinite(value)&&value>=base/100&&value<base&&Math.abs(value*100-Math.round(value*100))<1e-6?Math.round(value*100)/100:null;
 }
-export function discountPercent(p){
+export function configuredDiscountPercent(p){
  const fixed=fixedSalePrice(p);
  if(fixed!==null)return Math.round((Number(p.price)-fixed)*100/Number(p.price));
  const value=Number(p?.discount||0);return Number.isInteger(value)&&value>=0&&value<=MAX_DISCOUNT_PERCENT?value:0;
 }
-export function discountBadge(p,minus='-'){
- return minus+discountPercent(p)+'%';
+export function discountPercent(p,now=Date.now()){
+ const state=promotionState(p,now);return state.scheduled&&state.status!=='active'?0:configuredDiscountPercent(p);
 }
-export function effectivePrice(p){
+export function discountBadge(p,minus='-',now=Date.now()){
+ return minus+discountPercent(p,now)+'%';
+}
+export function effectivePrice(p,now=Date.now()){
+ const state=promotionState(p,now),price=Number(p.price);
+ if(state.scheduled&&state.status!=='active')return Math.round(price*100)/100;
  const fixed=fixedSalePrice(p);if(fixed!==null)return fixed;
- const price=Number(p.price),discount=discountPercent(p);
+ const discount=configuredDiscountPercent(p);
  // Percentage promotions round to the nearest whole PLN; exact sale prices remain explicit.
  return discount?Math.round(price*(100-discount)/100):Math.round(price*100)/100;
 }
@@ -56,6 +106,16 @@ export function validateProduct(p){
  if(!Number.isInteger(Number(p.status))||Number(p.status)<0||Number(p.status)>5)invalid('status');
  const discount=Number(p.discount||0);if(!Number.isInteger(discount)||discount<0||discount>MAX_DISCOUNT_PERCENT)invalid('discount');
  if(String(p.salePrice??'').trim()&&fixedSalePrice(p)===null)invalid('salePrice');
+
+ if(!['','true'].includes(String(p.promoHome||'')))invalid('promoHome');
+ for(const key of ['promoTitleUk','promoTitlePl'])if(String(p[key]||'').length>80)invalid(key);
+ const promotion=promotionState(p);
+ if(promotion.scheduled){
+  if(utcInstant(p.promoStartAt)===null)invalid('promoStartAt');
+  if(utcInstant(p.promoEndAt)===null||promotion.status==='invalid')invalid('promoEndAt');
+  if(effectivePrice({...p,promoStartAt:'',promoEndAt:''})>=Number(p.price))invalid('discount');
+ }else if(p.promoHome==='true')invalid('promoEndAt');
+
  if(!['','true'].includes(String(p.newArrival||'')))invalid('newArrival');
  if(!['','true'].includes(String(p.bestseller||'')))invalid('bestseller');
  if(!['','adapter','cable','none'].includes(String(p.charger||'')))invalid('charger');
@@ -82,7 +142,7 @@ export function validateProduct(p){
  for(const k of ['seoTitleUk','seoTitlePl'])if(String(p[k]||'').length>80)invalid(k);
  for(const k of ['seoDescriptionUk','seoDescriptionPl'])if(String(p[k]||'').length>300)invalid(k);
 }
-export function toRow(p){validateProduct(p);return {name:p.name.trim(),brand:p.brand.trim(),cat:Number(p.cat),status:Number(p.status),price:Math.round(Number(p.price)*100)/100,condition:String(p.condition||''),warranty:String(p.warranty||''),desc_uk:String(p.descUk||''),desc_pl:String(p.descPl||''),images:p.images||[],specs:Object.fromEntries(SPEC_KEYS.map(k=>[k,k==='telegramPost'?normalizeTelegramPost(p[k]):k==='discount'&&fixedSalePrice(p)!==null?String(discountPercent(p)):String(p[k]||'').trim()]))};}
+export function toRow(p){validateProduct(p);return {name:p.name.trim(),brand:p.brand.trim(),cat:Number(p.cat),status:Number(p.status),price:Math.round(Number(p.price)*100)/100,condition:String(p.condition||''),warranty:String(p.warranty||''),desc_uk:String(p.descUk||''),desc_pl:String(p.descPl||''),images:p.images||[],specs:Object.fromEntries(SPEC_KEYS.map(k=>[k,k==='telegramPost'?normalizeTelegramPost(p[k]):k==='discount'&&fixedSalePrice(p)!==null?String(configuredDiscountPercent(p)):String(p[k]||'').trim()]))};}
 export function fromRow(r){return {...r,...r.specs,price:Number(r.price),descUk:r.desc_uk||'',descPl:r.desc_pl||'',images:Array.isArray(r.images)?r.images:[]};}
 export function extraStorageLabel(p={}){
  if(Number(p?.cat)!==0)return '';
@@ -99,19 +159,19 @@ export function upgradeOptions(p){
  if(Number(p.cat)!==0)return [];
  return Object.entries(UPGRADES).flatMap(([key,o])=>{const raw=p[key+'Price'];const price=Number(raw);return p[key+'Enabled']==='true'&&raw!==''&&raw!=null&&Number.isFinite(price)&&price>=0&&price<=10000&&o.target>capacityGB(p[o.group])?[{key,...o,price}]:[];});
 }
-export function configuration(p,bundleSelection='',upgradeSelection={},lang='uk'){
+export function configuration(p,bundleSelection='',upgradeSelection={},lang='uk',now=Date.now()){
  const allowed=csv(p.bundles).filter(k=>Object.hasOwn(BUNDLES,k));
  const opts=upgradeOptions(p),upgrades={},lines=[];
  for(const group of ['ram','ssd']){const o=opts.find(o=>o.group===group&&o.key===upgradeSelection?.[group]);if(o){upgrades[group]=o.key;lines.push({label:(group==='ram'?'RAM': 'SSD')+' → '+(o.target===1024?'1 TB':o.target+' GB'),price:o.price,pending:false});}}
  const bundles=csv(bundleSelection).filter(k=>allowed.includes(k)&&!(k==='upgrade'&&opts.length));
  for(const key of bundles)lines.push({label:bundleLabel(key,lang),price:BUNDLES[key],pending:['software','upgrade'].includes(key)});
- const cents=Math.round(effectivePrice(p)*100)+lines.reduce((sum,l)=>sum+Math.round(l.price*100),0);
+ const cents=Math.round(effectivePrice(p,now)*100)+lines.reduce((sum,l)=>sum+Math.round(l.price*100),0);
  return {upgrades,bundles,lines,total:cents/100,pending:lines.some(l=>l.pending)};
 }
-export function orderText(items,lang='uk',origin='',bundleSelections={},upgradeSelections={}){
+export function orderText(items,lang='uk',origin='',bundleSelections={},upgradeSelections={},now=Date.now()){
  const lines=[lang==='pl'?'Dzień dobry! Interesują mnie te produkty:':'Вітаю! Цікавлять ці товари:'];let cents=0,pending=false;
- for(const p of items){const c=configuration(p,bundleSelections[p.id],upgradeSelections[p.id],lang);cents+=Math.round(c.total*100);pending||=c.pending;
- lines.push(`• ${p.name} / HMG-${String(p.id).padStart(3,'0')} — ${effectivePrice(p).toFixed(2)} zł${discountPercent(p)?` (${discountBadge(p)})`:''}`);
+ for(const p of items){const c=configuration(p,bundleSelections[p.id],upgradeSelections[p.id],lang,now);cents+=Math.round(c.total*100);pending||=c.pending;
+ lines.push(`• ${p.name} / HMG-${String(p.id).padStart(3,'0')} — ${effectivePrice(p,now).toFixed(2)} zł${discountPercent(p,now)?` (${discountBadge(p,'-',now)})`:''}`);
  for(const l of c.lines)lines.push(`  + ${l.label}${l.pending?'':` — ${l.price} zł`}`);
  lines.push(`  ${lang==='pl'?'Razem za zestaw':'Разом за комплект'}: ${c.total.toFixed(2)} zł`);
  if(origin)lines.push(`${origin}/?product=${p.id}`);}
