@@ -471,6 +471,7 @@ import {
     noDiscount: "Без знижки",
     discountResult: "Ціна після знижки",
     discountSaving: "економія",
+    discountRounding: "округлено до цілого zł",
     discountPriceHint: "Вкажи ціну, щоб побачити результат.",
     discountRangeHint: "Вкажи знижку від 0 до 99%.",
     yes: "Так",
@@ -486,6 +487,7 @@ import {
     noDiscount: "Bez rabatu",
     discountResult: "Cena po rabacie",
     discountSaving: "oszczędzasz",
+    discountRounding: "zaokrąglono do pełnych zł",
     discountPriceHint: "Podaj cenę, aby zobaczyć wynik.",
     discountRangeHint: "Podaj rabat od 0 do 99%.",
     yes: "Tak",
@@ -2500,7 +2502,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
     if (product.salePrice) { discount = discountPercent(product); discountInput.value = String(discount); }
     const salePrice = effectivePrice(product);
     const saving = Math.round((price - salePrice) * 100) / 100;
-    preview.textContent = t("discountResult") + ": " + money(salePrice) + " zł" + (discount ? " · " + t("discountSaving") + ": " + money(saving) + " zł" : "");
+    preview.textContent = t("discountResult") + ": " + money(salePrice) + " zł" + (discount ? " · " + t("discountSaving") + ": " + money(saving) + " zł" : "") + (discount && !product.salePrice ? " · " + t("discountRounding") : "");
   }
   function renderForm() {
     const p = products.find((p) => p.id === editId) || {

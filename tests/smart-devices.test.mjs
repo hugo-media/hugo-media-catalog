@@ -17,7 +17,7 @@ test('exact promotional prices agree in persistence, configuration and Telegram 
  }
  assert.equal(discountBadge(product),'≈ -29%');
  assert.equal(discountBadge({...product,price:250,salePrice:'200'}),'-20%');
- assert.equal(effectivePrice({...product,salePrice:'',discount:'29'}),248.5);
+ assert.equal(effectivePrice({...product,salePrice:'',discount:'29'}),249);
 });
 
 test('invalid fixed prices are rejected before persistence and category 6 round-trips',()=>{

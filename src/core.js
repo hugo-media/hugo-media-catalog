@@ -37,7 +37,12 @@ export function discountBadge(p,minus='-'){
  const approximate=fixed!==null&&Math.abs((Number(p.price)-fixed)*100/Number(p.price)-percent)>1e-6;
  return (approximate?'≈ ':'')+minus+percent+'%';
 }
-export function effectivePrice(p){const fixed=fixedSalePrice(p);return fixed!==null?fixed:Math.round(Number(p.price)*(100-discountPercent(p)))/100;}
+export function effectivePrice(p){
+ const fixed=fixedSalePrice(p);if(fixed!==null)return fixed;
+ const price=Number(p.price),discount=discountPercent(p);
+ // Percentage promotions round to the nearest whole PLN; exact sale prices remain explicit.
+ return discount?Math.round(price*(100-discount)/100):Math.round(price*100)/100;
+}
 export function normalizeTelegramPost(value=''){
  const raw=String(value||'').trim();if(!raw)return '';
  try{const url=new URL(/^https?:\/\//i.test(raw)?raw:`https://${raw}`);const host=url.hostname.toLowerCase().replace(/^www\./,'');let path=url.pathname.replace(/^\/s\//,'/').replace(/\/+$/,'');if(!['t.me','telegram.me'].includes(host)||!/^\/h_m_g_pl(?:\/\d+)?$/.test(path)||url.username||url.password)return null;return `https://t.me${path}`;}catch{return null;}
