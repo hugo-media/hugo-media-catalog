@@ -33,9 +33,7 @@ export function discountPercent(p){
  const value=Number(p?.discount||0);return Number.isInteger(value)&&value>=0&&value<=MAX_DISCOUNT_PERCENT?value:0;
 }
 export function discountBadge(p,minus='-'){
- const percent=discountPercent(p),fixed=fixedSalePrice(p);
- const approximate=fixed!==null&&Math.abs((Number(p.price)-fixed)*100/Number(p.price)-percent)>1e-6;
- return (approximate?'≈ ':'')+minus+percent+'%';
+ return minus+discountPercent(p)+'%';
 }
 export function effectivePrice(p){
  const fixed=fixedSalePrice(p);if(fixed!==null)return fixed;
