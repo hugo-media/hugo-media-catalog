@@ -491,11 +491,14 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
  background:#087fb8;border-color:#087fb8;box-shadow:0 7px 20px #087fb83a;
 }
 #hugo-preview.hp-storefront .hm-product-review .hp-channel-button{
- background:#f5f0fb;border:1px solid #d8c8eb;color:#59358a;
- border-radius:12px;box-shadow:none;font-size:16px;min-height:48px;
+ background:#ffe1e6;border:2px solid #ec8797;color:#96293e;
+ border-radius:12px;box-shadow:0 4px 14px #d9496220;font-size:16px;min-height:52px;
 }
 #hugo-preview.hp-storefront .hm-product-review .hp-channel-button:hover{
- background:#ece3f7;border-color:#bda4dd;color:#45236f;
+ background:#ffd2db;border-color:#d8667c;color:#802036;
+}
+#hugo-preview.hp-storefront .hm-product-review .hp-channel-button:focus-visible{
+ outline:3px solid #b93850;outline-offset:3px;
 }
 #hugo-preview.hp-storefront .hp-mobile-order-bar>a{color:#68488a}
 #hugo-preview.hp-storefront .hp-finder-highlight{
@@ -572,7 +575,7 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
 /* Show the Telegram overview action as unavailable until a product post is linked. */
 #hugo-preview.hp-storefront .hm-product-review .hp-channel-button:disabled,
 #hugo-preview.hp-storefront .hm-product-review .hp-channel-button:disabled:hover{
- background:#eeeaf2;border-color:#dbd3e3;color:#81768e;
+ background:#fff0f2;border-color:#edbac3;color:#8c5c67;
  box-shadow:none;opacity:1;cursor:not-allowed;
 }
 
