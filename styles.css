@@ -4169,3 +4169,29 @@ body {
   #hugo-preview .hm-admin-promotion-fields{grid-template-columns:minmax(0,1fr)}
   #hugo-preview .hm-admin-promotion-actions .hp-button{width:100%}
 }
+
+/* Calendar periods in admin analytics. */
+#hugo-preview .hp-stats-date-panel{padding:20px;margin:0 0 18px;border:1px solid #ded6e8;border-radius:14px;background:#fff}
+#hugo-preview #hp-stats-date-form fieldset{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end;gap:14px;margin:0;padding:0;border:0;min-width:0}
+#hugo-preview #hp-stats-date-form .hp-field{margin:0;min-width:0}
+#hugo-preview #hp-stats-date-form input{width:100%;min-width:0;min-height:48px;font-size:16px}
+#hugo-preview #hp-stats-date-form button{min-height:48px}
+#hugo-preview #hp-stats-date-error:empty{display:none}
+#hugo-preview .hp-stats-period{display:grid;gap:5px;margin:15px 0 0}
+#hugo-preview .hp-stats-period strong{font-size:17px;color:#332542}
+#hugo-preview .hp-stats-period span{font-size:14px;color:#75677f;line-height:1.45}
+#hugo-preview .hp-daily-stats{margin:20px 0}
+#hugo-preview .hp-daily-stats h2{margin:0 0 8px;font-size:22px}
+#hugo-preview .hp-daily-stats-scroll{max-height:460px;overflow:auto;border:1px solid #e6e0eb;border-radius:10px}
+#hugo-preview .hp-daily-stats table{width:100%;min-width:590px;border-collapse:separate;border-spacing:0;font-size:15px}
+#hugo-preview .hp-daily-stats th,#hugo-preview .hp-daily-stats td{padding:10px 14px;border-bottom:1px solid #ebe5f0;text-align:right;font-variant-numeric:tabular-nums}
+#hugo-preview .hp-daily-stats thead th{position:sticky;top:0;z-index:2;background:#f4effa;color:#5a426b}
+#hugo-preview .hp-daily-stats tr>th:first-child{position:sticky;left:0;z-index:1;background:#fff;text-align:left}
+#hugo-preview .hp-daily-stats thead th:first-child{z-index:3;background:#f4effa}
+#hugo-preview .hp-daily-stats tbody .hp-button{min-height:42px;padding:8px 10px;white-space:nowrap}
+@media(max-width:600px){
+ #hugo-preview .hp-stats-date-panel{padding:16px}
+ #hugo-preview #hp-stats-date-form fieldset{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+ #hugo-preview #hp-stats-date-form button{grid-column:1/-1;width:100%}
+ #hugo-preview .hp-daily-stats th,#hugo-preview .hp-daily-stats td{padding:8px 10px}
+}

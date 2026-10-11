@@ -1,5 +1,6 @@
 import { TABLE, BUCKET, toRow, fromRow, publicConfigValid, warsawDate, validateDailyPicks } from "./core.js";
 import { normalizeQuickFields } from './admin-catalog-core.js';
+import { validateAnalyticsDates } from './analytics-core.js';
 let client;
 export let currentUserId = null;
 export const ready = publicConfigValid(window.HUGO_CONFIG || {});
@@ -216,8 +217,10 @@ export async function trackEvent(event) {
 export async function listAnalytics(days = 7) {
   if (!(await isAdmin())) throw Error("notAdmin");
   const c = await connect();
+  const range = typeof days === "object" ? validateAnalyticsDates(days) : null;
   const normalizedDays = [1, 7, 30].includes(Number(days)) ? Number(days) : 7;
-  const { data: window, error } = await c.rpc("hmg_catalog_analytics_window", { p_days: normalizedDays });
+  const { data: window, error } = await c.rpc(range ? "hmg_catalog_analytics_date_window" : "hmg_catalog_analytics_window",
+    range ? {p_from:range.from,p_to:range.to} : {p_days:normalizedDays});
   if (error) throw error;
   return readAnalyticsSince(c, window.since, window.until);
 }
@@ -240,8 +243,10 @@ async function readAnalyticsSince(client, since, until) {
 export async function getAnalyticsReport(days = 7) {
   if (!(await isAdmin())) throw Error("notAdmin");
   const c = await connect();
+  const range = typeof days === "object" ? validateAnalyticsDates(days) : null;
   const normalizedDays = [1, 7, 30].includes(Number(days)) ? Number(days) : 7;
-  const { data, error } = await c.rpc("hmg_catalog_analytics_report", { p_days: normalizedDays });
+  const { data, error } = await c.rpc(range ? "hmg_catalog_analytics_date_report" : "hmg_catalog_analytics_report",
+    range ? {p_from:range.from,p_to:range.to} : {p_days:normalizedDays});
   if (error) throw error;
   return data;
 }
