@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "installCommand": "echo No package installation required",
+  "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [

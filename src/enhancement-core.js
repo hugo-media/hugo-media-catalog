@@ -18,7 +18,7 @@ export function validateSettings(value) {
  const featuredLabel={};for(const lang of ['uk','pl']){const label=String(value.homepage?.featuredLabel?.[lang]||'').trim();if(label.length>80)throw Error('validation');featuredLabel[lang]=label;}
  return { links, trust, homepage:{featuredProductId,featuredLabel} };
 }
-export function publicProduct(p) { return [0,1,2].includes(p.status); }
+export function publicProduct(p) { return [0,1,2,4,5].includes(Number(p.status)); }
 export function availableProduct(p) { return p.status === 0 && (p.quantity === '' || p.quantity == null || Number(p.quantity) > 0); }
 export function selectionIds(value) {
  if (typeof value !== 'string' || value.length > 320) return [];
@@ -84,4 +84,9 @@ export function draftValues(formData) {
  delete values.password;
  for(const key of ['purposes','benefits','bundles']) values[key]=formData.getAll(key).join(',');
  return values;
+}
+
+export function productReadiness(p, now=Date.now()) {
+ const all=productIssues(p,now), optional=new Set(['post','photoKind','stale']);
+ return {issues:all.filter(key=>!optional.has(key)),advisories:all.filter(key=>optional.has(key))};
 }

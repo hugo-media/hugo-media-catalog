@@ -1,5 +1,5 @@
 import { productPath, pagePath, visibleSeoContent } from './seo-core.js';
-import { effectivePrice, discountPercent, discountBadge, csv, telegramLink, availabilityRequestText } from './core.js';
+import { effectivePrice, discountPercent, discountBadge, csv, telegramLink, availabilityRequestText, normalizeTelegramPost } from './core.js';
 
 // Normalize display/filter values without rewriting the source specifications.
 export function normalizedSpec(key, value) {
@@ -46,10 +46,39 @@ export function featuredProduct(products,picks=[],preferredId=null) {
   ||available.find(p=>p.cat===0&&!picks.some(pick=>pick.id===p.id))
   ||available.find(p=>p.cat===0)||available[0];
 }
+export function productMediaUrl(value) {
+  const normalized=normalizeTelegramPost(value);
+  return /^https:\/\/t\.me\/h_m_g_pl\/\d+$/.test(normalized||'') ? normalized : null;
+}
+export function displayBrand(value) {
+  const text=String(value??'').trim();
+  return text && !text.split(/\s*\/\s*/).every(part=>/^(?:не вказано|не указано|nie podano|unknown|not specified|—|-)$/i.test(part.trim())) ? text : '';
+}
+export function availabilityRank(p) {
+  const qty=p.quantity===''||p.quantity==null?1:Number(p.quantity);
+  return p.status===0&&qty>0?0:p.status===1?1:p.status===5?2:p.status===4||p.status===0?3:p.status===2?4:5;
+}
+export function matchesAvailability(p,value='') {
+  const rank=availabilityRank(p);
+  return !value ? rank<5 : value==='in-stock'?rank===0:value==='reserved'?rank===1:value==='expected'?rank===2:value==='out-of-stock'?rank===3:value==='sold'?rank===4:false;
+}
+export function catalogSort(a,b,sort='newest') {
+  return availabilityRank(a)-availabilityRank(b) || (sort==='cheap'?effectivePrice(a)-effectivePrice(b):sort==='expensive'?effectivePrice(b)-effectivePrice(a):b.id-a.id) || b.id-a.id;
+}
+export function comparisonSelection(products,ids) {
+  const list=ids.map(id=>products.find(p=>p.id===id)).filter(p=>p&&p.status!==3);
+  return list.filter(p=>p.cat===list[0]?.cat).slice(0,3);
+}
+export function comparisonRows(items,definitions,onlyDifferences=false) {
+  return definitions.filter(([key])=>{
+    const values=items.map(p=>key==='price'?String(effectivePrice(p)):normalizedSpec(key,p[key]).trim().toLowerCase().replace(/\s+/g,' '));
+    return (key==='price'||values.some(Boolean)) && (!onlyDifferences||new Set(values).size>1);
+  });
+}
 export function createStorefront(c) {
   const L = (uk, pl) => c.lang === 'pl' ? pl : uk;
   const E = c.esc;
-  const specSummary = p => (p.cat===3 ? [p.noise, p.connection] : p.cat===4 ? [specLabel('screen',p.screen),c.localizedValue(p.compatibility),c.localizedValue(p.battery)] : p.cat===6 ? [c.localizedValue(p.type),c.localizedValue(p.compatibility),p.bluetooth&&`Bluetooth ${p.bluetooth}`] : p.cat===5 ? [specLabel('screen',p.screen),p.resolution,p.refreshRate] : [p.cpu,p.ram && `${specLabel('ram',p.ram)} RAM`,p.ssd && `${specLabel('ssd',p.ssd)}${p.cat===0?' SSD':''}`, p.cat===0 && specLabel('screen',p.screen),p.cat===0 && /^(NVIDIA|AMD)/i.test(p.gpu||'') && p.gpu]).filter(Boolean).join(' · ');
+  const specSummary = p => (p.cat===3 ? [p.noise, p.connection] : p.cat===4 ? [specLabel('screen',p.screen),c.localizedValue(p.compatibility),c.localizedValue(p.battery)] : p.cat===6 ? [c.localizedValue(p.type),(p.bluetooth&&/^bluetooth$/i.test(c.localizedValue(p.compatibility)||'')?'':c.localizedValue(p.compatibility)),p.bluetooth&&`Bluetooth ${p.bluetooth}`] : p.cat===5 ? [specLabel('screen',p.screen),p.resolution,p.refreshRate] : [p.cpu,p.ram && `${specLabel('ram',p.ram)} RAM`,p.ssd && `${specLabel('ssd',p.ssd)}${p.cat===0?' SSD':''}`, p.cat===0 && specLabel('screen',p.screen),p.cat===0 && /^(NVIDIA|AMD)/i.test(p.gpu||'') && p.gpu]).filter(Boolean).join(' · ');
   function card(p, options={}) {
     const compact=Boolean(options&&typeof options==='object'&&options.compact);
     const summary=specSummary(p);
@@ -59,8 +88,8 @@ export function createStorefront(c) {
     const discount=discountPercent(p), tags=[];
     const soldOut=p.status===2;
     const expected=p.status===5;
-    const unavailable=soldOut||p.status===4||expected;
-    const unavailableLabel=soldOut?c.t('statuses')[2]:expected?c.t('statuses')[5]:c.t('outOfStock');
+    const unavailable=soldOut||p.status===1||p.status===4||expected||(p.status===0&&c.stockQty(p)<1);
+    const unavailableLabel=soldOut?c.t('statuses')[2]:expected?c.t('statuses')[5]:p.status===1?c.t('statuses')[1]:c.t('outOfStock');
     const siteOrigin=c.origin||globalThis.location?.origin||'';
     const productUrl=siteOrigin?siteOrigin+productPath(p,c.lang):'';
     const orderAction=expected
@@ -68,10 +97,10 @@ export function createStorefront(c) {
       : '<button type="button" class="hp-button hp-primary hp-card-order" data-order-one="'+p.id+'" '+(unavailable ? 'disabled aria-disabled="true"' : '')+'>'+(unavailable ? '' : c.icon('send'))+(unavailable ? E(unavailableLabel) : c.t('cardOrder'))+'</button>';
     if(unavailable)tags.push(`<span class="hp-badge-out">${E(unavailableLabel)}</span>`);
     if(discount)tags.push(`<span class="hp-badge-sale">${E(discountBadge(p,'−'))}</span>`);
-    if(p.newArrival==='true')tags.push(`<span class="hp-badge-new">${c.t('newArrival')}</span>`);
-    else if(p.bestseller==='true')tags.push(`<span class="hp-badge-best">${c.t('bestseller')}</span>`);
+    if(p.newArrival==='true'&&options.collection!=='best')tags.push(`<span class="hp-badge-new">${c.t('newArrival')}</span>`);
+    if(p.bestseller==='true'&&options.collection!=='new')tags.push(`<span class="hp-badge-best">${c.t('bestseller')}</span>`);
     const extras=csv(p.benefits).filter(x=>['touch','keyboard'].includes(x)).map(x=>c.t(x==='touch'?'benefitTouch':'benefitKeyboard'));
-    return `<article class="hp-product"><a class="hp-product-open" href="${productPath(p,c.lang)}" data-detail="${p.id}" aria-label="${E(c.t('detail'))}: ${E(p.name)}"><div class="hp-card-badges">${tags.join('')}</div>${c.photo(p)}<div class="hp-product-body"><div class="hp-product-meta"><span>${E(p.brand)}</span></div><h3 class="hp-product-name">${E(c.productTitle(p))}</h3>${specsMarkup}<div class="hm-card-facts">${p.condition?`<span>${E(c.localizedValue(p.condition))}</span>`:''}${p.warranty?`<span>${c.icon('shield-check')}${E(c.localizedValue(p.warranty))}</span>`:''}</div>${extras.length?`<div class="hm-card-extras">${extras.map(E).join(' · ')}</div>`:''}</div></a><div class="hp-product-foot"><div class="hp-price-row">${c.priceBlock(p)}<button type="button" class="hp-compare-add" data-compare="${p.id}" aria-label="${E(c.t('compare'))}: ${E(p.name)}" aria-pressed="${c.compare.includes(p.id)}">${c.icon(c.compare.includes(p.id)?'check':'columns-2')}</button></div><div class="hp-card-cta"><a class="hp-button hp-card-details" href="${productPath(p,c.lang)}" data-detail="${p.id}">${c.t('cardDetails')}</a>${orderAction}</div></div></article>`;
+    return `<article class="hp-product"><a class="hp-product-open" href="${productPath(p,c.lang)}" data-detail="${p.id}" aria-label="${E(c.t('detail'))}: ${E(p.name)}"><div class="hp-card-badges">${tags.join('')}</div>${c.photo(p)}<div class="hp-product-body">${displayBrand(p.brand)?`<div class="hp-product-meta"><span>${E(displayBrand(p.brand))}</span></div>`:''}<h3 class="hp-product-name">${E(c.productTitle(p))}</h3>${specsMarkup}<div class="hm-card-facts">${p.condition?`<span>${E(c.localizedValue(p.condition))}</span>`:''}${p.warranty?`<span>${c.icon('shield-check')}${E(c.localizedValue(p.warranty))}</span>`:''}</div>${extras.length?`<div class="hm-card-extras">${extras.map(E).join(' · ')}</div>`:''}</div></a><div class="hp-product-foot"><div class="hp-price-row">${c.priceBlock(p)}<button type="button" class="hp-compare-add" data-compare="${p.id}" aria-label="${E(c.t('compare'))}: ${E(p.name)}" aria-pressed="${c.compare.includes(p.id)}">${c.icon(c.compare.includes(p.id)?'check':'columns-2')}</button></div><div class="hp-card-cta"><a class="hp-button hp-card-details" href="${productPath(p,c.lang)}" data-detail="${p.id}">${c.t('cardDetails')}</a>${orderAction}</div></div></article>`;
   }
   function finderButton() {
     return `<button type="button" class="hp-button hp-finder-highlight" data-grow="finder">${c.icon('sparkles')}<span class="hp-finder-label"><strong>${L('Допомогти з вибором','Pomóż mi wybrać')}</strong><small>${L('Підбір ноутбука за 30 секунд','Dobór laptopa w 30 sekund')}</small></span></button>`;
@@ -81,11 +110,12 @@ export function createStorefront(c) {
     const available=products.filter(p=>p.status===0&&c.stockQty(p)>0);
     const featured=featuredProduct(products,picks,c.homepage?.featuredProductId);
     const {newArrivals,bestsellers}=homeCollections(products,picks,featured);
+    const displayedPicks=picks.filter(p=>p.id!==featured?.id);
     const collection = (id,title,subtitle,items,empty,compact=false) =>
-      '<section class="hm-home-collection" aria-labelledby="'+id+'-title"><div class="hm-collection-heading"><h3 id="'+id+'-title">'+E(title)+'</h3><p>'+E(subtitle)+'</p></div><div class="hp-grid">'+(items.length?items.map(item=>card(item,{compact})).join(''):'<p class="hp-empty">'+E(empty)+'</p>')+'</div></section>';
-    return `<section class="hm-hero"><div class="hm-hero-copy"><span class="hp-kicker">HUGO MEDIA · ${L('ТЕХНІКА В ПОЛЬЩІ','ELEKTRONIKA W POLSCE')}</span><h1>${E(seoCopy.title)}</h1><p>${L('Порівняй характеристики, обери під свій бюджет і напиши нам у Telegram. Допоможемо з вибором.','Porównaj parametry, wybierz w swoim budżecie i napisz do nas na Telegramie. Pomożemy Ci wybrać.')}</p><div class="hm-hero-actions"><button type="button" class="hp-button hp-primary" data-cat="0">${L('Переглянути ноутбуки','Zobacz laptopy')}${c.icon('arrow-right')}</button>${finderButton()}</div><div class="hm-hero-proof"><span>${c.icon('shield-check')}${L('Гарантія в картці товару','Gwarancja w karcie produktu')}</span><span>${c.icon('message-circle')}${L('Консультація українською / польською','Pomoc po polsku / ukraińsku')}</span></div></div>${featured?`<a class="hm-hero-product" href="${productPath(featured,c.lang)}" data-detail="${featured.id}" aria-label="${E(featured.name)}"><span class="hm-hero-product-label">${E(c.homepage?.featuredLabel?.[c.lang]||L('Знайомся ближче','Poznaj bliżej'))}</span>${c.photo(featured)}<span class="hm-hero-product-caption"><span><strong>${E(c.productTitle(featured))}</strong><small>${E(specSummary(featured))}</small><small>${[featured.condition&&E(c.localizedValue(featured.condition)),featured.warranty&&E(c.t('warrantyShort'))+': '+E(c.localizedValue(featured.warranty))].filter(Boolean).join(' · ')}</small></span><b>${c.money(effectivePrice(featured))} zł ${c.icon('arrow-up-right')}</b></span></a>`:''}</section>
+      '<section class="hm-home-collection" aria-labelledby="'+id+'-title"><div class="hm-collection-heading"><h3 id="'+id+'-title">'+E(title)+'</h3><p>'+E(subtitle)+'</p></div><div class="hp-grid">'+(items.length?items.map(item=>card(item,{compact,collection:compact?'best':'new'})).join(''):'<p class="hp-empty">'+E(empty)+'</p>')+'</div></section>';
+    return `<section class="hm-hero"><div class="hm-hero-copy"><span class="hp-kicker">HUGO MEDIA · ${L('ТЕХНІКА В ПОЛЬЩІ','ELEKTRONIKA W POLSCE')}</span><h1>${E(seoCopy.title)}</h1><p>${L('Порівняй характеристики, обери під свій бюджет і напиши нам у Telegram. Допоможемо з вибором.','Porównaj parametry, wybierz w swoim budżecie i napisz do nas na Telegramie. Pomożemy Ci wybrać.')}</p><div class="hm-hero-actions"><button type="button" class="hp-button hp-primary" data-cat="0">${L('Переглянути ноутбуки','Zobacz laptopy')}${c.icon('arrow-right')}</button>${finderButton()}</div><div class="hm-hero-proof"><span>${c.icon('shield-check')}${L('Гарантія в картці товару','Gwarancja w karcie produktu')}</span><span>${c.icon('message-circle')}${L('Консультація українською / польською','Pomoc po polsku / ukraińsku')}</span></div></div>${featured?`<a class="hm-hero-product" href="${productPath(featured,c.lang)}" data-detail="${featured.id}" aria-label="${E(featured.name)}"><span class="hm-hero-product-label">${E(c.homepage?.featuredLabel?.[c.lang]||L('Знайомся ближче','Poznaj bliżej'))}</span>${c.photo(featured,{priority:true})}<span class="hm-hero-product-caption"><span><strong>${E(c.productTitle(featured))}</strong><small>${E(specSummary(featured))}</small><small>${[featured.condition&&E(c.localizedValue(featured.condition)),featured.warranty&&E(c.t('warrantyShort'))+': '+E(c.localizedValue(featured.warranty))].filter(Boolean).join(' · ')}</small></span><b>${c.money(effectivePrice(featured))} zł ${c.icon('arrow-up-right')}</b></span></a>`:''}</section>
       <section class="hm-quick"><span>${L('Швидкий вибір','Szybki wybór')}</span>${[1000,1500,2500].map(n=>`<button type="button" data-budget="${n}">${L('До','Do')} ${n} zł</button>`).join('')}<button type="button" data-purpose="study">${c.t('purposeStudy')}</button><button type="button" data-purpose="office">${c.t('purposeOffice')}</button><button type="button" data-cat="-1">${L('Уся техніка','Cały asortyment')} ↗</button></section>
-      ${picks.length?`<section class="hp-home-section hm-daily"><div class="hp-section-title"><div><span class="hp-kicker">HUGO SELECT</span><h2>${c.t('dailyPicks')}</h2><p>${L('Наш вибір із того, що зараз у наявності.','Nasz wybór z aktualnie dostępnych modeli.')}</p></div></div><div class="hm-picks">${picks.slice(0,2).map(card).join('')}</div></section>`:''}
+      ${displayedPicks.length?`<section class="hp-home-section hm-daily"><div class="hp-section-title"><div><span class="hp-kicker">HUGO SELECT</span><h2>${c.t('dailyPicks')}</h2><p>${L('Наш вибір із того, що зараз у наявності.','Nasz wybór z aktualnie dostępnych modeli.')}</p></div></div><div class="hm-picks">${displayedPicks.slice(0,2).map(card).join('')}</div></section>`:''}
        <section class="hp-home-section hm-selection">
          <div class="hp-section-title"><div><h2>${L('Знайди свій варіант','Znajdź coś dla siebie')}</h2><p>${available.length} ${L('товарів у наявності','produktów w ofercie')}</p></div><button type="button" class="hp-home-link" data-cat="-1">${L('Увесь каталог','Cały katalog')}${c.icon('arrow-right')}</button></div>
          <div class="hm-home-collections">

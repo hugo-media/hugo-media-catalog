@@ -42,3 +42,5 @@ test('start conversion counts unique sessions and only later Telegram channel cl
  assert.deepEqual(startFunnel([]),{starts:0,converted:0,rate:0});
  assert.equal(startFunnel([event('page_view',1,{path:'/uk/start'}),event('telegram_click',2,{destination:'telegram_order'})]).converted,0);
 });
+
+test('quality flags explicitly labeled description parameters that contradict structured facts',()=>{const product={price:1200,status:0,quantity:'1',ram:'8',ssd:'256',screen:'13.3',descUk:'Характеристики\nЕкран: 14″ Touch\nОперативна пам’ять: 8 ГБ\nНакопичувач: SSD 256 ГБ'};assert(consistencyIssues(product).includes('mismatch'));assert(!consistencyIssues({...product,screen:'14'}).includes('mismatch'));assert(!consistencyIssues({...product,descUk:'Можна під’єднати зовнішній екран 24″'}).includes('mismatch'));});
