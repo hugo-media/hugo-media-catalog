@@ -3,6 +3,7 @@ import { updateSeo, currentRoute } from './seo-client.js';
 import { adminUpgrades, configPanel } from './configurator.js';
 import { configuration } from './core.js';
 import { safeSearch, startFunnel } from './insights-core.js';
+import { validateAnalyticsDates, presetAnalyticsDates, analyticsBuckets, dailyAnalytics, analyticsDateLabel, analyticsPeriodLabel } from './analytics-core.js';
 import { createAdminCatalog } from './admin-catalog.js';
 import { createStorefront, normalizedSpec, specLabel, filterValues, displayBrand, matchesAvailability, catalogSort, comparisonSelection, comparisonRows, productMediaUrl } from "./storefront.js";
 import { createEnhancements } from "./enhancements.js";
@@ -1111,17 +1112,27 @@ import {
       new Promise((resolve) => setTimeout(resolve, 600)),
     ]);
   }
+  async function selectAnalyticsDates(range, preset = 0) {
+    statsDates = validateAnalyticsDates(range);
+    statsRange = preset;
+    statsMetric = "";
+    reportOpen = false;
+    analyticsReport = null;
+    history.replaceState(null, "", "?admin=stats&from="+statsDates.from+"&to="+statsDates.to);
+    await loadAnalytics();
+  }
   async function loadAnalytics() {
+    const generation = ++analyticsLoadGeneration, dates = {...statsDates};
     statsLoading = true;
     statsError = false;
     render();
     try {
-      analyticsEvents = await db.listAnalytics(statsRange);
+      const rows = await db.listAnalytics(dates);
+      if (generation === analyticsLoadGeneration) analyticsEvents = rows;
     } catch {
-      statsError = true;
+      if (generation === analyticsLoadGeneration) statsError = true;
     } finally {
-      statsLoading = false;
-      render();
+      if (generation === analyticsLoadGeneration) { statsLoading = false; render(); }
     }
   }
   async function loadAudit() {
@@ -1197,7 +1208,7 @@ import {
     if (summary.noResultSearches) findings.push("<li class=\"hp-report-attention\"><b>" + (uk ? "Пошук без результату" : "Wyszukiwanie bez wyników") + "</b><span>" + summary.noResultSearches + (uk ? " пошуків" : " wyszukiwań") + (summary.topSearch ? ": «" + esc(summary.topSearch) + "»" : "") + (uk ? ". Перевір наявність і назву товару." : ". Sprawdź dostępność i nazwę produktu.") + "</span></li>");
     if (summary.productSessions < 10 && summary.visitors) findings.push("<li><b>" + (uk ? "Поки мало даних для оцінки конверсії" : "Za mało danych do oceny konwersji") + "</b><span>" + (uk ? "Дивись звіт за тиждень або місяць." : "Sprawdź raport tygodniowy lub miesięczny.") + "</span></li>");
     if (!summary.visitors) findings.push("<li><b>" + (uk ? "Даних поки немає" : "Brak danych") + "</b><span>" + (uk ? "Аналітика рахує відвідування після згоди на її збір." : "Analityka zapisuje wizyty po wyrażeniu zgody.") + "</span></li>");
-    const period = statsRange === 1 ? (uk ? "день" : "dzień") : statsRange === 7 ? (uk ? "7 днів" : "7 dni") : (uk ? "30 днів" : "30 dni");
+    const period = analyticsPeriodLabel(statsDates, lang);
     return "<section class=\"hp-stat-panel hp-admin-report\" role=\"status\"><div class=\"hp-report-heading\"><div><h2>" + (uk ? "Короткий звіт" : "Krótki raport") + "</h2><p>" + (uk ? "Період: " : "Okres: ") + period + " · " + (uk ? "порівняння з попереднім таким самим періодом" : "porównanie z poprzednim takim samym okresem") + "</p></div><button type=\"button\" class=\"hp-button\" data-close-report>" + (uk ? "Закрити" : "Zamknij") + "</button></div><div class=\"hp-report-metrics\">" + metricHtml + "</div><ul class=\"hp-report-findings\">" + findings.join("") + "</ul><p class=\"hp-report-note\">" + (uk ? "Це анонімні відвідування та кліки, а не підтверджені замовлення. Звіт враховує лише дані після згоди на аналітику." : "To anonimowe wizyty i kliknięcia, a nie potwierdzone zamówienia. Raport uwzględnia dane po zgodzie na analitykę.") + "</p></section>";
   }
   function renderAnalytics() {
@@ -1365,6 +1376,7 @@ import {
               when = new Date(event.created_at).toLocaleString(
                 lang === "uk" ? "uk-UA" : "pl-PL",
                 {
+                  timeZone: "Europe/Warsaw",
                   day: "2-digit",
                   month: "2-digit",
                   hour: "2-digit",
@@ -1375,46 +1387,7 @@ import {
           })
           .join("")
       : `<p class="hp-muted hp-small">${t("noAnalytics")}</p>`;
-    const buckets = () => {
-      const hourly = statsRange === 1,
-        count = hourly ? 24 : statsRange,
-        points = [],
-        pad = (value) => String(value).padStart(2, "0"),
-        keyFor = (date) =>
-          hourly
-            ? `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}`
-            : `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-      for (let index = count - 1; index >= 0; index -= 1) {
-        const point = new Date();
-        if (hourly) {
-          point.setMinutes(0, 0, 0);
-          point.setHours(point.getHours() - index);
-        } else {
-          point.setHours(0, 0, 0, 0);
-          point.setDate(point.getDate() - index);
-        }
-        points.push({
-          key: keyFor(point),
-          label: hourly
-            ? point.toLocaleTimeString(lang === "uk" ? "uk-UA" : "pl-PL", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : point.toLocaleDateString(lang === "uk" ? "uk-UA" : "pl-PL", {
-                day: "2-digit",
-                month: "2-digit",
-              }),
-          rows: [],
-        });
-      }
-      const byKey = new Map(points.map((point) => [point.key, point]));
-      events.forEach((event) => {
-        const date = new Date(event.created_at),
-          point = byKey.get(keyFor(date));
-        if (point) point.rows.push(event);
-      });
-      return points;
-    };
+    const buckets = () => analyticsBuckets(events, statsDates, statsDates.from === statsDates.to);
     const breakdowns = {
       destinations: {
         label: t("destinations"),
@@ -1471,7 +1444,7 @@ import {
           ? `<div class="hp-time-chart hp-interest-chart" style="--hp-chart-columns:${points.length}">${points.map((point) => `<div class="hp-chart-column" title="${esc(point.label)}: ${point.views} / ${point.orders}"><b>${point.views}</b><i><em style="height:${Math.max(point.views ? 5 : 0, Math.round(point.views / max * 100))}%"></em></i><span>${esc(point.label)}</span><small>${point.orders} ${t("interestOrders")}</small></div>`).join("")}</div>`
           : `<p class="hp-muted">${t("chartEmpty")}</p>`;
         const sourcesForProduct = [...item.sourceCounts].map(([source, count]) => `<span>${esc(source)}: <b>${count}</b></span>`).join(" · ");
-        return `<div class="hp-stat-modal-backdrop"><section class="hp-stat-modal" role="dialog" aria-modal="true" aria-labelledby="hp-chart-title"><button type="button" class="hp-stat-modal-close" id="hp-stat-close" aria-label="${t("chartClose")}">${icon("x")}</button><div class="hp-kicker">${t("analytics")}</div><h2 id="hp-chart-title">${esc(label)}</h2><p>${t("productInterestDetail")}</p><div class="hp-chart-summary"><span>${t("interestViews")}: ${item.views} · ${t("interestOrders")}: ${item.orders} · ${t("interestRate")}: ${item.rate}%</span></div><h3>${statsRange === 1 ? t("chartByHour") : t("chartByDay")}</h3>${graph}<p class="hp-interest-sources"><b>${t("sourceBreakdown")}:</b> ${sourcesForProduct || t("noAnalytics")}</p></section></div>`;
+        return `<div class="hp-stat-modal-backdrop"><section class="hp-stat-modal" role="dialog" aria-modal="true" aria-labelledby="hp-chart-title"><button type="button" class="hp-stat-modal-close" id="hp-stat-close" aria-label="${t("chartClose")}">${icon("x")}</button><div class="hp-kicker">${t("analytics")}</div><h2 id="hp-chart-title">${esc(label)}</h2><p>${t("productInterestDetail")}</p><div class="hp-chart-summary"><span>${t("interestViews")}: ${item.views} · ${t("interestOrders")}: ${item.orders} · ${t("interestRate")}: ${item.rate}%</span></div><h3>${statsDates.from === statsDates.to ? t("chartByHour") : t("chartByDay")}</h3>${graph}<p class="hp-interest-sources"><b>${t("sourceBreakdown")}:</b> ${sourcesForProduct || t("noAnalytics")}</p></section></div>`;
       }
       const breakdown = breakdowns[statsMetric],
         metricConfig = metrics.find(([key]) => key === statsMetric);
@@ -1505,7 +1478,7 @@ import {
         label = metricLabel;
         description = t(descriptionKey);
         value = `${key === "funnelConversion" ? metricValue : money(metricValue)}${suffix}`;
-        graphTitle = statsRange === 1 ? t("chartByHour") : t("chartByDay");
+        graphTitle = statsDates.from === statsDates.to ? t("chartByHour") : t("chartByDay");
         graph = points.some((point) => point.value)
           ? `<div class="hp-time-chart" style="--hp-chart-columns:${points.length}">${points
               .map(
@@ -1519,20 +1492,21 @@ import {
     };
     q("#hp-content").innerHTML =
       `${adminNav("stats")}<div class="hp-intro hp-stats-head"><div><h1>${t("analyticsTitle")}</h1><span class="hp-muted">${t("analyticsSub")}</span><small>${t("analyticsClickHint")}</small><button type="button" class="hp-button hp-primary" data-generate-report ${statsLoading || reportLoading ? "disabled" : ""}>${lang === "uk" ? "Звіт" : "Raport"}</button></div><div class="hp-range-tabs" role="group" aria-label="${t("analyticsTitle")}">${[
-        [1, t("day")],
+        [1, lang === "uk" ? "Сьогодні" : "Dzisiaj"],
+        ["yesterday", lang === "uk" ? "Вчора" : "Wczoraj"],
         [7, t("week")],
         [30, t("month")],
       ]
         .map(
           ([days, label]) =>
-            `<button type="button" class="hp-button ${statsRange === days ? "hp-primary" : ""}" data-stats-range="${days}">${label}</button>`,
+            `<button type="button" class="hp-button ${statsRange === days ? "hp-primary" : ""}" data-stats-range="${days}" ${statsLoading || reportLoading ? "disabled" : ""}>${label}</button>`,
         )
-        .join("")}</div></div>${
+        .join("")}</div></div><section class="hp-stats-date-panel"><form id="hp-stats-date-form"><fieldset ${statsLoading || reportLoading ? "disabled" : ""}><label class="hp-field">${lang === "uk" ? "Від дати" : "Od daty"}<input type="date" name="from" value="${statsDates.from}" max="${warsawDate()}" required></label><label class="hp-field">${lang === "uk" ? "До дати включно" : "Do daty włącznie"}<input type="date" name="to" value="${statsDates.to}" max="${warsawDate()}" required></label><button type="submit" class="hp-button hp-primary">${lang === "uk" ? "Показати" : "Pokaż"}</button></fieldset><p id="hp-stats-date-error" class="hp-alert" role="alert"></p></form><p class="hp-stats-period" role="status"><strong>${analyticsPeriodLabel(statsDates,lang)}</strong><span>${lang === "uk" ? "Час Варшави · останній день включено; сьогодні — до поточного часу." : "Czas Warszawy · ostatni dzień wliczony; dziś — do bieżącej chwili."}</span></p></section>${
         statsLoading
           ? `<div class="hp-empty">${t("loading")}</div>`
           : statsError
             ? `<div class="hp-empty">${t("error")}</div>`
-            : `${reportOpen ? (reportLoading ? `<section class="hp-stat-panel">${t("loading")}</section>` : reportError ? `<section class="hp-stat-panel">${t("error")}</section>` : renderAdminReport(analyticsReport)) : ""}<div class="hp-stat-grid">${metrics.map(metric).join("")}</div><div class="hp-stat-sections">${breakdownPanel("destinations", list(destinations, destinationLabel))}${breakdownPanel(
+            : `${reportOpen ? (reportLoading ? `<section class="hp-stat-panel">${t("loading")}</section>` : reportError ? `<section class="hp-stat-panel">${t("error")}</section>` : renderAdminReport(analyticsReport)) : ""}<div class="hp-stat-grid">${metrics.map(metric).join("")}</div><section class="hp-stat-panel hp-daily-stats"><h2>${lang === "uk" ? "Статистика за днями" : "Statystyki dzienne"}</h2><p class="hp-stat-panel-desc">${lang === "uk" ? "Натисни дату, щоб подивитися лише цей день. Звернення — кліки контакту чи замовлення, не підтверджені покупки." : "Kliknij datę, aby zobaczyć tylko ten dzień. Kontakty to kliknięcia kontaktu lub zamówienia, nie potwierdzone zakupy."}</p><div class="hp-daily-stats-scroll"><table><thead><tr><th>${lang === "uk" ? "Дата" : "Data"}</th><th>${t("visitors")}</th><th>${lang === "uk" ? "Перегляди сайту" : "Wyświetlenia strony"}</th><th>${t("productViews")}</th><th>${lang === "uk" ? "Звернення в Telegram" : "Kontakty w Telegramie"}</th></tr></thead><tbody>${dailyAnalytics(events,statsDates).reverse().map(day=>`<tr><th><button type="button" class="hp-button" data-stats-date="${day.date}">${analyticsDateLabel(day.date,lang)}</button></th><td>${day.visitors}</td><td>${day.pageViews}</td><td>${day.productViews}</td><td>${day.contactClicks}</td></tr>`).join("")}</tbody></table></div></section><div class="hp-stat-sections">${breakdownPanel("destinations", list(destinations, destinationLabel))}${breakdownPanel(
                 "topProducts",
                 list(
                   top,
@@ -1548,7 +1522,7 @@ import {
                 list(devices, (type) => t(type) || type),
               )}<section class="hp-stat-panel hp-stat-recent"><h3>${t("recentTransitions")}</h3><p class="hp-stat-panel-desc">${t("recentTransitionsDesc")}</p>${journeys}</section></div>${chartModal()}`
       }`;
-    q(".hp-stats-head").insertAdjacentHTML("afterend", `<section class="hp-tracking-links"><strong>${t("trackingLinks")}</strong><p>${t("trackingLinksHint")}</p><div>${["tiktok", "facebook", "telegram"].map((source) => `<button type="button" class="hp-button" data-landing-social="${source}">${icon("copy")}${t("share" + source[0].toUpperCase() + source.slice(1))}</button>`).join("")}</div></section>`);
+    q(".hp-stats-date-panel").insertAdjacentHTML("afterend", `<section class="hp-tracking-links"><strong>${t("trackingLinks")}</strong><p>${t("trackingLinksHint")}</p><div>${["tiktok", "facebook", "telegram"].map((source) => `<button type="button" class="hp-button" data-landing-social="${source}">${icon("copy")}${t("share" + source[0].toUpperCase() + source.slice(1))}</button>`).join("")}</div></section>`);
     if (!statsLoading && !statsError) q("#hp-content").insertAdjacentHTML("beforeend", `<section class="hp-interest"><button type="button" class="hp-interest-title" data-stat-metric="productInterest"><span><strong>${t("productInterest")}</strong><small>${t("productInterestDesc")}</small></span>${icon("chart-no-axes-column-increasing")}</button><div class="hp-interest-scroll"><table><thead><tr><th>${t("name")}</th><th>${t("interestViews")}</th><th>${t("interestOrders")}</th><th>${t("interestChannel")}</th><th title="${esc(t("interestNoContactDesc"))}">${t("interestNoContact")}</th><th>${t("interestRate")}</th><th>${t("sourceBreakdown")}</th></tr></thead><tbody>${interest.length ? interest.map(({ id, views, orders, media, noContact, rate, sourceCounts }) => `<tr><th><button type="button" class="hp-interest-product" data-stat-metric="product:${id}">${esc(productTitle(products.find((p) => p.id === id) || { name: `HMG-${id}` }))}${icon("chart-no-axes-column-increasing")}</button></th><td>${views}</td><td>${orders}</td><td>${media}</td><td>${noContact}</td><td>${rate}%</td><td>${[...sourceCounts].map(([source, count]) => `${esc(source)} ${count}`).join(" · ") || "—"}</td></tr>`).join("") : `<tr><td colspan="7">${t("noAnalytics")}</td></tr>`}</tbody></table></div></section>`);
     refreshIcons();
   }
@@ -2040,10 +2014,15 @@ import {
     reportLoading = false,
     reportError = false,
     statsRange = 7,
+    statsDates = presetAnalyticsDates(7),
     statsMetric = "",
     statsLoading = false,
     statsError = false,
     reportOpen = false;
+  let analyticsLoadGeneration = 0;
+  if (view === "stats" && initialParams.has("from") && initialParams.has("to")) {
+    try { statsDates = validateAnalyticsDates({from:initialParams.get("from"),to:initialParams.get("to")}); statsRange = 0; } catch {}
+  }
   if (!["uk", "pl"].includes(lang)) lang = "uk";
   if (!Array.isArray(cart)) cart = [];
   if (!Array.isArray(compare)) compare = [];
@@ -2726,7 +2705,7 @@ import {
       reportError = false;
       render();
       try {
-        analyticsReport = await db.getAnalyticsReport(statsRange);
+        analyticsReport = await db.getAnalyticsReport(statsDates);
       } catch {
         reportError = true;
       } finally {
@@ -2736,11 +2715,11 @@ import {
     } else if (b.dataset.closeReport !== undefined) {
       reportOpen = false;
       render();
+    } else if (b.dataset.statsDate) {
+      await selectAnalyticsDates({from:b.dataset.statsDate,to:b.dataset.statsDate});
     } else if (b.dataset.statsRange) {
-      statsRange = Number(b.dataset.statsRange);
-      reportOpen = false;
-      analyticsReport = null;
-      await loadAnalytics();
+      const preset = b.dataset.statsRange === "yesterday" ? "yesterday" : Number(b.dataset.statsRange);
+      await selectAnalyticsDates(presetAnalyticsDates(preset), preset);
     } else if (b.id === "hp-save-picks") {
       await run(async () => {
         const expected = [...draftPicks];
@@ -3106,6 +3085,14 @@ import {
   root.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (busy) return;
+    if (e.target.id === "hp-stats-date-form") {
+      const values = new FormData(e.target);
+      try { await selectAnalyticsDates({from:String(values.get("from")||""),to:String(values.get("to")||"")}); }
+      catch { q("#hp-stats-date-error").textContent = lang === "uk"
+        ? "Обери коректні дати: початок не пізніше завершення, без майбутніх дат, до 366 днів за раз."
+        : "Wybierz prawidłowe daty: początek przed końcem, bez dat przyszłych, maksymalnie 366 dni naraz."; }
+      return;
+    }
     if (await adminCatalog.handleSubmit(e.target)) return;
     if (await extra.handleSubmit(e.target)) return;
     if (e.target.id === "hp-login") {
@@ -3207,7 +3194,7 @@ import {
         if (view === "stats" && admin) {
           statsLoading = true;
           try {
-            analyticsEvents = await db.listAnalytics(statsRange);
+            analyticsEvents = await db.listAnalytics(statsDates);
           } catch {
             statsError = true;
           } finally {
