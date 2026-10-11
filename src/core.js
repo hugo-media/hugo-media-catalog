@@ -2,7 +2,7 @@ export const UPGRADES = {ram16:{group:'ram',target:16},ram32:{group:'ram',target
 export const TABLE = 'hmg_catalog_products';
 export const BUCKET = 'hmg-catalog-photos';
 export const MAX_IMAGES = 8;
-export const SPEC_KEYS = ['cpu','generation','ram','ssd','extraStorageType','extraStorageCapacity','extraStorageUnit','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','newArrival','bestseller','discount','telegramPost','quantity','seoTitleUk','seoTitlePl','seoDescriptionUk','seoDescriptionPl','purposes','benefits','bundles','charger','photoKind',...Object.keys(UPGRADES).flatMap(k=>[k+'Enabled',k+'Price'])];
+export const SPEC_KEYS = ['cpu','generation','ram','ssd','extraStorageType','extraStorageCapacity','extraStorageUnit','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','bluetooth','weight','dimensions','newArrival','bestseller','discount','salePrice','telegramPost','quantity','seoTitleUk','seoTitlePl','seoDescriptionUk','seoDescriptionPl','purposes','benefits','bundles','charger','photoKind',...Object.keys(UPGRADES).flatMap(k=>[k+'Enabled',k+'Price'])];
 export const MAX_DISCOUNT_PERCENT = 99;
 export const TELEGRAM_CHANNEL = 'https://t.me/h_m_g_pl';
 export const PURPOSES = ['study','office','programming','editing','gaming','travel'];
@@ -22,8 +22,22 @@ export function csv(value=''){
  }
  return [...new Set((Array.isArray(items)?items:String(items||'').split(',')).map(v=>String(v).trim()).filter(Boolean))];
 }
-export function discountPercent(p){const value=Number(p?.discount||0);return Number.isInteger(value)&&value>=0&&value<=MAX_DISCOUNT_PERCENT?value:0;}
-export function effectivePrice(p){return Math.round(Number(p.price)*(100-discountPercent(p)))/100;}
+export function fixedSalePrice(p){
+ const raw=String(p?.salePrice??'').trim();if(!/^\d+(?:\.\d{1,2})?$/.test(raw))return null;
+ const base=Number(p?.price),value=Number(raw);
+ return Number.isFinite(base)&&base>0&&Number.isFinite(value)&&value>=base/100&&value<base&&Math.abs(value*100-Math.round(value*100))<1e-6?Math.round(value*100)/100:null;
+}
+export function discountPercent(p){
+ const fixed=fixedSalePrice(p);
+ if(fixed!==null)return Math.round((Number(p.price)-fixed)*100/Number(p.price));
+ const value=Number(p?.discount||0);return Number.isInteger(value)&&value>=0&&value<=MAX_DISCOUNT_PERCENT?value:0;
+}
+export function discountBadge(p,minus='-'){
+ const percent=discountPercent(p),fixed=fixedSalePrice(p);
+ const approximate=fixed!==null&&Math.abs((Number(p.price)-fixed)*100/Number(p.price)-percent)>1e-6;
+ return (approximate?'≈ ':'')+minus+percent+'%';
+}
+export function effectivePrice(p){const fixed=fixedSalePrice(p);return fixed!==null?fixed:Math.round(Number(p.price)*(100-discountPercent(p)))/100;}
 export function normalizeTelegramPost(value=''){
  const raw=String(value||'').trim();if(!raw)return '';
  try{const url=new URL(/^https?:\/\//i.test(raw)?raw:`https://${raw}`);const host=url.hostname.toLowerCase().replace(/^www\./,'');let path=url.pathname.replace(/^\/s\//,'/').replace(/\/+$/,'');if(!['t.me','telegram.me'].includes(host)||!/^\/h_m_g_pl(?:\/\d+)?$/.test(path)||url.username||url.password)return null;return `https://t.me${path}`;}catch{return null;}
@@ -35,9 +49,10 @@ export function validateProduct(p){
  if(!String(p.name||'').trim()||String(p.name).length>180)invalid('name');
  if(!String(p.brand||'').trim()||String(p.brand).length>80)invalid('brand');
  if(!Number.isFinite(Number(p.price))||Number(p.price)<0||Number(p.price)>10000000)invalid('price');
- if(!Number.isInteger(Number(p.cat))||Number(p.cat)<0||Number(p.cat)>5)invalid('cat');
+ if(!Number.isInteger(Number(p.cat))||Number(p.cat)<0||Number(p.cat)>6)invalid('cat');
  if(!Number.isInteger(Number(p.status))||Number(p.status)<0||Number(p.status)>5)invalid('status');
  const discount=Number(p.discount||0);if(!Number.isInteger(discount)||discount<0||discount>MAX_DISCOUNT_PERCENT)invalid('discount');
+ if(String(p.salePrice??'').trim()&&fixedSalePrice(p)===null)invalid('salePrice');
  if(!['','true'].includes(String(p.newArrival||'')))invalid('newArrival');
  if(!['','true'].includes(String(p.bestseller||'')))invalid('bestseller');
  if(!['','adapter','cable','none'].includes(String(p.charger||'')))invalid('charger');
@@ -64,7 +79,7 @@ export function validateProduct(p){
  for(const k of ['seoTitleUk','seoTitlePl'])if(String(p[k]||'').length>80)invalid(k);
  for(const k of ['seoDescriptionUk','seoDescriptionPl'])if(String(p[k]||'').length>300)invalid(k);
 }
-export function toRow(p){validateProduct(p);return {name:p.name.trim(),brand:p.brand.trim(),cat:Number(p.cat),status:Number(p.status),price:Math.round(Number(p.price)*100)/100,condition:String(p.condition||''),warranty:String(p.warranty||''),desc_uk:String(p.descUk||''),desc_pl:String(p.descPl||''),images:p.images||[],specs:Object.fromEntries(SPEC_KEYS.map(k=>[k,k==='telegramPost'?normalizeTelegramPost(p[k]):String(p[k]||'').trim()]))};}
+export function toRow(p){validateProduct(p);return {name:p.name.trim(),brand:p.brand.trim(),cat:Number(p.cat),status:Number(p.status),price:Math.round(Number(p.price)*100)/100,condition:String(p.condition||''),warranty:String(p.warranty||''),desc_uk:String(p.descUk||''),desc_pl:String(p.descPl||''),images:p.images||[],specs:Object.fromEntries(SPEC_KEYS.map(k=>[k,k==='telegramPost'?normalizeTelegramPost(p[k]):k==='discount'&&fixedSalePrice(p)!==null?String(discountPercent(p)):String(p[k]||'').trim()]))};}
 export function fromRow(r){return {...r,...r.specs,price:Number(r.price),descUk:r.desc_uk||'',descPl:r.desc_pl||'',images:Array.isArray(r.images)?r.images:[]};}
 export function extraStorageLabel(p={}){
  if(Number(p?.cat)!==0)return '';
@@ -93,7 +108,7 @@ export function configuration(p,bundleSelection='',upgradeSelection={},lang='uk'
 export function orderText(items,lang='uk',origin='',bundleSelections={},upgradeSelections={}){
  const lines=[lang==='pl'?'Dzień dobry! Interesują mnie te produkty:':'Вітаю! Цікавлять ці товари:'];let cents=0,pending=false;
  for(const p of items){const c=configuration(p,bundleSelections[p.id],upgradeSelections[p.id],lang);cents+=Math.round(c.total*100);pending||=c.pending;
- lines.push(`• ${p.name} / HMG-${String(p.id).padStart(3,'0')} — ${effectivePrice(p).toFixed(2)} zł${discountPercent(p)?` (-${discountPercent(p)}%)`:''}`);
+ lines.push(`• ${p.name} / HMG-${String(p.id).padStart(3,'0')} — ${effectivePrice(p).toFixed(2)} zł${discountPercent(p)?` (${discountBadge(p)})`:''}`);
  for(const l of c.lines)lines.push(`  + ${l.label}${l.pending?'':` — ${l.price} zł`}`);
  lines.push(`  ${lang==='pl'?'Razem za zestaw':'Разом за комплект'}: ${c.total.toFixed(2)} zł`);
  if(origin)lines.push(`${origin}/?product=${p.id}`);}
