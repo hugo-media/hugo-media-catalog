@@ -36,3 +36,13 @@ export function consistencyIssues(p){
  }return [...new Set(issues)];
 }
 
+
+export function isStartPath(path) { return /^\/(?:(?:uk|pl)\/)?start\/?$/.test(String(path||'').split(/[?#]/)[0]); }
+
+export function startFunnel(events) {
+ const firstStart=new Map();
+ for(const e of events){const time=Date.parse(e.created_at);if(e.event_type!=='page_view'||!e.session_id||!isStartPath(e.path)||!Number.isFinite(time))continue;firstStart.set(e.session_id,Math.min(firstStart.get(e.session_id)??Infinity,time));}
+ const converted=new Set();
+ for(const e of events){const start=firstStart.get(e.session_id),time=Date.parse(e.created_at);if(start!==undefined&&e.event_type==='telegram_click'&&e.destination==='telegram_channel'&&Number.isFinite(time)&&time>=start)converted.add(e.session_id);}
+ return {starts:firstStart.size,converted:converted.size,rate:firstStart.size?Math.round(converted.size/firstStart.size*100):0};
+}
