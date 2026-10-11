@@ -1,4 +1,5 @@
 import { TABLE, BUCKET, toRow, fromRow, publicConfigValid, warsawDate, validateDailyPicks } from "./core.js";
+import { normalizeQuickFields } from './admin-catalog-core.js';
 let client;
 export let currentUserId = null;
 export const ready = publicConfigValid(window.HUGO_CONFIG || {});
@@ -340,4 +341,20 @@ export async function restoreVersion(id,updatedAt) {
  if(!(await isAdmin())) throw Error('notAdmin');
  const c=await connect(); const {data,error}=await c.rpc('hmg_catalog_restore_version',{version_id:id,expected_updated_at:updatedAt});
  if(error) throw error; return fromRow(data);
+}
+
+export async function quickUpdateProducts(changes) {
+ if (!(await isAdmin())) throw Error('notAdmin');
+ if (!Array.isArray(changes) || !changes.length || changes.length>100) throw Error('validation');
+ const ids=new Set();
+ const plan=changes.map(change=>{
+  if(!Number.isSafeInteger(change.id)||change.id<1||ids.has(change.id)||!change.expected_updated_at||!Number.isFinite(Date.parse(change.expected_updated_at)))throw Error('validation');
+  ids.add(change.id);
+  return {id:change.id,expected_updated_at:change.expected_updated_at,fields:normalizeQuickFields(change.fields)};
+ });
+ const c=await connect();
+ const {data,error}=await c.rpc('hmg_catalog_quick_update',{p_changes:plan});
+ if(error)throw error;
+ if(!Array.isArray(data)||data.length!==plan.length||new Set(data.map(row=>Number(row.id))).size!==ids.size||data.some(row=>!ids.has(Number(row.id))))throw Error('saveUnconfirmed');
+ return data.map(fromRow);
 }

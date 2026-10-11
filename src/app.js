@@ -2,7 +2,8 @@ import { productPath, catalogPath, pagePath, categories, visibleSeoContent } fro
 import { updateSeo, currentRoute } from './seo-client.js';
 import { adminUpgrades, configPanel } from './configurator.js';
 import { configuration } from './core.js';
-import { safeSearch } from './insights-core.js';
+import { safeSearch, startFunnel } from './insights-core.js';
+import { createAdminCatalog } from './admin-catalog.js';
 import { createStorefront, normalizedSpec, specLabel, filterValues } from "./storefront.js";
 import { createEnhancements } from "./enhancements.js";
 import * as db from "./data.js";
@@ -1208,18 +1209,7 @@ import {
     const top = countBy(productViews, "product_id").slice(0, 8),
       sources = countBy(pageViews, "traffic_source").slice(0, 8),
       devices = countBy(pageViews, "device_type"),
-      startSessions = new Set(
-        pageViews
-          .filter((e) => e.path?.startsWith("/start"))
-          .map((e) => e.session_id),
-      ),
-      channelSessions = new Set(channelClicks.map((e) => e.session_id)),
-      convertedSessions = [...channelSessions].filter((id) =>
-        startSessions.has(id),
-      ).length,
-      conversion = startSessions.size
-        ? Math.round((convertedSessions / startSessions.size) * 100)
-        : 0,
+      conversion = startFunnel(events).rate,
       transitions = [...telegram, ...catalogClicks].sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at),
       ),
@@ -1282,20 +1272,7 @@ import {
         return rows.filter((e) => e.event_type === "compare_add").length;
       if (key === "bundleAdds")
         return rows.filter((e) => e.event_type === "bundle_select").length;
-      if (key === "funnelConversion") {
-        const starts = new Set(
-            views
-              .filter((e) => e.path?.startsWith("/start"))
-              .map((e) => e.session_id),
-          ),
-          channels = new Set(
-            telegramRows
-              .filter((e) => e.destination === "telegram_channel")
-              .map((e) => e.session_id),
-          ),
-          converted = [...channels].filter((id) => starts.has(id)).length;
-        return starts.size ? Math.round((converted / starts.size) * 100) : 0;
-      }
+      if (key === "funnelConversion") return startFunnel(rows).rate;
       return 0;
     };
     const metrics = [
@@ -2450,20 +2427,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
       }`;
     }
     if (view === "admin") {
-      content.innerHTML = `${adminNav("admin")}${passwordSetup ? `<form id="hp-password-setup" class="hp-form hp-login"><h2>${t(passwordSetup ? "setPassword" : "changePassword")}</h2><label class="hp-field">${t("newPassword")}<input name="password" type="password" required autocomplete="new-password" minlength="8"></label><p class="hp-muted hp-small">${t("passwordHint")}</p><p id="hp-password-error" role="alert"></p><button type="submit" class="hp-button hp-primary">${t("savePassword")}</button></form>` : ""}<div class="hp-intro"><div><h1>${t("manage")}</h1><span class="hp-muted">${t("manageSub")}</span></div><button type="button" class="hp-button hp-primary" id="hp-new">${icon("plus")}${t("newProduct")}</button></div><div class="hp-admin-list">${products
-        .map(
-          (p) =>
-            `<div class="hp-admin-row"><div><b>${esc(p.name)}</b><div class="hp-small hp-muted">HMG-${String(p.id).padStart(3, "0")} · ${t("categories")[p.cat]}${p.newArrival === "true" ? ` · ${t("newArrival")}` : ""}${p.bestseller === "true" ? ` · ${t("bestseller")}` : ""}${discountPercent(p) ? ` · -${discountPercent(p)}%` : ""}</div></div><b>${money(effectivePrice(p))} zł</b><select data-status="${p.id}" aria-label="${t("status")}: ${esc(p.name)}">${t(
-              "statuses",
-            )
-              .map((s, i) => option(i, s, p.status))
-              .join(
-                "",
-              )}</select><div class="hp-admin-actions"><button type="button" data-edit="${p.id}" aria-label="${t("edit")}: ${esc(p.name)}">${icon("pencil")}</button><button type="button" data-duplicate="${p.id}" aria-label="${t("duplicate")}: ${esc(p.name)}">${icon("copy")}</button><button type="button" data-delete="${p.id}" aria-label="${t("delete")}: ${esc(p.name)}">${icon("trash-2")}</button></div></div>`,
-        )
-        .join(
-          "",
-        )}</div><div class="hp-note">${t("adminNote")}</div><button type="button" class="hp-button" id="hp-signout">${t("signout")}</button>`;
+      content.innerHTML = `${adminNav("admin")}${passwordSetup ? `<form id="hp-password-setup" class="hp-form hp-login"><h2>${t(passwordSetup ? "setPassword" : "changePassword")}</h2><label class="hp-field">${t("newPassword")}<input name="password" type="password" required autocomplete="new-password" minlength="8"></label><p class="hp-muted hp-small">${t("passwordHint")}</p><p id="hp-password-error" role="alert"></p><button type="submit" class="hp-button hp-primary">${t("savePassword")}</button></form>` : ""}${adminCatalog.render()}<div class="hp-note">${t("adminNote")}</div><button type="button" class="hp-button" id="hp-signout">${t("signout")}</button>`;
     }
     if (view === "picks") renderDailyPicksAdmin();
     if (view === "reviews") renderReviewsAdmin();
@@ -2475,6 +2439,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
     }
     if (view === "edit") renderForm();
     extra.afterRender();
+    if (admin && view === "admin") adminCatalog.afterRender();
     for(const [id,open] of detailOpen){const el=document.getElementById(id);if(el)el.open=open;}
     refreshIcons();
     renderCompareDock();
@@ -2699,6 +2664,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
     if (b.dataset.view==='catalog' && view==='detail') {
       view='catalog'; history.replaceState(null,'','?catalog'); render(); window.scrollTo(0,catalogScroll); return;
     }
+    if (await adminCatalog.handleClick(b)) return;
     if (await extra.handleClick(b)) return;
     if (b.classList.contains("hp-brand")) {
       view = "home";
@@ -2985,6 +2951,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
     }
   });
   root.addEventListener("input", (e) => {
+    if (adminCatalog.handleInput(e.target)) return;
     if (e.target.id === "hp-search") {
       if (view === "edit") return;
       search = e.target.value;
@@ -3003,6 +2970,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
   });
   root.addEventListener("change", async (e) => {
     const el = e.target;
+    if (adminCatalog.handleChange(el)) return;
     if (el.matches("input[data-pick]")) {
       const id = Number(el.dataset.pick);
       if (el.checked && draftPicks.length >= 2) {
@@ -3081,6 +3049,7 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
   root.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (busy) return;
+    if (await adminCatalog.handleSubmit(e.target)) return;
     if (await extra.handleSubmit(e.target)) return;
     if (e.target.id === "hp-login") {
       const values = new FormData(e.target);
@@ -3233,6 +3202,16 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
     async openEditor(id){
       if(id&&!products.some(p=>p.id===id)){notify(lang==='uk'?'Товар видалено. Чернетка залишається на пристрої.':'Produkt usunięty. Szkic pozostaje na urządzeniu.');return;}
       clearPictures(); editId=id; formImages=id?[...products.find(p=>p.id===id).images]:[];view="edit";render();window.scrollTo(0,0);
+    }
+  });
+  const adminCatalog = createAdminCatalog({
+    root,db,esc,t,icon,money,render,refresh,notify,refreshIcons,photoUrl:pictureUrl,
+    get lang(){return lang;},get admin(){return admin;},get view(){return view;},get products(){return products;},
+    applyProducts(rows){
+      const changed=new Map(rows.map(p=>[p.id,p]));
+      products=products.map(p=>changed.get(p.id)||p);
+      cart=reconcileCart(cart,products);writeLocal("hmg-cart",cart);
+      compare=compare.filter(id=>products.some(p=>p.id===id&&p.status===0));writeLocal("hmg-compare",compare);
     }
   });
   const storefront = createStorefront({esc,t,icon,photo,productTitle,localizedValue,priceBlock,stockQty,purposeKey,reviewsBlock,money,
