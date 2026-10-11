@@ -67,8 +67,8 @@ export function createAdminCatalog(c) {
   if(el.hasAttribute('data-admin-quick-input')){
    const form=el.closest('[data-admin-quick-form]'),id=Number(form?.dataset.adminQuickForm),p=c.products.find(p=>p.id===id);if(!p)return true;
    const d=drafts.get(id)||{base:{...p},fields:rawFields(p)};d.fields[el.name]=el.value;drafts.set(id,d);preview=null;
-   const changed=dirty(id);if(!changed)drafts.delete(id);form.closest('[data-admin-row]').classList.toggle('is-dirty',changed);
-   form.querySelector('[data-admin-save-button]').disabled=!changed;form.querySelector('[data-admin-reset]').disabled=!changed;
+   const changed=dirty(id),stale=d.base.updated_at!==p.updated_at;if(!changed&&!stale)drafts.delete(id);form.closest('[data-admin-row]').classList.toggle('is-dirty',changed);
+   form.querySelector('[data-admin-save-button]').disabled=!changed||stale;form.querySelector('[data-admin-reset]').disabled=!changed&&!stale;
    let final=null;try{final=effectivePrice({...p,...normalizeQuickFields(d.fields)});}catch{}
    form.querySelector('[data-admin-final]').innerHTML=`${E(L('Після знижки','Po rabacie'))}: <strong>${final===null?'—':E(c.money(final))+' zł'}</strong>`;
    sync();return true;
