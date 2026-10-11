@@ -480,7 +480,12 @@ grant execute on function public.hmg_catalog_finish_daily_report(date,uuid,text,
 
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
--- pg_net queues contain authorization headers; keep transport metadata server-only.
+-- Supabase-managed pg_net objects may be owned by supabase_admin: this
+-- best-effort REVOKE can be ineffective for postgres (a platform constraint).
+-- The supported boundary is net kept OUT of the exposed Data API schemas and
+-- anon/authenticated roles kept NOLOGIN. Trusted SQL login roles can read queued
+-- cron headers; bot token/chat credentials never enter pg_net requests.
+-- See Supabase troubleshooting: revoking-access-to-pg_net-objects-has-no-effect-0bbc16.
 revoke select on net.http_request_queue,net._http_response from public,anon,authenticated;
 do $$
 begin
