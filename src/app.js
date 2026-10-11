@@ -2751,10 +2751,11 @@ ${configPanel(p,bundleSelections[p.id],upgradeSelections[p.id],lang,esc,money)||
       render();
     } else if (b.hasAttribute("data-start-catalog")) {
       recordEvent("catalog_click", null, "catalog");
+      savePublicHistory();
       view = "catalog";
       cat = -1;
       const campaign = new URLSearchParams(location.search);
-      history.replaceState(null, "", `${catalogPath(lang)}${campaign.size ? `?${campaign}` : ""}`);
+      history.pushState({hmg:true,view,selected,cat,search,sort,filters:{...filters},catalogScroll,scroll:0}, "", `${catalogPath(lang)}${campaign.size ? `?${campaign}` : ""}`);
       render();
       window.scrollTo(0,0);
     } else if (b.dataset.view) {
