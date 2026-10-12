@@ -153,3 +153,11 @@ test('admin shortcut keeps unfinished product and opens the independent site edi
  const resumed=run(draft,'/resume');
  assert.equal(resumed.state.step,'preview');
 });
+
+test('microphone wizard asks type before device-specific specifications',()=>{
+ let state=run({},'/add').state;
+ state=run(state,'Навушники та аудіо').state;
+ assert.equal(state.step,'deviceType');
+ state=run(state,'Мікрофон').state;
+ assert.equal(state.values.deviceType,'microphone');assert.equal(state.step,'name');
+});

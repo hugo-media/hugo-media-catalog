@@ -1,3 +1,4 @@
+import {renderDeviceSelector,renderDeviceFields,deviceSpecRows,resolveDeviceType,deviceFieldSnapshot,switchDeviceValues,deviceProfile,deviceFieldLabel,deviceTypeLabel} from './device-fields.js';
 import { productPath, catalogPath, pagePath, categories, visibleSeoContent } from './seo-core.js';
 import { updateSeo, currentRoute } from './seo-client.js';
 import { adminUpgrades, configPanel } from './configurator.js';
@@ -61,7 +62,7 @@ import {
         "Ноутбуки",
         "Телефони",
         "Планшети",
-        "Навушники",
+        "Навушники та аудіо",
         "Смартгодинники",
         "Монітори",
         "Смартдевайси",
@@ -164,7 +165,7 @@ import {
         "Laptopy",
         "Telefony",
         "Tablety",
-        "Słuchawki",
+        "Słuchawki i audio",
         "Smartwatche",
         "Monitory",
         "Smart gadżety",
@@ -2169,7 +2170,7 @@ import {
     return `<option value="${esc(v)}" ${String(v) === String(chosen) ? "selected" : ""}>${esc(label)}</option>`;
   }
   function selectFilter(key, label, values) {
-    return `<label class="hp-field">${label}<select data-filter="${key}">${option("", t("any"), filters[key] || "")}${values.map((v) => option(v, specLabel(key, v), filters[key])).join("")}</select></label>`;
+    return `<label class="hp-field">${label}<select data-filter="${key}">${option("", t("any"), filters[key] || "")}${values.map((v) => option(v, key==="deviceType"?deviceTypeLabel({cat,deviceType:v},lang):specLabel(key, v), filters[key])).join("")}</select></label>`;
   }
   function eligible() {
     return products.filter(
@@ -2319,8 +2320,7 @@ import {
         return;
       }
       const specs = [
-          ...filterKeys(p.cat).map(([key, label]) => [t(label), localizedValue(specLabel(key, p[key]))]),
-          ...((p.cat === 1 || p.cat === 2) ? [["cpu", "cpu"], ["battery", "battery"]] : p.cat === 4 ? [["screen", "screen"], ["resolution", "resolution"], ["cpu", "cpu"], ["battery", "autonomy"]] : p.cat === 6 ? [["cpu", "cpu"], ["battery", "autonomy"], ["weight", "weight"], ["dimensions", "dimensions"]] : []).map(([key,label])=>[t(label),localizedValue(specLabel(key,p[key]))]),
+          ...deviceSpecRows(p,lang,(key,value)=>localizedValue(specLabel(key,value))),
           ...(extraStorageLabel(p) ? [[t("extraStorage"), extraStorageLabel(p)]] : []),
           [t("condition"), localizedValue(p.condition) || t("stateValue")],
           [t("warranty"), localizedValue(p.warranty) || t("unknown")],
@@ -2411,12 +2411,10 @@ import {
     }
     if (view === "compare") {
       const items = comparisonSelection(products,compare);
-      const categoryKeys = items.length ? [...filterKeys(items[0].cat),
-        ...(items[0].cat===0?[["os","os"]]:[1,2].includes(items[0].cat)?[["cpu","cpu"],["battery","battery"]]:items[0].cat===4?[["screen","screen"],["resolution","resolution"],["battery","autonomy"]]:items[0].cat===6?[["battery","autonomy"],["weight","weight"],["dimensions","dimensions"]]:[])
-      ] : [];
+      const categoryKeys = items.length ? [['deviceType','deviceType'],...items.flatMap(item=>deviceProfile(item).fields.map(key=>[key,key]))] : [];
       const definitions = [
         ["price",t("price")],
-        ...categoryKeys.map(([key,label])=>[key,t(label)]),
+        ...categoryKeys.map(([key,label])=>[key,key==="deviceType"?t(label):deviceFieldLabel(key,lang)]),
         ["condition",t("condition")],["warranty",t("warranty")]
       ].filter(([key],index,list)=>list.findIndex(row=>row[0]===key)===index);
       const rows = comparisonRows(items,definitions,compareDifferences);
@@ -2501,7 +2499,9 @@ import {
     const saving = Math.round((price - salePrice) * 100) / 100;
     preview.textContent = t("discountResult") + ": " + money(salePrice) + " zł" + (discount ? " · " + t("discountSaving") + ": " + money(saving) + " zł" : "") + (discount && !product.salePrice ? " · " + t("discountRounding") : "");
   }
+  let editorDeviceCategory = 0, editorDeviceType = 'laptop', deviceFieldCache = {};
   function renderForm() {
+    deviceFieldCache = {};
     const p = products.find((p) => p.id === editId) || {
       name: "",
       price: "",
@@ -2521,25 +2521,26 @@ import {
       ? `<section class="hp-form-section"><h3 class="hp-section-heading">${t("shareFor")}</h3><div class="hp-social-buttons">${["facebook", "tiktok", "instagram", "telegram"].map((source) => `<button type="button" class="hp-button" data-social="${source}" data-product="${p.id}">${t("share" + source[0].toUpperCase() + source.slice(1))}</button>`).join("")}</div></section>`
       : "";
     q("#hp-content").innerHTML =
-      `<button type="button" class="hp-back" data-view="admin">${icon("arrow-left")}${t("admin")}</button><div class="hp-edit-heading"><h2>${editId ? t("edit") : t("newProduct")}</h2><span class="hp-muted hp-small">${t("manageSub")}</span></div><form class="hp-form" id="hp-form">${["promoStartAt","promoEndAt","promoHome","promoTitleUk","promoTitlePl"].map(key=>`<input type="hidden" name="${key}" value="${esc(p[key]||"")}">`).join("")}<section class="hp-form-section"><h3 class="hp-section-heading">${t("basicInfo")}</h3><div class="hp-form-grid"><div class="hp-wide">${field("name", t("name"), p.name, "text", true)}</div><label class="hp-field">${t("category")}<select name="cat" id="hp-form-cat">${t(
+      `<button type="button" class="hp-back" data-view="admin">${icon("arrow-left")}${t("admin")}</button><div class="hp-edit-heading"><h2>${editId ? t("edit") : t("newProduct")}</h2><span class="hp-muted hp-small">${t("manageSub")}</span></div><form class="hp-form" id="hp-form">${["promoStartAt","promoEndAt","promoHome","promoTitleUk","promoTitlePl"].map(key=>`<input type="hidden" name="${key}" value="${esc(p[key]||"")}">`).join("")}<section class="hp-form-section"><h3 class="hp-section-heading">${t("basicInfo")}</h3><div class="hp-form-grid"><label class="hp-field">${t("category")}<select name="cat" id="hp-form-cat">${t(
         "categories",
       )
         .map((c, i) => option(i, c, p.cat))
         .join(
           "",
-        )}</select></label><div id="hp-brand-field">${choiceField("brand", t("brand"), categoryChoices[p.cat].brand, p.brand, true)}</div>${field("price", t("regularPrice"), p.price, "number", true)}<label class="hp-field">${t("quantity")}<select name="quantity">${Array.from({ length: 11 }, (_, i) => option(i, i, p.quantity || 1)).join("")}</select></label><label class="hp-field">${t("status")}<select name="status">${t(
+        )}</select></label><div id="hp-device-type-field"></div><div class="hp-wide">${field("name", t("name"), p.name, "text", true)}</div><div id="hp-brand-field">${choiceField("brand", t("brand"), categoryChoices[p.cat].brand, p.brand, true)}</div>${field("price", t("regularPrice"), p.price, "number", true)}<label class="hp-field">${t("quantity")}<select name="quantity">${Array.from({ length: 11 }, (_, i) => option(i, i, p.quantity || 1)).join("")}</select></label><label class="hp-field">${t("status")}<select name="status">${t(
         "statuses",
       )
         .map((s, i) => option(i, s, p.status))
         .join(
           "",
-        )}</select></label>${choiceField("condition", t("condition"), commonChoices.condition, p.condition, true)}${choiceField("warranty", t("warranty"), commonChoices.warranty, p.warranty, true)}<label class="hp-field">${t("markNewArrival")}<select name="newArrival">${option("", t("no"), p.newArrival || "")}${option("true", t("yes"), p.newArrival || "")}</select></label><label class="hp-field">${t("markBestseller")}<select name="bestseller">${option("", t("no"), p.bestseller || "")}${option("true", t("yes"), p.bestseller || "")}</select></label><label class="hp-field">${t("discount")}<input name="discount" type="number" inputmode="numeric" min="0" max="${MAX_DISCOUNT_PERCENT}" step="1" value="${configuredDiscountPercent(p)}" aria-describedby="hp-discount-preview"><small id="hp-discount-preview" class="hp-muted hp-small" data-discount-preview aria-live="polite"></small></label><label class="hp-field">${t("salePrice")}<input name="salePrice" type="number" min="0.01" step="0.01" inputmode="decimal" value="${esc(p.salePrice || "")}" aria-describedby="hp-sale-price-help"><small id="hp-sale-price-help" class="hp-muted hp-small">${t("salePriceHelp")}</small></label>${checkGroup("purposes", t("purpose"), PURPOSES, p.purposes, purposeKey)}${checkGroup("benefits", t("advantages"), BENEFITS, p.benefits, benefitKey)}${checkGroup("bundles", t("bundles"), Object.keys(BUNDLES), p.bundles, bundleKey)}</div></section>${adminUpgrades(p,lang,esc)}<section class="hp-form-section"><h3 class="hp-section-heading">${t("spec")}</h3><div class="hp-form-grid" id="hp-category-fields"></div></section><section class="hp-form-section"><h3 class="hp-section-heading">${t("mediaInfo")}</h3><div class="hp-form-grid"><label class="hp-field hp-wide">${t("telegramPost")}<input type="text" inputmode="url" name="telegramPost" value="${esc(p.telegramPost || "")}" placeholder="https://t.me/h_m_g_pl/123"><span class="hp-muted hp-small">${t("telegramPostHint")}</span></label><label class="hp-field hp-wide">${t("photos")}<input type="file" id="hp-upload" multiple accept="image/jpeg,image/png,image/webp"><span class="hp-muted hp-small">${t("photoHint")}</span><div id="hp-upload-previews" class="hp-toprow"></div></label><label class="hp-field">${t("descUk")}<textarea name="descUk">${esc(p.descUk)}</textarea></label><label class="hp-field">${t("descPl")}<textarea name="descPl">${esc(p.descPl)}</textarea></label></div></section><section class="hp-form-section"><h2>${lang==="uk"?"SEO для пошуку":"SEO w wyszukiwarce"}</h2><p class="hp-muted">${lang==="uk"?"Орієнтири довжини — підказка, не гарантія відображення у Google.":"Zalecana długość to wskazówka, nie gwarancja wyglądu w Google."}</p><div class="hp-form-grid" data-seo-group><label class="hp-field hp-wide">SEO-заголовок українською<input name="seoTitleUk" maxlength="80" value="${esc(p.seoTitleUk||"")}" data-seo-live></label><label class="hp-field hp-wide">SEO-опис українською<textarea name="seoDescriptionUk" maxlength="300" data-seo-live>${esc(p.seoDescriptionUk||"")}</textarea></label><label class="hp-field hp-wide">Tytuł SEO po polsku<input name="seoTitlePl" maxlength="80" value="${esc(p.seoTitlePl||"")}" data-seo-live></label><label class="hp-field hp-wide">Opis SEO po polsku<textarea name="seoDescriptionPl" maxlength="300" data-seo-live>${esc(p.seoDescriptionPl||"")}</textarea></label><p data-seo-status class="hp-muted"></p></div></section>${shareButtons}<div role="alert" id="hp-form-error" class="hp-alert"></div><div class="hp-form-actions"><button type="button" class="hp-button" data-view="admin">${t("cancel")}</button><button type="submit" class="hp-button hp-primary">${lang === "pl" ? "Zapisz w bazie" : "Зберегти в базу"}</button></div></form>`;
+        )}</select></label>${choiceField("condition", t("condition"), commonChoices.condition, p.condition, true)}${choiceField("warranty", t("warranty"), commonChoices.warranty, p.warranty, true)}<label class="hp-field">${t("markNewArrival")}<select name="newArrival">${option("", t("no"), p.newArrival || "")}${option("true", t("yes"), p.newArrival || "")}</select></label><label class="hp-field">${t("markBestseller")}<select name="bestseller">${option("", t("no"), p.bestseller || "")}${option("true", t("yes"), p.bestseller || "")}</select></label><label class="hp-field">${t("discount")}<input name="discount" type="number" inputmode="numeric" min="0" max="${MAX_DISCOUNT_PERCENT}" step="1" value="${configuredDiscountPercent(p)}" aria-describedby="hp-discount-preview"><small id="hp-discount-preview" class="hp-muted hp-small" data-discount-preview aria-live="polite"></small></label><label class="hp-field">${t("salePrice")}<input name="salePrice" type="number" min="0.01" step="0.01" inputmode="decimal" value="${esc(p.salePrice || "")}" aria-describedby="hp-sale-price-help"><small id="hp-sale-price-help" class="hp-muted hp-small">${t("salePriceHelp")}</small></label><div class="hp-wide" data-computer-only>${checkGroup("purposes", t("purpose"), PURPOSES, p.purposes, purposeKey)}${checkGroup("bundles", t("bundles"), Object.keys(BUNDLES), p.bundles, bundleKey)}</div><div class="hp-wide" id="hp-device-benefits"></div></div></section><div id="hp-device-upgrades"></div><section class="hp-form-section"><h3 class="hp-section-heading">${t("spec")}</h3><div class="hp-form-grid" id="hp-category-fields"></div></section><section class="hp-form-section"><h3 class="hp-section-heading">${t("mediaInfo")}</h3><div class="hp-form-grid"><label class="hp-field hp-wide">${t("telegramPost")}<input type="text" inputmode="url" name="telegramPost" value="${esc(p.telegramPost || "")}" placeholder="https://t.me/h_m_g_pl/123"><span class="hp-muted hp-small">${t("telegramPostHint")}</span></label><label class="hp-field hp-wide">${t("photos")}<input type="file" id="hp-upload" multiple accept="image/jpeg,image/png,image/webp"><span class="hp-muted hp-small">${t("photoHint")}</span><div id="hp-upload-previews" class="hp-toprow"></div></label><label class="hp-field">${t("descUk")}<textarea name="descUk">${esc(p.descUk)}</textarea></label><label class="hp-field">${t("descPl")}<textarea name="descPl">${esc(p.descPl)}</textarea></label></div></section><section class="hp-form-section"><h2>${lang==="uk"?"SEO для пошуку":"SEO w wyszukiwarce"}</h2><p class="hp-muted">${lang==="uk"?"Орієнтири довжини — підказка, не гарантія відображення у Google.":"Zalecana długość to wskazówka, nie gwarancja wyglądu w Google."}</p><div class="hp-form-grid" data-seo-group><label class="hp-field hp-wide">SEO-заголовок українською<input name="seoTitleUk" maxlength="80" value="${esc(p.seoTitleUk||"")}" data-seo-live></label><label class="hp-field hp-wide">SEO-опис українською<textarea name="seoDescriptionUk" maxlength="300" data-seo-live>${esc(p.seoDescriptionUk||"")}</textarea></label><label class="hp-field hp-wide">Tytuł SEO po polsku<input name="seoTitlePl" maxlength="80" value="${esc(p.seoTitlePl||"")}" data-seo-live></label><label class="hp-field hp-wide">Opis SEO po polsku<textarea name="seoDescriptionPl" maxlength="300" data-seo-live>${esc(p.seoDescriptionPl||"")}</textarea></label><p data-seo-status class="hp-muted"></p></div></section>${shareButtons}<div role="alert" id="hp-form-error" class="hp-alert"></div><div class="hp-form-actions"><button type="button" class="hp-button" data-view="admin">${t("cancel")}</button><button type="submit" class="hp-button hp-primary">${lang === "pl" ? "Zapisz w bazie" : "Зберегти в базу"}</button></div></form>`;
     q('#hp-form select[name="warranty"]')?.closest(".hp-field")?.insertAdjacentHTML("afterend", `<label class="hp-field">${t("charger")}<select name="charger">${option("", t("chargerUnknown"), p.charger || "")}${["adapter", "cable", "none"].map((value) => option(value, chargerLabel(value), p.charger || "")).join("")}</select></label>`);
     formCategory(p.cat, p);
     showUploads();
     extra.formReady(p);
     updateDiscountPreview();
   }
+  for(const language of ['uk','pl'])Object.assign(dict[language],{deviceType:language==='pl'?'Typ urządzenia':'Тип пристрою',...Object.fromEntries(['connection','pickupPattern','frequencyResponse','sampleRate','wirelessRange','outputPower'].map(key=>[key,deviceFieldLabel(key,language)]))});
   function filterKeys(c) {
     return c === 0 || c === -1
       ? [
@@ -2560,7 +2561,9 @@ import {
           ]
         : c === 3
           ? [
+              ["deviceType", "deviceType"],
               ["type", "type"],
+              ["connection", "connection"],
               ["noise", "noise"],
             ]
           : c === 4
@@ -2570,7 +2573,7 @@ import {
                 ["lte", "lte"],
               ]
             : c === 6
-              ? [["type", "type"], ["compatibility", "compatibility"], ["bluetooth", "bluetooth"]]
+              ? [["deviceType","deviceType"], ["type", "type"], ["compatibility", "compatibility"], ["bluetooth", "bluetooth"]]
               : [
                 ["screen", "screen"],
                 ["resolution", "resolution"],
@@ -2578,34 +2581,31 @@ import {
               ];
   }
   function formCategory(c, p = {}) {
-    const defs = filterKeys(c);
-    if (c === 1 || c === 2) defs.push(["cpu", "cpu"], ["battery", "battery"]);
-    if (c === 4) defs.push(["screen", "screen"], ["resolution", "resolution"], ["cpu", "cpu"], ["battery", "autonomy"]);
-    if (c === 6) defs.push(["cpu", "cpu"], ["battery", "autonomy"], ["weight", "weight"], ["dimensions", "dimensions"]);
-    const categoryFields = defs
-      .map(([key, label]) => {
-        const freeEntry = c === 6 || (c === 4 && ["screen", "resolution", "cpu", "battery"].includes(key));
-        if (freeEntry) {
-          const values = categoryChoices[c][key] || [];
-          const required = c === 6 && ["type", "compatibility"].includes(key);
-          return `<label class="hp-field">${t(label)}<input name="${key}" value="${esc(p[key] || "")}" ${required ? "required" : ""} ${values.length ? `list="hp-choices-${key}"` : ""}>${values.length ? `<datalist id="hp-choices-${key}">${values.map(value=>`<option value="${esc(value)}"></option>`).join("")}</datalist>` : ""}</label>`;
-        }
-        return choiceField(key, t(label), c === 4 && key !== "compatibility" ? ["", ...(categoryChoices[c][key] || [])] : categoryChoices[c][key] || [], p[key] || "", !(c === 4 && key !== "compatibility"));
-      })
-      .join("");
+    p={...p,cat:Number(c)};
+    editorDeviceCategory=Number(c);editorDeviceType=resolveDeviceType(p);p.deviceType=editorDeviceType;
+    q("#hp-device-type-field").innerHTML=renderDeviceSelector(p,lang);
     const extraStorageFields = Number(c) === 0
       ? `<label class="hp-field">${t("extraStorageType")}<select name="extraStorageType">${option("", t("extraStorageNone"), p.extraStorageType || "")}${["SSD", "HDD"].map((value) => option(value, value, p.extraStorageType || "")).join("")}</select></label><label class="hp-field">${t("extraStorageCapacity")}<input name="extraStorageCapacity" type="number" min="0.1" step="any" inputmode="decimal" value="${esc(p.extraStorageCapacity || "")}" placeholder="700" aria-describedby="hp-extra-storage-help"><small id="hp-extra-storage-help" class="hp-muted hp-small">${t("extraStorageHelp")}</small></label><label class="hp-field">${t("extraStorageUnit")}<select name="extraStorageUnit">${option("", t("chargerUnknown"), p.extraStorageUnit || "")}${["GB", "TB"].map((value) => option(value, value, p.extraStorageUnit || "")).join("")}</select></label>`
       : "";
-    q("#hp-category-fields").innerHTML = categoryFields + extraStorageFields;
-    const brand = q("#hp-brand-field");
-    if (brand)
-      brand.innerHTML = c === 6 ? `<label class="hp-field">${t("brand")}<input name="brand" required maxlength="80" value="${esc(p.brand || "")}"></label>` : choiceField(
-        "brand",
-        t("brand"),
-        categoryChoices[c].brand,
-        p.brand || "",
-        true,
-      );
+    
+    q("#hp-category-fields").innerHTML=renderDeviceFields(p,lang,categoryChoices[c]||{})+extraStorageFields;
+    const brand=q("#hp-brand-field");
+    if(brand)brand.innerHTML='<label class="hp-field">'+t('brand')+'<input name="brand" required maxlength="80" value="'+esc(p.brand||'')+'" list="hp-device-brand-choices"><datalist id="hp-device-brand-choices">'+(categoryChoices[c]?.brand||[]).map(value=>'<option value="'+esc(value)+'"></option>').join('')+'</datalist></label>';
+    q("#hp-device-upgrades").innerHTML=adminUpgrades(p,lang,esc);
+    for(const group of all('[data-computer-only]')){
+      group.hidden=Number(c)!==0;
+      for(const input of group.querySelectorAll('input,select,textarea'))input.disabled=Number(c)!==0;
+    }
+    const benefits=Number(c)===0?BENEFITS:BENEFITS.filter(key=>['tested','metal','battery','light','gradeA'].includes(key));
+    q("#hp-device-benefits").innerHTML=checkGroup('benefits',t('advantages'),benefits,p.benefits,benefitKey);
+  }
+  function changeDeviceForm(nextCategory,nextType){
+    const form=q('#hp-form'),data=new FormData(form),values={...Object.fromEntries(data),benefits:data.getAll('benefits').join(','),purposes:data.getAll('purposes').join(','),bundles:data.getAll('bundles').join(',')};
+    deviceFieldCache[editorDeviceCategory+':'+editorDeviceType]=deviceFieldSnapshot(values);
+    const type=nextType||resolveDeviceType({cat:nextCategory,name:values.name});
+    const cached=deviceFieldCache[nextCategory+':'+type]||{};
+    formCategory(nextCategory,switchDeviceValues(values,nextCategory,type,cached));
+    extra.changed();
   }
   function showUploads() {
     q("#hp-upload-previews").innerHTML = formImages
@@ -3057,7 +3057,9 @@ import {
         notify(t("saved"));
       });
     } else if (el.id === "hp-form-cat") {
-      formCategory(Number(el.value));
+      changeDeviceForm(Number(el.value));
+    } else if (el.id === "hp-form-device-type") {
+      changeDeviceForm(Number(q("#hp-form-cat").value),el.value);
     } else if (el.id === "hp-review-upload") {
       await run(async () => {
         const file = el.files?.[0];

@@ -1,3 +1,4 @@
+import {deviceProfile,deviceTypeLabel} from './device-fields.js';
 import { productPath, pagePath, visibleSeoContent } from './seo-core.js';
 import { effectivePrice, discountPercent, discountBadge, csv, telegramLink, availabilityRequestText, normalizeTelegramPost } from './core.js';
 
@@ -78,7 +79,20 @@ export function comparisonRows(items,definitions,onlyDifferences=false) {
 export function createStorefront(c) {
   const L = (uk, pl) => c.lang === 'pl' ? pl : uk;
   const E = c.esc;
-  const specSummary = p => (p.cat===3 ? [p.noise, p.connection] : p.cat===4 ? [specLabel('screen',p.screen),c.localizedValue(p.compatibility),c.localizedValue(p.battery)] : p.cat===6 ? [c.localizedValue(p.type),(p.bluetooth&&/^bluetooth$/i.test(c.localizedValue(p.compatibility)||'')?'':c.localizedValue(p.compatibility)),p.bluetooth&&`Bluetooth ${p.bluetooth}`] : p.cat===5 ? [specLabel('screen',p.screen),p.resolution,p.refreshRate] : [p.cpu,p.ram && `${specLabel('ram',p.ram)} RAM`,p.ssd && `${specLabel('ssd',p.ssd)}${p.cat===0?' SSD':''}`, p.cat===0 && specLabel('screen',p.screen),p.cat===0 && /^(NVIDIA|AMD)/i.test(p.gpu||'') && p.gpu]).filter(Boolean).join(' · ');
+  const specSummary = p => {
+    const profile=deviceProfile(p);
+    const values=profile.summary.map(key=>{
+      if(key==='gpu'&&Number(p.cat)===0&&!/^(NVIDIA|AMD)/i.test(p.gpu||''))return '';
+      let value=c.localizedValue(specLabel(key,p[key]));
+      if(!value)return '';
+      if(key==='ram')value+=' RAM';
+      if(key==='ssd'&&Number(p.cat)===0)value+=' SSD';
+      if(key==='bluetooth')value='Bluetooth '+value;
+      if(key==='hz')value+=' Hz';
+      return value;
+    }).filter(Boolean);
+    return values.length?values.join(' · '):deviceTypeLabel(p,c.lang);
+  };
   function card(p, options={}) {
     const compact=Boolean(options&&typeof options==='object'&&options.compact);
     const summary=specSummary(p);
