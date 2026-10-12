@@ -1,5 +1,5 @@
 
-import {transition,formatOnDemandReport,MENU} from './bot-core.mjs';
+import {transition,formatOnDemandReport,MENU,productSearchResult,openManagedProduct} from './bot-core.mjs';
 import {toRow,BUCKET} from '../../../src/core.js';
 
 export function incomingMessage(update){
@@ -84,10 +84,28 @@ export function createBotHandler({env={},fetch:fetcher=globalThis.fetch,uuid=()=
   try{
    const context=await rpc('hmg_catalog_bot_context',{p_chat_id:input.chatId,p_update_id:input.updateId});
    if(context.duplicate){if(!context.delivered)await deliver(context.result);return respond(200,{ok:true,duplicate:true});}
-   const next=transition(context.state,input,uuid());
+   let next=transition(context.state,input,uuid());
+   if(next.lookup){const data=await rpc('hmg_catalog_bot_products',{p_query:next.lookup.query,p_offset:next.lookup.offset});next=productSearchResult(data,next.lookup.query,next.lookup.offset);}
+   if(next.openProduct){const data=await rpc('hmg_catalog_bot_product',{p_id:next.openProduct});next=openManagedProduct(data,uuid());}
    if(next.report){
     const report=await rpc('hmg_catalog_bot_report',{p_period:next.report});
     next.reply={text:formatOnDemandReport(report),reply_markup:MENU};
+   }
+   if(next.saveExisting||next.remove){
+    let changed=null;
+    if(next.saveExisting){
+     try{
+      const paths=[];
+      for(let i=0;i<next.state.photos.length;i+=2)paths.push(...await Promise.all(next.state.photos.slice(i,i+2).map((p,j)=>p.path||uploadPhoto(p,next.state.draftId,i+j))));
+      changed=toRow({...next.state.values,images:paths});
+      changed.specs={...next.state.values.specs,...changed.specs};
+     }catch{
+      const result=await rpc('hmg_catalog_bot_commit',{p_chat_id:input.chatId,p_update_id:input.updateId,p_version:context.version,p_state:context.state,p_reply:{text:'Не вдалося завантажити фото або перевірити зміни. Дані збережені. Спробуй ще раз.',reply_markup:{keyboard:[['💾 Зберегти зміни','✏️ Виправити'],['❌ Скасувати']],resize_keyboard:true}},p_product:null});
+      await deliver(result);return respond(200,{ok:true});
+     }
+    }
+    const result=await rpc('hmg_catalog_bot_manage_commit',{p_chat_id:input.chatId,p_update_id:input.updateId,p_version:context.version,p_action:next.remove?'delete':'update',p_product:changed,p_reply:next.reply});
+    await deliver(result);return respond(200,{ok:true});
    }
    let product=null;
    if(next.publish){
