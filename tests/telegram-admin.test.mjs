@@ -85,7 +85,7 @@ function mock({state={},denied=false,duplicate=false,photoFailure=false,pending=
   if(url.includes('/storage/v1/object/'))return json({Key:'stored'});
   if(method==='hmg_catalog_bot_commit'){if(body.p_product)products.push(body.p_product);return json({reply:body.p_reply,...(body.p_product?{productId:77,draft:body.p_product.status===3}:{})});}
   if(method==='sendMessage'){sent.push(body);return json({ok:true,result:{message_id:4}});}
-  if(method==='hmg_catalog_bot_delivered')return json(null);
+  if(method==='hmg_catalog_bot_delivered')return new Response(null,{status:204});
   throw Error('Unexpected request: '+method);
  };
  const handler=createBotHandler({env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'service-test'},fetch,uuid:()=>id});
