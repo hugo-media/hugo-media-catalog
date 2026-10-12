@@ -103,10 +103,11 @@ export function validateProduct(p){
  if(!String(p.name||'').trim()||String(p.name).length>180)invalid('name');
  if(!String(p.brand||'').trim()||String(p.brand).length>80)invalid('brand');
  if(!Number.isFinite(Number(p.price))||Number(p.price)<0||Number(p.price)>10000000)invalid('price');
- if(!Number.isInteger(Number(p.cat))||Number(p.cat)<0||Number(p.cat)>6)invalid('cat');
+ if(!Number.isInteger(Number(p.cat))||Number(p.cat)<0||Number(p.cat)>7)invalid('cat');
  if(p.deviceType&&!deviceTypeChoices(p.cat).some(o=>o.value===p.deviceType))invalid('deviceType');
  for(const key of DEVICE_SPEC_KEYS.filter(k=>!['customSpecs','deviceType'].includes(k)))if(String(p[key]||'').length>500)invalid(key);
  parseCustomSpecs(p.customSpecs);
+ if(Number(p.cat)===7&&String(p.controllerCount||'').trim()&&!/^(?:[0-9]|1[0-6])$/.test(String(p.controllerCount).trim()))invalid('controllerCount');
  if(!Number.isInteger(Number(p.status))||Number(p.status)<0||Number(p.status)>5)invalid('status');
  const discount=Number(p.discount||0);if(!Number.isInteger(discount)||discount<0||discount>MAX_DISCOUNT_PERCENT)invalid('discount');
  if(String(p.salePrice??'').trim()&&fixedSalePrice(p)===null)invalid('salePrice');

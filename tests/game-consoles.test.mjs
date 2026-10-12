@@ -1,0 +1,68 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {toRow,fromRow,upgradeOptions} from '../src/core.js';
+import {deviceProfile,deviceTypeChoices,resolveDeviceType,renderDeviceFields,renderDeviceSelector,deviceSpecRows,CONSOLE_BRANDS} from '../src/device-fields.js';
+import {adminUpgrades} from '../src/configurator.js';
+import {categories,catalogPath,parseRoute,metadata,sitemap,escapeHtml} from '../src/seo-core.js';
+import {servePage} from '../api/seo.js';
+import {createStorefront} from '../src/storefront.js';
+import {transition,parseSpecs,CATEGORIES,openManagedProduct} from '../supabase/functions/hmg-telegram-admin/bot-core.mjs';
+const p={id:52,name:'Sony PlayStation 5 1 TB Digital',brand:'Sony',cat:7,deviceType:'console',status:0,price:1800,quantity:'1',images:['console/photo.jpg'],condition:'Вживаний — відмінний',warranty:'12 місяців',consolePlatform:'PlayStation',consoleModel:'PS5',consoleEdition:'Digital',consoleStorage:'1 TB SSD',gameMedia:'Цифрові ігри',discDrive:'Немає',consoleMemory:'16 GB GDDR6',cpu:'AMD Ryzen Zen 2',gpu:'AMD RDNA 2',controller:'DualSense',controllerCount:'1',consoleBundle:'Консоль, контролер',videoOutput:'До 4K',maxFps:'120'};
+const id='12345678-1234-4234-8234-123456789012';
+const run=(s,text)=>transition(s,{text},id);
+test('new category keeps existing routes stable and generates localized canonical pages and sitemap',()=>{
+ assert.equal(categories[6],'smart-devices');assert.equal(categories[7],'game-consoles');
+ assert.equal(catalogPath('uk',7),'/uk/catalog/game-consoles');
+ assert.deepEqual(parseRoute('/pl/catalog/game-consoles'),{lang:'pl',view:'catalog',cat:7});
+ const m=metadata({lang:'uk',view:'detail',product:p});
+ assert.match(JSON.stringify(m.schema),/Ігрові консолі/);
+ assert.match(sitemap([p]),/\/uk\/catalog\/game-consoles/);assert.match(sitemap([p]),/\/pl\/catalog\/game-consoles/);
+});
+test('console fields persist for any manufacturer and remain separate from laptop upgrades',()=>{
+ const loaded=fromRow(toRow({...p,brand:'Custom Maker',customSpecs:'Особливість: Dock mode'}));
+ assert.equal(loaded.cat,7);assert.equal(loaded.brand,'Custom Maker');assert.equal(loaded.consoleStorage,'1 TB SSD');
+ assert.equal(loaded.consoleMemory,'16 GB GDDR6');assert.equal(loaded.controllerCount,'1');
+ assert.deepEqual(loaded.customSpecs,[{label:'Особливість',value:'Dock mode'}]);
+ assert.equal(adminUpgrades(loaded,'uk',String),'');assert.deepEqual(upgradeOptions(loaded),[]);
+ assert.throws(()=>toRow({...p,controllerCount:'-1'}),e=>e.field==='controllerCount');
+ assert.throws(()=>toRow({...p,cat:8}),e=>e.field==='cat');
+ for(const brand of ['Sony','Microsoft','Nintendo','Valve','ASUS','Lenovo','Anbernic'])assert.ok(CONSOLE_BRANDS.includes(brand));
+});
+test('stationary, handheld and retro profiles show relevant capabilities and infer legacy types',()=>{
+ assert.equal(deviceTypeChoices(7).length,3);
+ assert.equal(resolveDeviceType({cat:7,name:'Sony PlayStation 5'}),'console');
+ for(const name of ['Steam Deck','Nintendo Switch OLED','ASUS ROG Ally','Lenovo Legion Go'])assert.equal(resolveDeviceType({cat:7,name}),'handheldConsole');
+ assert.equal(resolveDeviceType({cat:7,name:'SEGA Mega Drive'}),'retroConsole');
+ const desktop=renderDeviceFields(p);
+ assert.match(desktop,/name="discDrive"/);assert.match(desktop,/name="consoleBundle"/);
+ assert.doesNotMatch(desktop,/name="(?:battery|screen|extraStorageType|ram16Enabled)"/);
+ const handheld=renderDeviceFields({...p,deviceType:'handheldConsole'});
+ assert.match(handheld,/name="screen"/);assert.match(handheld,/name="battery"/);assert.match(handheld,/name="panelType"/);
+ assert.match(renderDeviceSelector(p,'pl'),/Konsola przenośna/);
+ assert.ok(deviceSpecRows(p).some(([label,value])=>label==='Вбудована пам’ять / накопичувач'&&value==='1 TB SSD'));
+});
+test('bot creation asks console type, offers manufacturers and uses shared fields',()=>{
+ let s=run({},'/add').state;s=run(s,'Ігрові консолі').state;assert.equal(s.step,'deviceType');
+ s=run(s,'Стаціонарна консоль').state;
+ assert.equal(s.values.cat,7);assert.equal(s.values.deviceType,'console');
+ s=run(s,p.name).state;assert.equal(s.step,'brand');
+ const manufacturers=run(s,'/resume').reply.reply_markup.keyboard.flat();assert.ok(manufacturers.includes('Sony'));assert.ok(manufacturers.includes('Nintendo'));
+ s=run(s,'My manufacturer').state;assert.equal(s.values.brand,'My manufacturer');
+ const specPrompt=run({...s,step:'specs'},'/resume').reply.text;
+ assert.match(specPrompt,/Ігрова платформа/);assert.match(specPrompt,/Контролери/);assert.doesNotMatch(specPrompt,/Додатковий диск|RAM\/SSD/);
+ const parsed=parseSpecs('Платформа: PlayStation\nSSD: 1 TB\nRAM: 16 GB GDDR6\nКонтролери / геймпади: DualSense\nКомплект: Консоль і геймпад',7,'console');
+ assert.equal(parsed.consoleStorage,'1 TB');assert.equal(parsed.consoleMemory,'16 GB GDDR6');assert.equal(parsed.controller,'DualSense');assert.equal(parsed.consoleBundle,'Консоль і геймпад');
+ assert.equal(CATEGORIES[7],'Ігрові консолі');
+ const managed=openManagedProduct({product:{...toRow(p),id:52},fingerprint:'a'.repeat(32)},id);
+ assert.equal(managed.state.values.consoleStorage,p.consoleStorage);
+});
+test('server-rendered console pages and cards contain real specifications with escaped text',async()=>{
+ const row=toRow({...p,consoleBundle:'<script>bad</script>'});
+ const options={template:'<html><head><!--HMG_HEAD--></head><body><main class="hp-main" id="hp-content"><!--HMG_CONTENT--></main></body></html>',config:{supabaseUrl:'https://example.supabase.co',supabaseKey:'sb_publishable_12345678901234567890'},loadProducts:async()=>[fromRow({...row,id:52})],loadSeo:async()=>({})};
+ const category=await servePage(new URL('https://www.hugomedia.pl/uk/catalog/game-consoles'),options);
+ assert.equal(category.status,200);assert.match(category.body,/Ігрові консолі/);assert.match(category.body,/Sony PlayStation/);
+ const detail=await servePage(new URL('https://www.hugomedia.pl/uk/product/52-sony-playstation-5-1-tb-digital'),options);
+ assert.equal(detail.status,200);assert.match(detail.body,/1 TB SSD/);assert.match(detail.body,/DualSense/);assert.match(detail.body,/&lt;script&gt;/);assert.doesNotMatch(detail.body,/<script>bad/);
+ const ui=createStorefront({lang:'uk',esc:escapeHtml,t:k=>k,icon:()=>'',photo:()=>'',productTitle:p=>p.name,localizedValue:v=>v,priceBlock:()=>'',stockQty:()=>1,compare:[]});
+ const card=ui.card(p);assert.match(card,/PlayStation/);assert.match(card,/1 TB SSD/);assert.match(card,/Digital/);
+});
