@@ -4254,3 +4254,9 @@ body {
  #hugo-preview .hp-trend-peak small{grid-column:1/-1}
  #hugo-preview .hp-trend-graph{grid-template-columns:28px minmax(0,1fr);gap:5px}
 }
+
+/* Device-specific editor fields and hidden laptop-only controls. */
+#hugo-preview #hp-form [data-computer-only][hidden]{display:none!important}
+#hugo-preview #hp-device-type-field,#hugo-preview #hp-device-brand-choices,#hugo-preview #hp-device-benefits{min-width:0}
+#hugo-preview #hp-category-fields textarea{min-height:92px;resize:vertical}
+#hugo-preview #hp-category-fields input,#hugo-preview #hp-form-device-type{max-width:100%;min-width:0}

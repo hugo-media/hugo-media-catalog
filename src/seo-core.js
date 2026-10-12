@@ -2,8 +2,8 @@ import { effectivePrice, promotionState, warsawDate, BUCKET } from './core.js';
 export const ORIGIN = 'https://www.hugomedia.pl';
 export const categories = ['laptops','phones','tablets','headphones','smartwatches','monitors','smart-devices'];
 export const labels = {
-  uk: ['Ноутбуки','Телефони','Планшети','Навушники','Смартгодинники','Монітори','Смартдевайси'],
-  pl: ['Laptopy','Telefony','Tablety','Słuchawki','Smartwatche','Monitory','Smart gadżety'],
+  uk: ['Ноутбуки','Телефони','Планшети','Навушники та аудіо','Смартгодинники','Монітори','Смартдевайси'],
+  pl: ['Laptopy','Telefony','Tablety','Słuchawki i audio','Smartwatche','Monitory','Smart gadżety'],
 };
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function visibleSeoContent(page={},fallbackTitle='',escape=escapeHtml) {

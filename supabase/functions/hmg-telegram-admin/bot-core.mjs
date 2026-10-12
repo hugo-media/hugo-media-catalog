@@ -1,12 +1,13 @@
+import {deviceTypeChoices,resolveDeviceType,deviceProfile,deviceFieldLabel,deviceSpecRows,DEVICE_RESET_KEYS,parseCustomSpecs} from '../../../src/device-fields.js';
 
 import {toRow,effectivePrice,normalizeTelegramPost} from '../../../src/core.js';
 
 export const MENU={keyboard:[['📊 Звіт зараз','➕ Додати товар'],['📅 Звіт за вчора','📈 Звіт за 7 днів'],['🗓 Звіт за 30 днів','📝 Продовжити товар'],['⚙️ Адмінка сайту']],resize_keyboard:true,is_persistent:true};
-export const CATEGORIES=['Ноутбуки','Телефони','Планшети','Навушники','Смартгодинники','Монітори','Смартдевайси'];
+export const CATEGORIES=['Ноутбуки','Телефони','Планшети','Навушники та аудіо','Смартгодинники','Монітори','Смартдевайси'];
 export const STATUSES=['У наявності','Заброньовано','Розпродано','Чернетка','Немає в наявності','Очікується'];
-const steps=['cat','name','brand','price','discount','condition','warranty','status','quantity','newArrival','specs','descUk','descPl','charger','telegramPost','photoKind','photos','preview'];
+const steps=['cat','deviceType','name','brand','price','discount','condition','warranty','status','quantity','newArrival','specs','descUk','descPl','charger','telegramPost','photoKind','photos','preview'];
 const optional=new Set(['discount','warranty','specs','descUk','descPl','charger','telegramPost']);
-const labels={cat:'Категорія',name:'Назва',brand:'Бренд',price:'Ціна',discount:'Знижка',condition:'Стан',warranty:'Гарантія',status:'Наявність',quantity:'Кількість',newArrival:'Нове надходження',specs:'Характеристики',descUk:'Опис українською',descPl:'Опис польською',charger:'Зарядка',telegramPost:'Пост у Telegram',photoKind:'Тип фото',photos:'Фото'};
+const labels={cat:'Категорія',deviceType:'Тип пристрою',name:'Назва',brand:'Бренд',price:'Ціна',discount:'Знижка',condition:'Стан',warranty:'Гарантія',status:'Наявність',quantity:'Кількість',newArrival:'Нове надходження',specs:'Характеристики',descUk:'Опис українською',descPl:'Опис польською',charger:'Зарядка',telegramPost:'Пост у Telegram',photoKind:'Тип фото',photos:'Фото'};
 const specKeys={'процесор':'cpu','cpu':'cpu','покоління':'generation','ram':'ram','озп':'ram','ssd':'ssd','пам’ять':'ssd','память':'ssd','gpu':'gpu','відеокарта':'gpu','екран':'screen','акб':'battery','батарея':'battery','ос':'os','роздільність':'resolution','гц':'hz','sim':'sim','gps':'gps','lte':'lte','сумісність':'compatibility','bluetooth':'bluetooth','вага':'weight','розміри':'dimensions','тип':'type'};
 const reply=(text,keyboard)=>({text,reply_markup:keyboard?{keyboard,resize_keyboard:true}:MENU});
 const clean=value=>String(value||'').trim();
@@ -17,22 +18,25 @@ export function parseNumber(text,{min=0,max=10000000,integer=false}={}){
  const n=Number(raw);if(n<min||n>max||(integer&&!Number.isInteger(n)))throw Error('Введи '+(integer?'ціле ':'')+'число від '+min+' до '+max+'.');
  return n;
 }
-export function parseSpecs(text,cat){
- const out={};
+export function parseSpecs(text,cat,deviceType){
+ const profile=deviceProfile({cat,deviceType}),allowed=new Set(profile.fields),out={},custom=[];
+ const aliases={...specKeys,connection:'connection','підключення':'connection','роз’єм':'connection',pickuppattern:'pickupPattern'};
+ for(const key of profile.fields){aliases[key.toLowerCase()]=key;aliases[deviceFieldLabel(key,'uk',deviceType).toLocaleLowerCase('uk')]=key;}
  for(const line of clean(text).split('\n')){
   const match=/^([^:]+):\s*(.+)$/.exec(line.trim());
-  if(!match)throw Error('Кожну характеристику пиши окремим рядком: RAM: 16 GB');
+  if(!match)throw Error('Кожну характеристику пиши окремим рядком: Назва: значення');
   const key=match[1].trim().toLocaleLowerCase('uk'),value=match[2].trim();
-  if(value.length>150)throw Error('Значення характеристики має бути до 150 символів.');
+  if(value.length>500)throw Error('Значення характеристики має бути до 500 символів.');
   if(['додатковий диск','додатковий накопичувач'].includes(key)){
    const m=/^(SSD|HDD)\s+(\d+(?:[.,]\d+)?)\s*(GB|TB|ГБ|ТБ)$/i.exec(value);
    if(Number(cat)!==0||!m||Number(m[2].replace(',','.'))<=0)throw Error('Для ноутбука: Додатковий диск: HDD 1 TB');
    out.extraStorageType=m[1].toUpperCase();out.extraStorageCapacity=m[2].replace(',','.');out.extraStorageUnit=/^(TB|ТБ)$/i.test(m[3])?'TB':'GB';
-  }else{
-   if(!specKeys[key])throw Error('Не впізнала поле «'+match[1]+'». Використай назву з прикладу або внеси це в опис.');
-   out[specKeys[key]]=value;
-  }
+  }else if(aliases[key]){
+   const field=aliases[key];if(!allowed.has(field))throw Error('Ця характеристика не належить до обраного типу пристрою: '+match[1]+'.');
+   out[field]=value;
+  }else custom.push({label:match[1].trim(),value});
  }
+ out.customSpecs=parseCustomSpecs(custom);
  return out;
 }
 export function describeDraft(state){
@@ -43,7 +47,7 @@ export function describeDraft(state){
   'Стан: '+(p.condition||'Не вказано'),'Гарантія: '+(p.warranty||'Не вказано'),
   'Статус: '+STATUSES[p.status]+' · Кількість: '+p.quantity,
   'Нове надходження: '+(p.newArrival==='true'?'Так':'Ні'),
-  ...Object.entries(specKeys).filter(([label,key],i,a)=>p[key]&&a.findIndex(x=>x[1]===key)===i).map(([label,key])=>label+': '+p[key]),
+  ...deviceSpecRows(p,'uk').map(([label,value])=>label+': '+value),
   p.extraStorageType?'Додатковий диск: '+p.extraStorageType+' '+p.extraStorageCapacity+' '+p.extraStorageUnit:'',
   'Зарядка: '+({adapter:'Блок і кабель',cable:'Лише кабель',none:'Без зарядки'}[p.charger]||'Не вказано'),
   'Фото: '+(state.photos?.length||0)+' із 8 · '+({actual:'цього товару',model:'моделі',mixed:'змішані'}[p.photoKind]||'Не вказано'),
@@ -57,6 +61,7 @@ function prompt(state,notice=''){
  const s=state.step,p=state.values||{};
  const prompts={
   cat:'Обери категорію товару.',
+  deviceType:'Що це за пристрій? Обери тип кнопкою.',
   name:'Напиши повну назву товару (до 180 символів).',
   brand:'Напиши бренд: Lenovo, Apple, Samsung тощо.',
   price:'Введи базову ціну у злотих, наприклад 1299.',
@@ -66,7 +71,7 @@ function prompt(state,notice=''){
   status:'Обери наявність.',
   quantity:'Скільки одиниць? Введи ціле число від 0 до 99.',
   newArrival:'Позначити як нове надходження?\n\nЦе позначка для блоку «Нові надходження» на сайті. Її можна змінити в адмінці.',
-  specs:'Надішли характеристики одним повідомленням, кожну з нового рядка. Або пропусти.\n\nCPU: Intel Core i5-1135G7\nRAM: 16 GB\nSSD: 512 GB\nGPU: Intel Iris Xe\nЕкран: 15.6″ Full HD\nАКБ: 85%\nОС: Windows 11\nДодатковий диск: HDD 1 TB\n\nТакож: Покоління, Роздільність, Гц, SIM, GPS, LTE, Сумісність, Bluetooth, Вага, Розміри, Тип.',
+  specs:'Надішли характеристики одним повідомленням: Назва: значення, кожну з нового рядка. Або пропусти.\n\nДля цього пристрою:\n'+deviceProfile(p).fields.map(key=>deviceFieldLabel(key,'uk',resolveDeviceType(p))+': …').join('\n')+(Number(p.cat)===0?'\nДодатковий диск: HDD 1 TB':'')+'\n\nМожна додати власні характеристики у такому самому форматі.',
   descUk:'Надішли опис українською: особливості, комплект і всі нюанси стану. Можна вставити текст оголошення.',
   descPl:'Надішли опис польською або натисни «Пропустити».',
   charger:'Що йде із зарядкою?',
@@ -76,7 +81,7 @@ function prompt(state,notice=''){
   preview:describeDraft(state),
   edit:'Що змінити?'
  };
- let keys=s==='cat'?CATEGORIES.map(x=>[x]):s==='status'?STATUSES.map(x=>[x]):s==='condition'?[['Новий','Вживаний — відмінний'],['Вживаний — добрий','З нюансами']]:s==='warranty'?[['12 місяців','6 місяців','3 місяці']]:s==='charger'?[['Блок і кабель','Лише кабель','Без зарядки']]:s==='photoKind'?[['Фото цього товару'],['Зображення моделі','Змішані фото']]:s==='photos'?[['✅ Фото додано'],['🗑 Очистити фото']]:s==='preview'?[['✅ Опублікувати'],['💾 Зберегти чернетку','✏️ Виправити']]:s==='edit'?Object.values(labels).map(x=>[x]):[];
+ let keys=s==='cat'?CATEGORIES.map(x=>[x]):s==='deviceType'?deviceTypeChoices(p.cat).map(o=>[o.uk]):s==='status'?STATUSES.map(x=>[x]):s==='condition'?[['Новий','Вживаний — відмінний'],['Вживаний — добрий','З нюансами']]:s==='warranty'?[['12 місяців','6 місяців','3 місяці']]:s==='charger'?[['Блок і кабель','Лише кабель','Без зарядки']]:s==='photoKind'?[['Фото цього товару'],['Зображення моделі','Змішані фото']]:s==='photos'?[['✅ Фото додано'],['🗑 Очистити фото']]:s==='preview'?[['✅ Опублікувати'],['💾 Зберегти чернетку','✏️ Виправити']]:s==='edit'?Object.values(labels).map(x=>[x]):[];
  if(s==='discount')keys=[['0','5','10','15','20']];
  if(s==='quantity')keys=[['1','2','3']];
  if(s==='newArrival')keys=[['Так','Ні']];
@@ -87,6 +92,7 @@ function prompt(state,notice=''){
 function advance(state){
  if(state.editing){delete state.editing;state.step='preview';return;}
  let i=steps.indexOf(state.step)+1;
+ if(steps[i]==='deviceType'&&deviceTypeChoices(state.values.cat).length===1){state.values.deviceType=resolveDeviceType(state.values);i++;}
  if(steps[i]==='charger'&&![0,1,2].includes(Number(state.values.cat)))i++;
  state.step=steps[i];
 }
@@ -142,8 +148,16 @@ export function transition(previous,input,newDraftId){
   if(skip&&!optional.has(step))throw Error('Це поле потрібно заповнити.');
   let value=skip?'':text;
   if(step==='cat'){
-   const n=CATEGORIES.indexOf(text);if(n<0)throw Error('Обери категорію кнопкою.');
-   value=n;if(n!==0)for(const k of ['extraStorageType','extraStorageCapacity','extraStorageUnit'])delete state.values[k];
+   const n=CATEGORIES.indexOf(text==='Навушники'?'Навушники та аудіо':text);if(n<0)throw Error('Обери категорію кнопкою.');
+   value=n;state.values.deviceType=resolveDeviceType({cat:n,name:state.values.name});
+   const allowed=new Set(deviceProfile({cat:n,deviceType:state.values.deviceType}).fields);
+   for(const key of DEVICE_RESET_KEYS)if(!allowed.has(key)&&key!=='customSpecs')delete state.values[key];
+   if(n!==0)for(const k of ['extraStorageType','extraStorageCapacity','extraStorageUnit'])delete state.values[k];
+  }else if(step==='deviceType'){
+   const selected=deviceTypeChoices(state.values.cat).find(o=>o.uk===text);if(!selected)throw Error('Обери тип кнопкою.');
+   value=selected.value;const allowed=new Set(deviceProfile({cat:state.values.cat,deviceType:value}).fields);
+   for(const key of DEVICE_RESET_KEYS)if(!allowed.has(key)&&key!=='customSpecs')delete state.values[key];
+   state.values.type='';
   }else if(step==='name'||step==='brand'){
    if(text.length>(step==='name'?180:80))throw Error('Текст задовгий.');
   }else if(step==='price')value=parseNumber(text);
@@ -157,8 +171,8 @@ export function transition(previous,input,newDraftId){
   else if(['condition','warranty'].includes(step)&&value.length>500)throw Error('До 500 символів.');
   else if(['descUk','descPl'].includes(step)&&value.length>10000)throw Error('Опис має бути до 10000 символів.');
   if(step==='specs'){
-   for(const k of [...new Set(Object.values(specKeys)),'extraStorageType','extraStorageCapacity','extraStorageUnit'])delete state.values[k];
-   Object.assign(state.values,skip?{}:parseSpecs(text,state.values.cat));
+   for(const k of DEVICE_RESET_KEYS)delete state.values[k];
+   Object.assign(state.values,skip?{}:parseSpecs(text,state.values.cat,state.values.deviceType));
   }else state.values[step]=value;
   advance(state);return {state,reply:prompt(state)};
  }catch(error){return {state:previous,reply:prompt(previous,error.message)};}

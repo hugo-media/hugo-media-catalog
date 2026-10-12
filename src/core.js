@@ -1,9 +1,10 @@
+import {DEVICE_SPEC_KEYS,deviceTypeChoices,parseCustomSpecs,resolveDeviceType} from './device-fields.js';
 export const UPGRADES = {ram16:{group:'ram',target:16},ram32:{group:'ram',target:32},ssd512:{group:'ssd',target:512},ssd1024:{group:'ssd',target:1024}};
 export const TABLE = 'hmg_catalog_products';
 export const BUCKET = 'hmg-catalog-photos';
 export const MAX_IMAGES = 8;
 export const PROMOTION_KEYS = ['promoStartAt','promoEndAt','promoHome','promoTitleUk','promoTitlePl'];
-export const SPEC_KEYS = ['cpu','generation','ram','ssd','extraStorageType','extraStorageCapacity','extraStorageUnit','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','bluetooth','weight','dimensions','newArrival','bestseller','discount','salePrice','telegramPost','quantity','seoTitleUk','seoTitlePl','seoDescriptionUk','seoDescriptionPl','purposes','benefits','bundles','charger','photoKind',...PROMOTION_KEYS,...Object.keys(UPGRADES).flatMap(k=>[k+'Enabled',k+'Price'])];
+export const SPEC_KEYS = [...DEVICE_SPEC_KEYS,'cpu','generation','ram','ssd','extraStorageType','extraStorageCapacity','extraStorageUnit','gpu','screen','battery','os','type','resolution','hz','sim','gps','lte','compatibility','noise','bluetooth','weight','dimensions','newArrival','bestseller','discount','salePrice','telegramPost','quantity','seoTitleUk','seoTitlePl','seoDescriptionUk','seoDescriptionPl','purposes','benefits','bundles','charger','photoKind',...PROMOTION_KEYS,...Object.keys(UPGRADES).flatMap(k=>[k+'Enabled',k+'Price'])];
 export const MAX_DISCOUNT_PERCENT = 99;
 export const TELEGRAM_CHANNEL = 'https://t.me/h_m_g_pl';
 export const PURPOSES = ['study','office','programming','editing','gaming','travel'];
@@ -103,6 +104,9 @@ export function validateProduct(p){
  if(!String(p.brand||'').trim()||String(p.brand).length>80)invalid('brand');
  if(!Number.isFinite(Number(p.price))||Number(p.price)<0||Number(p.price)>10000000)invalid('price');
  if(!Number.isInteger(Number(p.cat))||Number(p.cat)<0||Number(p.cat)>6)invalid('cat');
+ if(p.deviceType&&!deviceTypeChoices(p.cat).some(o=>o.value===p.deviceType))invalid('deviceType');
+ for(const key of DEVICE_SPEC_KEYS.filter(k=>!['customSpecs','deviceType'].includes(k)))if(String(p[key]||'').length>500)invalid(key);
+ parseCustomSpecs(p.customSpecs);
  if(!Number.isInteger(Number(p.status))||Number(p.status)<0||Number(p.status)>5)invalid('status');
  const discount=Number(p.discount||0);if(!Number.isInteger(discount)||discount<0||discount>MAX_DISCOUNT_PERCENT)invalid('discount');
  if(String(p.salePrice??'').trim()&&fixedSalePrice(p)===null)invalid('salePrice');
@@ -142,8 +146,8 @@ export function validateProduct(p){
  for(const k of ['seoTitleUk','seoTitlePl'])if(String(p[k]||'').length>80)invalid(k);
  for(const k of ['seoDescriptionUk','seoDescriptionPl'])if(String(p[k]||'').length>300)invalid(k);
 }
-export function toRow(p){validateProduct(p);return {name:p.name.trim(),brand:p.brand.trim(),cat:Number(p.cat),status:Number(p.status),price:Math.round(Number(p.price)*100)/100,condition:String(p.condition||''),warranty:String(p.warranty||''),desc_uk:String(p.descUk||''),desc_pl:String(p.descPl||''),images:p.images||[],specs:Object.fromEntries(SPEC_KEYS.map(k=>[k,k==='telegramPost'?normalizeTelegramPost(p[k]):k==='discount'&&fixedSalePrice(p)!==null?String(configuredDiscountPercent(p)):String(p[k]||'').trim()]))};}
-export function fromRow(r){return {...r,...r.specs,price:Number(r.price),descUk:r.desc_uk||'',descPl:r.desc_pl||'',images:Array.isArray(r.images)?r.images:[]};}
+export function toRow(p){validateProduct(p);return {name:p.name.trim(),brand:p.brand.trim(),cat:Number(p.cat),status:Number(p.status),price:Math.round(Number(p.price)*100)/100,condition:String(p.condition||''),warranty:String(p.warranty||''),desc_uk:String(p.descUk||''),desc_pl:String(p.descPl||''),images:p.images||[],specs:Object.fromEntries(SPEC_KEYS.map(k=>[k,k==='customSpecs'?parseCustomSpecs(p[k]):k==='telegramPost'?normalizeTelegramPost(p[k]):k==='discount'&&fixedSalePrice(p)!==null?String(configuredDiscountPercent(p)):String(p[k]||'').trim()]))};}
+export function fromRow(r){const p={...r,...r.specs,price:Number(r.price),descUk:r.desc_uk||'',descPl:r.desc_pl||'',images:Array.isArray(r.images)?r.images:[]};return {...p,deviceType:resolveDeviceType(p)};}
 export function extraStorageLabel(p={}){
  if(Number(p?.cat)!==0)return '';
  const type=String(p.extraStorageType||'').trim().toUpperCase();
