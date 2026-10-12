@@ -1,5 +1,6 @@
 
 import test from 'node:test';
+import {toRow,fromRow} from '../src/core.js';
 import assert from 'node:assert/strict';
 import {transition,parseNumber,parseSpecs,formatOnDemandReport,CATEGORIES,STATUSES,MENU} from '../supabase/functions/hmg-telegram-admin/bot-core.mjs';
 import {createBotHandler,incomingMessage,imageType} from '../supabase/functions/hmg-telegram-admin/handler.mjs';
@@ -9,7 +10,7 @@ const photo={fileId:'photo-id',uniqueId:'photo-unique',size:100};
 const run=(state,text,extra={})=>transition(state,{text,...extra},id);
 function completed(){
  let state=run({},'/add').state;
- for(const text of [CATEGORIES[0],'Dell Latitude 5420','Dell','1299','10','Вживаний — добрий','12 місяців',STATUSES[0],'1','CPU: Intel Core i5\nRAM: 16 GB\nSSD: 512 GB\nДодатковий диск: HDD 1 TB','Справний, є подряпини.','Пропустити','Блок і кабель','https://t.me/h_m_g_pl/12','Фото цього товару'])state=run(state,text).state;
+ for(const text of [CATEGORIES[0],'Dell Latitude 5420','Dell','1299','10','Вживаний — добрий','12 місяців',STATUSES[0],'1','Так','CPU: Intel Core i5\nRAM: 16 GB\nSSD: 512 GB\nДодатковий диск: HDD 1 TB','Справний, є подряпини.','Пропустити','Блок і кабель','https://t.me/h_m_g_pl/12','Фото цього товару'])state=run(state,text).state;
  assert.equal(state.step,'photos');
  state=run(state,'',{photo}).state;
  state=run(state,'✅ Фото додано').state;
@@ -105,7 +106,7 @@ test('button creates a fresh report, not a daily delivery claim',async()=>{
 test('publication transfers photo, inserts once and returns public URL',async()=>{
  const m=mock({state:completed()});assert.equal((await m.handler(m.request('✅ Опублікувати'))).status,200);
  assert.equal(m.products.length,1);assert.match(m.products[0].images[0],/^telegram\/[a-f0-9-]+\/0.jpg$/);
- assert.equal(m.products[0].specs.ram,'16 GB');assert.match(m.sent[0].text,/\?product=77/);
+ assert.equal(m.products[0].specs.ram,'16 GB');assert.equal(m.products[0].specs.newArrival,'true');assert.match(m.sent[0].text,/\?product=77/);
  assert.ok(!JSON.stringify(m.products).includes('private-test-token'));
 });
 test('duplicate updates never insert or upload again; pending replies can recover',async()=>{
@@ -118,4 +119,37 @@ test('failed photo upload leaves product unpublished and offers retry',async()=>
  const m=mock({state:completed(),photoFailure:true});
  assert.equal((await m.handler(m.request('✅ Опублікувати'))).status,200);assert.equal(m.products.length,0);
  assert.match(m.sent[0].text,/Не вдалося завантажити/);
+});
+
+test('new-arrival choice round-trips through the shared catalog field and can be cleared independently',()=>{
+ const draft=completed();
+ assert.equal(draft.values.newArrival,'true');
+ assert.match(run(draft,'anything').reply.text,/Нове надходження: Так/);
+ const marked=toRow({...draft.values,images:[]});
+ assert.equal(fromRow(marked).newArrival,'true');
+ let edited=run(run(draft,'✏️ Виправити').state,'Нове надходження').state;
+ assert.equal(edited.step,'newArrival');
+ assert.deepEqual(run(edited,'maybe').state,edited);
+ const cleared=run(edited,'Ні').state;
+ assert.equal(cleared.step,'preview');
+ assert.equal(cleared.values.newArrival,'');
+ assert.equal(cleared.values.status,draft.values.status);
+ assert.equal(cleared.values.discount,draft.values.discount);
+ assert.equal(fromRow(toRow({...cleared.values,images:[]})).newArrival,'');
+ assert.match(run(cleared,'anything').reply.text,/Нове надходження: Ні/);
+ const legacy={...draft,values:{...draft.values}};
+ delete legacy.values.newArrival;
+ assert.match(run(legacy,'/resume').reply.text,/Нове надходження: Ні/);
+ assert.equal(run(legacy,'✅ Опублікувати').publish,true);
+});
+test('admin shortcut keeps unfinished product and opens the independent site editor',()=>{
+ const draft=completed();
+ for(const action of ['⚙️ Адмінка сайту','/admin']){
+  const result=run(draft,action);
+  assert.deepEqual(result.state,draft);
+  assert.equal(result.reply.reply_markup.inline_keyboard[0][0].url,'https://www.hugomedia.pl/?admin');
+ }
+ assert.ok(MENU.keyboard.flat().includes('⚙️ Адмінка сайту'));
+ const resumed=run(draft,'/resume');
+ assert.equal(resumed.state.step,'preview');
 });
