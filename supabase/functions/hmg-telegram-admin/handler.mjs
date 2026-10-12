@@ -48,7 +48,7 @@ export function createBotHandler({env={},fetch:fetcher=globalThis.fetch,uuid=()=
   if(!input)return respond(200,{ok:true,ignored:true});
   async function rpc(name,args){
    const r=await fetcher(base+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'},body:JSON.stringify(args),signal:AbortSignal.timeout(15000)});
-   const data=await r.json();
+   const raw=await r.text(),data=raw?JSON.parse(raw):null;
    if(!r.ok)throw Object.assign(Error('database_request_failed'),{code:data?.code});
    return data;
   }
