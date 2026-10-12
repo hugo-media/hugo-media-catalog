@@ -43,80 +43,8 @@ begin
  v_required_step:=case when p_action='delete' then 'confirmDelete' else 'preview' end;
  if v_session.state->>'mode' is distinct from 'manage' or v_session.state->>'step' is distinct from v_required_step
   or coalesce(v_session.state->>'productId','')!~'^[1-9][0-9]{0,15}$'
-  or coalesce(v_session.state->>'fingerprint','')!~'^[a-f0-9]{32} then raise exception 'product review required';end if;
- v_id:=(v_session.state->>'productId')::bigint;
- select * into v_row from public.hmg_catalog_products where id=v_id for update;
- if not found or md5(to_jsonb(v_row)::text) is distinct from v_session.state->>'fingerprint' then
-  v_state:='{"step":"manageSearch"}'::jsonb;
-  v_reply:=jsonb_build_object('text','Товар змінили в адмінці або видалили. Твої правки не перезаписали нові дані. Знайди та відкрий товар заново.','reply_markup',jsonb_build_object('keyboard',jsonb_build_array(jsonb_build_array('Останні товари'),jsonb_build_array('❌ Скасувати')),'resize_keyboard',true));
-  return public.hmg_catalog_bot_commit(p_chat_id,p_update_id,p_version,v_state,v_reply,null);
- end if;
- if p_action='delete' then
-  if p_product is not null then raise exception 'unexpected product';end if;
-  delete from public.hmg_catalog_products where id=v_id;
- else
-  if jsonb_typeof(p_product) is distinct from 'object' or octet_length(p_product::text)>60000
-   or jsonb_typeof(p_product->'specs') is distinct from 'object'
-   or jsonb_typeof(p_product->'images') is distinct from 'array'
-   or coalesce(length(btrim(p_product->>'name')),0) not between 1 and 180
-   or coalesce(length(btrim(p_product->>'brand')),0) not between 1 and 80
-   or p_product->>'status' is null or (p_product->>'status')::integer not between 0 and 5
-   or p_product->>'cat' is null or (p_product->>'cat')::integer not between 0 and 6
-   or p_product->>'price' is null or (p_product->>'price')::numeric<0 then raise exception 'invalid product';end if;
-  select coalesce(array_agg(value),'{}'::text[]) into v_images from jsonb_array_elements_text(p_product->'images');
-  if cardinality(v_images)>8 or (cardinality(v_images)=0 and (p_product->>'status')::integer<>3) then raise exception 'invalid photos';end if;
-  if exists(select 1 from unnest(v_images) x where not(x=any(v_row.images)) and
-   x !~ ('^telegram/'||(v_session.state->>'draftId')||'/[0-9]+[.](jpg|png|webp)$')) then raise exception 'invalid photo path';end if;
-  update public.hmg_catalog_products set name=p_product->>'name',brand=p_product->>'brand',
-   cat=(p_product->>'cat')::smallint,status=(p_product->>'status')::smallint,price=(p_product->>'price')::numeric,
-   condition=coalesce(p_product->>'condition',''),warranty=coalesce(p_product->>'warranty',''),
-   desc_uk=coalesce(p_product->>'desc_uk',''),desc_pl=coalesce(p_product->>'desc_pl',''),specs=p_product->'specs',images=v_images
-  where id=v_id;
- end if;
- return public.hmg_catalog_bot_commit(p_chat_id,p_update_id,p_version,'{}'::jsonb,p_reply,null);
-end $$;
-revoke all on function public.hmg_catalog_bot_products(text,integer),public.hmg_catalog_bot_product(bigint),
- public.hmg_catalog_bot_manage_commit(text,bigint,bigint,text,jsonb,jsonb) from public,anon,authenticated;
-grant execute on function public.hmg_catalog_bot_products(text,integer),public.hmg_catalog_bot_product(bigint),
- public.hmg_catalog_bot_manage_commit(text,bigint,bigint,text,jsonb,jsonb) to service_role;
-
-  or coalesce(v_session.state->>'draftId','')!~'^[a-f0-9-]{36} then raise exception 'product review required';end if;
- v_id:=(v_session.state->>'productId')::bigint;
- select * into v_row from public.hmg_catalog_products where id=v_id for update;
- if not found or md5(to_jsonb(v_row)::text) is distinct from v_session.state->>'fingerprint' then
-  v_state:='{"step":"manageSearch"}'::jsonb;
-  v_reply:=jsonb_build_object('text','Товар змінили в адмінці або видалили. Твої правки не перезаписали нові дані. Знайди та відкрий товар заново.','reply_markup',jsonb_build_object('keyboard',jsonb_build_array(jsonb_build_array('Останні товари'),jsonb_build_array('❌ Скасувати')),'resize_keyboard',true));
-  return public.hmg_catalog_bot_commit(p_chat_id,p_update_id,p_version,v_state,v_reply,null);
- end if;
- if p_action='delete' then
-  if p_product is not null then raise exception 'unexpected product';end if;
-  delete from public.hmg_catalog_products where id=v_id;
- else
-  if jsonb_typeof(p_product) is distinct from 'object' or octet_length(p_product::text)>60000
-   or jsonb_typeof(p_product->'specs') is distinct from 'object'
-   or jsonb_typeof(p_product->'images') is distinct from 'array'
-   or coalesce(length(btrim(p_product->>'name')),0) not between 1 and 180
-   or coalesce(length(btrim(p_product->>'brand')),0) not between 1 and 80
-   or p_product->>'status' is null or (p_product->>'status')::integer not between 0 and 5
-   or p_product->>'cat' is null or (p_product->>'cat')::integer not between 0 and 6
-   or p_product->>'price' is null or (p_product->>'price')::numeric<0 then raise exception 'invalid product';end if;
-  select coalesce(array_agg(value),'{}'::text[]) into v_images from jsonb_array_elements_text(p_product->'images');
-  if cardinality(v_images)>8 or (cardinality(v_images)=0 and (p_product->>'status')::integer<>3) then raise exception 'invalid photos';end if;
-  if exists(select 1 from unnest(v_images) x where not(x=any(v_row.images)) and
-   x !~ ('^telegram/'||(v_session.state->>'draftId')||'/[0-9]+[.](jpg|png|webp)$')) then raise exception 'invalid photo path';end if;
-  update public.hmg_catalog_products set name=p_product->>'name',brand=p_product->>'brand',
-   cat=(p_product->>'cat')::smallint,status=(p_product->>'status')::smallint,price=(p_product->>'price')::numeric,
-   condition=coalesce(p_product->>'condition',''),warranty=coalesce(p_product->>'warranty',''),
-   desc_uk=coalesce(p_product->>'desc_uk',''),desc_pl=coalesce(p_product->>'desc_pl',''),specs=p_product->'specs',images=v_images
-  where id=v_id;
- end if;
- return public.hmg_catalog_bot_commit(p_chat_id,p_update_id,p_version,'{}'::jsonb,p_reply,null);
-end $$;
-revoke all on function public.hmg_catalog_bot_products(text,integer),public.hmg_catalog_bot_product(bigint),
- public.hmg_catalog_bot_manage_commit(text,bigint,bigint,text,jsonb,jsonb) from public,anon,authenticated;
-grant execute on function public.hmg_catalog_bot_products(text,integer),public.hmg_catalog_bot_product(bigint),
- public.hmg_catalog_bot_manage_commit(text,bigint,bigint,text,jsonb,jsonb) to service_role;
- then raise exception 'product review required';end if;
+  or coalesce(v_session.state->>'fingerprint','')!~'^[a-f0-9]{32}$'
+  or coalesce(v_session.state->>'draftId','')!~'^[a-f0-9-]{36}$' then raise exception 'product review required';end if;
  v_id:=(v_session.state->>'productId')::bigint;
  select * into v_row from public.hmg_catalog_products where id=v_id for update;
  if not found or md5(to_jsonb(v_row)::text) is distinct from v_session.state->>'fingerprint' then
