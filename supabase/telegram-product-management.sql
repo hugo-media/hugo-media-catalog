@@ -62,7 +62,7 @@ begin
    or coalesce(length(btrim(p_product->>'name')),0) not between 1 and 180
    or coalesce(length(btrim(p_product->>'brand')),0) not between 1 and 80
    or p_product->>'status' is null or (p_product->>'status')::integer not between 0 and 5
-   or p_product->>'cat' is null or (p_product->>'cat')::integer not between 0 and 6
+   or p_product->>'cat' is null or (p_product->>'cat')::integer not between 0 and 7
    or p_product->>'price' is null or (p_product->>'price')::numeric<0 then raise exception 'invalid product';end if;
   select coalesce(array_agg(value),'{}'::text[]) into v_images from jsonb_array_elements_text(p_product->'images');
   if cardinality(v_images)>8 or (cardinality(v_images)=0 and (p_product->>'status')::integer<>3) then raise exception 'invalid photos';end if;

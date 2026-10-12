@@ -27,7 +27,7 @@ test('invalid fixed prices are rejected before persistence and category 6 round-
  }
  const device=fromRow(toRow({...product,cat:6,bluetooth:'5.2',weight:'48 g',dimensions:'31.2 × 8.5 mm'}));
  assert.equal(device.cat,6);assert.equal(device.bluetooth,'5.2');assert.equal(device.weight,'48 g');
- assert.throws(()=>toRow({...product,cat:7}),e=>e.field==='cat');
+ assert.throws(()=>toRow({...product,cat:8}),e=>e.field==='cat');
 });
 
 test('stock and unchanged price edits preserve a fixed price; real price/discount edits use percentages',()=>{

@@ -1,4 +1,4 @@
-import {renderDeviceSelector,renderDeviceFields,deviceSpecRows,resolveDeviceType,deviceFieldSnapshot,switchDeviceValues,deviceProfile,deviceFieldLabel,deviceTypeLabel} from './device-fields.js';
+import {renderDeviceSelector,renderDeviceFields,deviceSpecRows,resolveDeviceType,deviceFieldSnapshot,switchDeviceValues,deviceProfile,deviceFieldLabel,deviceTypeLabel,CONSOLE_BRANDS,CONSOLE_CHOICES} from './device-fields.js';
 import { productPath, catalogPath, pagePath, categories, visibleSeoContent } from './seo-core.js';
 import { updateSeo, currentRoute } from './seo-client.js';
 import { adminUpgrades, configPanel } from './configurator.js';
@@ -66,6 +66,7 @@ import {
         "Смартгодинники",
         "Монітори",
         "Смартдевайси",
+        "Ігрові консолі",
       ],
       filters: "Фільтри",
       price: "Ціна, zł",
@@ -169,6 +170,7 @@ import {
         "Smartwatche",
         "Monitory",
         "Smart gadżety",
+        "Konsole do gier",
       ],
       filters: "Filtry",
       price: "Cena, zł",
@@ -1536,6 +1538,7 @@ import {
     "watch",
     "monitor",
     "glasses",
+    "gamepad-2",
   ];
   const commonChoices = {
     condition: [
@@ -1926,7 +1929,9 @@ import {
       compatibility: ["Apple Find My", "Android + iPhone"],
       bluetooth: ["5.2", "5.3", "5.4"],
     },
+    CONSOLE_CHOICES,
   ];
+  for(const language of ['uk','pl'])for(const key of ['consolePlatform','consoleStorage','consoleEdition','discDrive'])dict[language][key]=deviceFieldLabel(key,language,'console');
   Object.assign(dict.uk, {
     salePrice: "Акційна ціна, zł", salePriceHelp: "Точна сума зі знижкою. Залиш порожньою для розрахунку за відсотком.",
     salePriceInvalid: "Акційна ціна має бути меншою за звичайну, не нижчою за 1% від неї та мати до 2 знаків після коми.",
@@ -2572,6 +2577,8 @@ import {
                 ["gps", "gps"],
                 ["lte", "lte"],
               ]
+            : c === 7
+              ? [["deviceType","deviceType"],["consolePlatform","consolePlatform"],["consoleStorage","consoleStorage"],["consoleEdition","consoleEdition"],["discDrive","discDrive"]]
             : c === 6
               ? [["deviceType","deviceType"], ["type", "type"], ["compatibility", "compatibility"], ["bluetooth", "bluetooth"]]
               : [

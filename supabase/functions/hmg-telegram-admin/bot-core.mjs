@@ -1,9 +1,9 @@
-import {deviceTypeChoices,resolveDeviceType,deviceProfile,deviceFieldLabel,deviceSpecRows,DEVICE_RESET_KEYS,parseCustomSpecs} from '../../../src/device-fields.js';
+import {deviceTypeChoices,resolveDeviceType,deviceProfile,deviceFieldLabel,deviceSpecRows,DEVICE_RESET_KEYS,parseCustomSpecs,CONSOLE_BRANDS} from '../../../src/device-fields.js';
 
 import {toRow,fromRow,effectivePrice,normalizeTelegramPost,UPGRADES,capacityGB} from '../../../src/core.js';
 
 export const MENU={keyboard:[['📊 Звіт зараз','➕ Додати товар'],['📅 Звіт за вчора','📈 Звіт за 7 днів'],['🗓 Звіт за 30 днів','📝 Продовжити товар'],['🔎 Керувати товарами','⚙️ Адмінка сайту']],resize_keyboard:true,is_persistent:true};
-export const CATEGORIES=['Ноутбуки','Телефони','Планшети','Навушники та аудіо','Смартгодинники','Монітори','Смартдевайси'];
+export const CATEGORIES=['Ноутбуки','Телефони','Планшети','Навушники та аудіо','Смартгодинники','Монітори','Смартдевайси','Ігрові консолі'];
 export const STATUSES=['У наявності','Заброньовано','Розпродано','Чернетка','Немає в наявності','Очікується'];
 const steps=['cat','deviceType','name','brand','price','discount','condition','warranty','status','quantity','newArrival','specs','descUk','descPl','charger','telegramPost','photoKind','photos','preview'];
 const optional=new Set(['salePrice','seoTitleUk','seoTitlePl','seoDescriptionUk','seoDescriptionPl','discount','warranty','specs','descUk','descPl','charger','telegramPost']);
@@ -21,6 +21,7 @@ export function parseNumber(text,{min=0,max=10000000,integer=false}={}){
 export function parseSpecs(text,cat,deviceType){
  const profile=deviceProfile({cat,deviceType}),allowed=new Set(profile.fields),out={},custom=[];
  const aliases={...specKeys,connection:'connection','підключення':'connection','роз’єм':'connection',pickuppattern:'pickupPattern'};
+ if(Number(cat)===7)Object.assign(aliases,{'ram':'consoleMemory','озп':'consoleMemory','оперативна пам’ять':'consoleMemory','ssd':'consoleStorage','пам’ять':'consoleStorage','память':'consoleStorage','накопичувач':'consoleStorage','графіка':'gpu','платформа':'consolePlatform','модель':'consoleModel','версія':'consoleEdition','комплект':'consoleBundle','геймпад':'controller'});
  for(const key of profile.fields){aliases[key.toLowerCase()]=key;aliases[deviceFieldLabel(key,'uk',deviceType).toLocaleLowerCase('uk')]=key;}
  for(const line of clean(text).split('\n')){
   const match=/^([^:]+):\s*(.+)$/.exec(line.trim());
@@ -69,7 +70,7 @@ function prompt(state,notice=''){
   cat:'Обери категорію товару.',
   deviceType:'Що це за пристрій? Обери тип кнопкою.',
   name:'Напиши повну назву товару (до 180 символів).',
-  brand:'Напиши бренд: Lenovo, Apple, Samsung тощо.',
+  brand:Number(p.cat)===7?'Обери виробника консолі кнопкою або введи свого.':'Напиши бренд: Lenovo, Apple, Samsung тощо.',
   price:'Введи базову ціну у злотих, наприклад 1299.',
   discount:'Знижка у відсотках: 0–99. Ціна зі знижкою округлюється до цілого zł.',
   condition:'Вкажи стан товару. Нюанси й дефекти обов’язково додай в опис.',
@@ -88,6 +89,7 @@ function prompt(state,notice=''){
   edit:'Що змінити?'
  };
  let keys=s==='cat'?CATEGORIES.map(x=>[x]):s==='deviceType'?deviceTypeChoices(p.cat).map(o=>[o.uk]):s==='status'?STATUSES.map(x=>[x]):s==='condition'?[['Новий','Вживаний — відмінний'],['Вживаний — добрий','З нюансами']]:s==='warranty'?[['12 місяців','6 місяців','3 місяці']]:s==='charger'?[['Блок і кабель','Лише кабель','Без зарядки']]:s==='photoKind'?[['Фото цього товару'],['Зображення моделі','Змішані фото']]:s==='photos'?[['✅ Фото додано'],['➖ Прибрати останнє фото','🗑 Очистити фото']]:s==='preview'?[['✅ Опублікувати'],['💾 Зберегти чернетку','✏️ Виправити']]:s==='edit'?Object.values(labels).map(x=>[x]):[];
+ if(s==='brand'&&Number(p.cat)===7)keys=CONSOLE_BRANDS.reduce((rows,name,i)=>{if(i%3===0)rows.push([]);rows.at(-1).push(name);return rows;},[]);
  if(s==='discount')keys=[['0','5','10','15','20']];
  if(s==='quantity')keys=[['1','2','3']];
  if(s==='newArrival'||s==='bestseller')keys=[['Так','Ні']];

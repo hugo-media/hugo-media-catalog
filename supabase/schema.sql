@@ -24,7 +24,7 @@ create table if not exists public.hmg_catalog_products (
  id bigint generated always as identity primary key,
  name text not null check (char_length(btrim(name)) between 1 and 180),
  brand text not null check (char_length(btrim(brand)) between 1 and 80),
- cat smallint not null check (cat between 0 and 6),
+ cat smallint not null check (cat between 0 and 7),
  status smallint not null default 3 check (status between 0 and 3),
  price numeric(12,2) not null check (price between 0 and 10000000),
  condition text not null default '',
