@@ -54,6 +54,7 @@ test('content checks catch CPU, storage, GPU, screen, translation and SEO price 
  assert(!productContentIssues({...laptop,ssd:'1024',name:'Laptop SSD 1 TB',descUk:'SSD 1 ТБ',descPl:'Dysk: 1 TB SSD'}).includes('storageMismatch'));
  assert(productContentIssues({...laptop,descUk:'Екран: 15.6″'}).includes('screenMismatch'));
  assert(productContentIssues({...laptop,gpu:'NVIDIA GTX 1050',descUk:'NVIDIA GTX 1060'}).includes('gpuMismatch'));
+ assert(!productContentIssues({...laptop,gpu:'NVIDIA Quadro P1000',descUk:'NVIDIA Quadro P1000 та Intel UHD Graphics P630'}).includes('gpuMismatch'));
  assert(productContentIssues({...laptop,descPl:'Laptop ze стилусом'}).includes('plTranslation'));
  assert(productContentIssues({...laptop,discount:'10'}).includes('seoPrice'));
  assert(!productContentIssues({...laptop,discount:'10',seoDescriptionUk:'Зараз 1079 zł замість 1199 zł'}).includes('seoPrice'));

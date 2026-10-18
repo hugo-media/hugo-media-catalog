@@ -28,8 +28,8 @@ export function productContentIssues(p={},lang) {
  }))issues.push('storageMismatch');
  const diagonal=Number(String(p.screen||'').replace(',','.'));
  if(Number(p.cat)===0&&diagonal>0&&texts.some(text=>[...text.matchAll(/(?:Екран|Дисплей|Ekran|Wyświetlacz)\s*:\s*(\d+(?:[.,]\d+)?)\s*["″”]/gi)].some(m=>Math.abs(Number(m[1].replace(',','.'))-diagonal)>.05)))issues.push('screenMismatch');
- const gpu=String(p.gpu||'').match(/\b(?:GTX|RTX|P)\s*([0-9]{3,4})\b/i)?.[1];
- if(gpu&&texts.some(text=>[...text.matchAll(/\b(?:GTX|RTX|P)\s*([0-9]{3,4})\b/gi)].some(m=>m[1]!==gpu)))issues.push('gpuMismatch');
+ const gpu=String(p.gpu||'').match(/\b(?:GTX|RTX|Quadro\s+P)\s*([0-9]{3,4})\b/i)?.[1];
+ if(gpu&&texts.some(text=>[...text.matchAll(/\b(?:GTX|RTX|Quadro\s+P)\s*([0-9]{3,4})\b/gi)].some(m=>m[1]!==gpu)))issues.push('gpuMismatch');
  if((p.ram16Enabled==='true'||p.ram32Enabled==='true')&&!ramUpgradesSupported(p))issues.push('ramUpgrade');
  const languages=lang?[lang]:['uk','pl'];
  if(languages.some(l=>{
