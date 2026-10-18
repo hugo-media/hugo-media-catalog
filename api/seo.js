@@ -1,4 +1,5 @@
-import {deviceSpecRows,resolveDeviceType,deviceFieldLabel} from '../src/device-fields.js';
+import { plainDescription } from '../src/catalog-content.js';
+import {deviceSpecRows,localizedSpecValue,resolveDeviceType,deviceFieldLabel} from '../src/device-fields.js';
 import { readFile } from 'node:fs/promises';
 import { fromRow, publicConfigValid, promotionState } from '../src/core.js';
 import { createStorefront } from '../src/storefront.js';
@@ -26,9 +27,9 @@ function serverContent(route,products,base,seo={},now=Date.now()) {
   const pageKey=view==='start'?'start':view==='catalog'?(cat>=0?`category:${categories[cat]}`:'catalog'):'home';
   const page=seo.pages?.[pageKey]?.[lang]||{};
   const intro=String(page.intro||'').split(/\n{2,}/).map(x=>x.trim()).filter(Boolean).map(x=>`<p>${E(x)}</p>`).join('');
-  const categoryLinks=categories.map((slug,i)=>`<li><a href="${catalogPath(lang,i)}">${E(labels[lang][i])}</a></li>`).join('');
+  const categoryLinks=categories.map((slug,i)=>products.some(p=>Number(p.cat)===i)?`<li><a href="${catalogPath(lang,i)}">${E(labels[lang][i])}</a></li>`:'').join('');
   const nav=`<nav class="hp-toprow" aria-label="${pl?'Nawigacja':'Навігація'}"><a href="/${lang}">Hugo Media</a><a href="${catalogPath(lang)}">${pl?'Katalog':'Каталог'}</a><ul aria-label="${pl?'Kategorie':'Категорії'}">${categoryLinks}</ul><a href="${pagePath({...route,lang:lang==='uk'?'pl':'uk'})}">${pl?'Українська':'Polski'}</a></nav>`;
-  if(product) return nav+`<article class="hp-detail"><h1>${E(product.name)}</h1>${meta.image?`<div class="hp-photo"><img src="${E(meta.image)}" alt="${E(product.name)}" fetchpriority="high"></div>`:''}<p>${E(meta.schema['@graph'][2].offers.price)} zł · ${E((pl?['Dostępny','Zarezerwowany','Wyprzedany','Szkic','Brak w magazynie','Oczekuje na dostawę']:['У наявності','Заброньовано','Розпродано','Чернетка','Немає в наявності','Очікується'])[product.status])}</p><p>${E(pl?product.descPl:product.descUk).replace(/\n/g,'<br>')}</p><dl>${[...deviceSpecRows(product,lang),[pl?'Stan':'Стан',product.condition],[pl?'Gwarancja':'Гарантія',product.warranty]].filter(([,v])=>v).map(([k,v])=>`<dt>${E(k)}</dt><dd>${E(v)}</dd>`).join('')}</dl><a href="https://t.me/HGM_Manager">${pl?'Zapytaj w Telegramie':'Запитати в Telegram'}</a></article>`;
+  if(product) return nav+`<article class="hp-detail"><h1>${E(product.name)}</h1>${meta.image?`<div class="hp-photo"><img src="${E(meta.image)}" alt="${E(product.name)}" fetchpriority="high"></div>`:''}<p>${E(meta.schema['@graph'][2].offers.price)} zł · ${E((pl?['Dostępny','Zarezerwowany','Wyprzedany','Szkic','Brak w magazynie','Oczekuje na dostawę']:['У наявності','Заброньовано','Розпродано','Чернетка','Немає в наявності','Очікується'])[product.status])}</p><p>${E(plainDescription(pl?product.descPl:product.descUk)).replace(/\n/g,'<br>')}</p><dl>${[...deviceSpecRows(product,lang),[pl?'Stan':'Стан',localizedSpecValue(product.condition,lang)],[pl?'Gwarancja':'Гарантія',localizedSpecValue(product.warranty,lang)]].filter(([,v])=>v).map(([k,v])=>`<dt>${E(k)}</dt><dd>${E(v)}</dd>`).join('')}</dl><a href="https://t.me/HGM_Manager">${pl?'Zapytaj w Telegramie':'Запитати в Telegram'}</a></article>`;
   if(view==='start') return createStorefront({lang,icon:name=>`<i data-lucide="${name}" aria-hidden="true"></i>`}).start();
   const list=cat>=0?products.filter(p=>Number(p.cat)===cat):products;
   const displayed=view==='home'?list.filter(p=>Number(p.status)===0&&(p.quantity===''||p.quantity==null?1:Number(p.quantity))>0).slice(0,8):list;

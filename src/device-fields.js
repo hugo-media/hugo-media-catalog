@@ -78,12 +78,18 @@ export function parseCustomSpecs(value){
  });
 }
 export function customSpecsText(value){if(typeof value==='string'&&!value.trim().startsWith('['))return value;return parseCustomSpecs(value).map(row=>row.label+': '+row.value).join('\n');}
-export function deviceSpecRows(p={},lang='uk',format=(key,value)=>String(value||'')){
+export function localizedSpecValue(value='',lang='uk'){
+ const text=String(value??'');
+ const match=text.match(/^(.+?)\s+\/\s+(.+)$/s);
+ if(match&&/\p{Script=Cyrillic}/u.test(match[1])&&!/\p{Script=Cyrillic}/u.test(match[2]))return (lang==='pl'?match[2]:match[1]).trim();
+ return text;
+}
+export function deviceSpecRows(p={},lang='uk',format=(key,value)=>localizedSpecValue(value,lang)){
  const type=resolveDeviceType(p);
  return [
   [lang==='pl'?'Typ urządzenia':'Тип пристрою',deviceTypeLabel(p,lang)],
   ...deviceProfile(p).fields.map(key=>[deviceFieldLabel(key,lang,type),format(key,p[key])]),
-  ...parseCustomSpecs(p.customSpecs).map(row=>[row.label,row.value])
+  ...parseCustomSpecs(p.customSpecs).map(row=>[localizedSpecValue(row.label,lang),localizedSpecValue(row.value,lang)])
  ].filter(([,value])=>String(value||'').trim());
 }
 export function deviceFieldSnapshot(values={}){return Object.fromEntries(DEVICE_RESET_KEYS.filter(key=>Object.hasOwn(values,key)).map(key=>[key,values[key]]));}

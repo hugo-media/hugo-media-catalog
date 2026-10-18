@@ -5,6 +5,7 @@ import { effectivePrice, discountPercent, discountBadge, csv, telegramLink, avai
 // Normalize display/filter values without rewriting the source specifications.
 export function normalizedSpec(key, value) {
   const text = String(value ?? '').trim();
+  if(key==='cpu'){const family=text.match(/\b(?:Intel\s+)?(?:Core\s+)?(i[3579])\b/i);if(family)return 'Intel Core '+family[1].toLowerCase();}
   if (['ram', 'ssd'].includes(key)) {
     const match = text.replace(',', '.').match(/^(\d+(?:\.\d+)?)\s*(GB|ГБ|TB|ТБ)?(?:\s+SSD)?$/i);
     if (match) return String(Number(match[1]) * (/^(TB|ТБ)$/i.test(match[2] || '') ? 1024 : 1));
@@ -16,6 +17,7 @@ export function normalizedSpec(key, value) {
   return text;
 }
 export function specLabel(key, value) {
+  if(key==='cpu')return String(value??'').trim();
   const normalized = normalizedSpec(key, value);
   return normalized && ['ram', 'ssd'].includes(key) && /^\d+(\.\d+)?$/.test(normalized)
     ? `${normalized} GB`
@@ -72,7 +74,7 @@ export function comparisonSelection(products,ids) {
 }
 export function comparisonRows(items,definitions,onlyDifferences=false) {
   return definitions.filter(([key])=>{
-    const values=items.map(p=>key==='price'?String(effectivePrice(p)):normalizedSpec(key,p[key]).trim().toLowerCase().replace(/\s+/g,' '));
+    const values=items.map(p=>key==='price'?String(effectivePrice(p)):key==='cpu'?String(p[key]||''):normalizedSpec(key,p[key]).trim().toLowerCase().replace(/\s+/g,' '));
     return (key==='price'||values.some(Boolean)) && (!onlyDifferences||new Set(values).size>1);
   });
 }

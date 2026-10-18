@@ -134,3 +134,13 @@ test('explicit legacy catalog links still bypass the start page',async()=>{
  assert.equal(direct.headers.Location,undefined);
  assert.match(direct.body,/HP EliteBook 850 G8/);
 });
+
+test('server descriptions and custom specs localize and escape pasted content before hydration',async()=>{
+ const item={...p,condition:'Як новий / Jak nowy',warranty:'12 місяців / 12 miesięcy',descPl:'# **Laptop**\nOpis <script>alert(1)</script>',customSpecs:[{label:'Роз’єми / Złącza',value:'USB / USB-C / HDMI'}]};
+ const result=await servePage(new URL('https://www.hugomedia.pl'+productPath(item,'pl')),{...options,loadProducts:async()=>[item]});
+ assert.match(result.body,/<p>Laptop<br>Opis &lt;script&gt;/);
+ assert.match(result.body,/<dt>Stan<\/dt><dd>Jak nowy<\/dd>/);
+ assert.match(result.body,/<dt>Złącza<\/dt><dd>USB \/ USB-C \/ HDMI<\/dd>/);
+ assert.doesNotMatch(result.body,/<dt>Stan<\/dt><dd>Як новий/);
+ assert.match(result.body,/"itemCondition":"https:\/\/schema.org\/UsedCondition"/);
+});

@@ -1,4 +1,5 @@
-import {renderDeviceSelector,renderDeviceFields,deviceSpecRows,resolveDeviceType,deviceFieldSnapshot,switchDeviceValues,deviceProfile,deviceFieldLabel,deviceTypeLabel,CONSOLE_BRANDS,CONSOLE_CHOICES} from './device-fields.js';
+import { matchesProductSearch, plainDescription } from './catalog-content.js';
+import {renderDeviceSelector,renderDeviceFields,deviceSpecRows,localizedSpecValue,resolveDeviceType,deviceFieldSnapshot,switchDeviceValues,deviceProfile,deviceFieldLabel,deviceTypeLabel,CONSOLE_BRANDS,CONSOLE_CHOICES} from './device-fields.js';
 import { productPath, catalogPath, pagePath, categories, visibleSeoContent } from './seo-core.js';
 import { updateSeo, currentRoute } from './seo-client.js';
 import { adminUpgrades, configPanel } from './configurator.js';
@@ -2105,8 +2106,7 @@ import {
     return title || p.name;
   }
   function localizedValue(value) {
-    const parts = String(value || "").split(/\s*\/\s*/);
-    return parts[lang === "pl" && parts.length > 1 ? 1 : 0] || "";
+    return localizedSpecValue(value,lang);
   }
   function productHighlights(p) {
     const highlights = [];
@@ -2138,7 +2138,7 @@ import {
       dock.id = "hp-compare-dock";
       root.append(dock);
     }
-    const hidden = ["admin", "edit", "stats", "reviews", "reviewEdit", "activity", "picks", "quality", "drafts", "settings", "versions"].includes(
+    const hidden = ["admin", "edit", "stats", "reviews", "reviewEdit", "activity", "picks", "quality", "drafts", "settings", "seo", "versions", "compare"].includes(
       view,
     );
     dock.innerHTML =
@@ -2184,12 +2184,7 @@ import {
   }
   function visible() {
     return eligible()
-      .filter((p) =>
-        [p.name, p.brand, p.cpu, p.gpu, p.ram, p.ssd]
-          .join(" ")
-          .toLowerCase()
-          .includes(search.toLowerCase()),
-      )
+      .filter((p) => matchesProductSearch(p,search))
       .filter(
         (p) =>
           matchesAvailability(p,filters.availability) &&
@@ -2276,7 +2271,7 @@ import {
     );
     q("#hp-categories").innerHTML = [
       { id: -1, label: t("all"), icon: "layout-grid" },
-      ...t("categories").map((label, id) => ({ id, label, icon: icons[id] })),
+      ...t("categories").map((label, id) => ({ id, label, icon: icons[id] })).filter(c=>products.some(p=>p.cat===c.id&&matchesAvailability(p))),
     ]
       .map(
         (c) =>
@@ -2308,7 +2303,7 @@ import {
       const seoKey = cat < 0 ? "catalog" : `category:${categories[cat]}`;
       const seoPage = extra.seo?.pages?.[seoKey]?.[lang] || {};
       const seoCopy = visibleSeoContent(seoPage, cat < 0 ? t("all") : t("categories")[cat], esc);
-      content.innerHTML = `<div class="hp-intro hm-catalog-hero"><div><div class="hp-kicker">HUGO CATALOG</div><h1>${esc(seoCopy.title)}</h1><span class="hp-muted">${t("subtitle")}</span>${seoCopy.intro ? `<details class="hm-catalog-about"><summary>${lang==='uk'?'Про каталог, стан і доставку':'O katalogu, stanie i dostawie'}</summary><div class="hp-seo-copy">${seoCopy.intro}</div></details>` : ""}</div>${cat===7?"":storefront.finderButton()}</div><button type="button" class="hp-button hp-mobile-filter" id="hp-filter-toggle" aria-expanded="false">${icon("sliders-horizontal")}${t("filters")}</button><button type="button" class="hp-filter-backdrop" id="hp-filter-backdrop" aria-label="${t("closeFilters")}"></button><div class="hp-shop"><aside class="hp-filters"><button type="button" class="hp-filter-close" id="hp-filter-close">${icon("x")}${t("closeFilters")}</button><h3>${t("filters")}</h3><label class="hp-field">${t("price")}<div class="hp-prices"><input type="number" min="0" data-filter="min" aria-label="${t("min")}" placeholder="${t("min")}" value="${esc(filters.min || "")}"><input type="number" min="0" data-filter="max" aria-label="${t("max")}" placeholder="${t("max")}" value="${esc(filters.max || "")}"></div></label>${availabilityFilter()}${selectFilter("brand", t("brand"), vals("brand").filter(displayBrand))}${cat===7?"":`<label class="hp-field">${t("purpose")}<select data-filter="purpose">${option("", t("any"), filters.purpose || "")}${PURPOSES.map((code) => option(code, t(purposeKey(code)), filters.purpose)).join("")}</select></label>`}${filterKeys(
+      content.innerHTML = `<div class="hp-intro hm-catalog-hero"><div><div class="hp-kicker">HUGO CATALOG</div><h1>${esc(seoCopy.title)}</h1><span class="hp-muted">${t("subtitle")}</span>${seoCopy.intro ? `<details class="hm-catalog-about"><summary>${lang==='uk'?'Про каталог, стан і доставку':'O katalogu, stanie i dostawie'}</summary><div class="hp-seo-copy">${seoCopy.intro}</div></details>` : ""}</div>${cat===0||cat<0?storefront.finderButton():""}</div><button type="button" class="hp-button hp-mobile-filter" id="hp-filter-toggle" aria-expanded="false">${icon("sliders-horizontal")}${t("filters")}</button><button type="button" class="hp-filter-backdrop" id="hp-filter-backdrop" aria-label="${t("closeFilters")}"></button><div class="hp-shop"><aside class="hp-filters"><button type="button" class="hp-filter-close" id="hp-filter-close">${icon("x")}${t("closeFilters")}</button><h3>${t("filters")}</h3><label class="hp-field">${t("price")}<div class="hp-prices"><input type="number" min="0" data-filter="min" aria-label="${t("min")}" placeholder="${t("min")}" value="${esc(filters.min || "")}"><input type="number" min="0" data-filter="max" aria-label="${t("max")}" placeholder="${t("max")}" value="${esc(filters.max || "")}"></div></label>${availabilityFilter()}${selectFilter("brand", t("brand"), vals("brand").filter(displayBrand))}${cat===0||cat<0?`<label class="hp-field">${t("purpose")}<select data-filter="purpose">${option("", t("any"), filters.purpose || "")}${PURPOSES.map((code) => option(code, t(purposeKey(code)), filters.purpose)).join("")}</select></label>`:""}${filterKeys(
         cat,
       )
         .map(([key, label]) => selectFilter(key, t(label), vals(key)))
@@ -2336,7 +2331,7 @@ import {
         benefitCodes = csv(p.benefits),
         bundleCodes = csv(p.bundles),
         chosenBundles = csv(bundleSelections[p.id]),
-        description = String(p[lang === "uk" ? "descUk" : "descPl"] || "").replace(/\\n/g, "\n"),
+        description = plainDescription(p[lang === "uk" ? "descUk" : "descPl"]),
         similar = products
           .filter(
             (x) =>
@@ -2423,7 +2418,7 @@ import {
         ["condition",t("condition")],["warranty",t("warranty")]
       ].filter(([key],index,list)=>list.findIndex(row=>row[0]===key)===index);
       const rows = comparisonRows(items,definitions,compareDifferences);
-      content.innerHTML = `<button type="button" class="hp-back" data-view="catalog">${icon("arrow-left")}${t("back")}</button><div class="hp-intro"><h1>${t("comparison")}</h1></div>${items.length > 1 ? `<label class="hp-compare-toggle"><input id="hp-compare-differences" type="checkbox" ${compareDifferences?"checked":""}>${lang==="uk"?"Лише відмінності":"Tylko różnice"}</label><div class="hp-compare-wrap"><table class="hp-compare-table"><thead><tr><th></th>${items.map((p) => `<th><a href="${productPath(p,lang)}" data-detail="${p.id}">${esc(productTitle(p))}</a><button type="button" data-compare="${p.id}" aria-label="${t("remove")}">${icon("x")}</button></th>`).join("")}</tr></thead><tbody>${rows.length?rows.map(([key, label]) => `<tr><th>${label}</th>${items.map((p) => `<td>${key === "price" ? `${money(effectivePrice(p))} zł` : esc(localizedValue(specLabel(key,p[key])) || "—")}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${items.length+1}">${lang==="uk"?"Ці характеристики збігаються.":"Te parametry są takie same."}</td></tr>`}</tbody></table></div>` : `<div class="hp-empty"><p>${lang==="uk"?"Додай щонайменше два товари однієї категорії.":"Dodaj co najmniej dwa produkty z tej samej kategorii."}</p><button class="hp-button hp-primary" data-view="catalog">${t("continue")}</button></div>`}`;
+      content.innerHTML = `<button type="button" class="hp-back" data-view="catalog">${icon("arrow-left")}${t("back")}</button><div class="hp-intro"><h1>${t("comparison")}</h1></div>${items.length > 1 ? `<label class="hp-compare-toggle"><input id="hp-compare-differences" type="checkbox" ${compareDifferences?"checked":""}>${lang==="uk"?"Лише відмінності":"Tylko różnice"}</label><div class="hp-compare-wrap"><table class="hp-compare-table"><thead><tr><th></th>${items.map((p) => `<th><div class="hm-compare-product"><a href="${productPath(p,lang)}" data-detail="${p.id}">${p.images?.length?`<img src="${esc(pictureUrl(p.images[0]))}" alt="${esc(productTitle(p))}" loading="lazy" decoding="async">`:''}${esc(productTitle(p))}</a><button type="button" class="hp-button hp-primary" data-order-one="${p.id}" ${p.status!==0||stockQty(p)<1?'disabled':''}>${p.status===0&&stockQty(p)>0?(lang==='uk'?'Замовити в Telegram':'Zamów w Telegramie'):t("statuses")[p.status]||t("outOfStock")}</button><button type="button" data-compare="${p.id}" aria-label="${t("remove")}">${icon("x")}</button></div></th>`).join("")}</tr></thead><tbody>${rows.length?rows.map(([key, label]) => `<tr><th>${label}</th>${items.map((p) => `<td>${key === "price" ? `${money(effectivePrice(p))} zł` : esc(key==="deviceType"?deviceTypeLabel(p,lang):localizedValue(specLabel(key,p[key])) || "—")}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${items.length+1}">${lang==="uk"?"Ці характеристики збігаються.":"Te parametry są takie same."}</td></tr>`}</tbody></table></div>` : `<div class="hp-empty"><p>${lang==="uk"?"Додай щонайменше два товари однієї категорії.":"Dodaj co najmniej dwa produkty z tej samej kategorii."}</p><button class="hp-button hp-primary" data-view="catalog">${t("continue")}</button></div>`}`;
     }
     if (view === "cart") {
       const items = products.filter((p) => cart.includes(p.id));

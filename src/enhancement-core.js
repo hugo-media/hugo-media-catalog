@@ -1,3 +1,4 @@
+import { productContentIssues } from './catalog-content.js';
 import { consistencyIssues } from './insights-core.js';
 import { csv, effectivePrice } from './core.js';
 export const LINK_SLOTS = ['start','catalog','product','footer','floating'];
@@ -67,8 +68,11 @@ export function laptopHighlights(results, { purpose='', size='any' }={}) {
 }
 
 export function productIssues(p, now=Date.now()) {
- const issues=consistencyIssues(p);
+ const issues=[...consistencyIssues(p),...productContentIssues(p)];
  if (!p.images?.length) issues.push('photos');
+ else if(p.images.length===1)issues.push('singlePhoto');
+ if(Number(p.cat)===0&&!String(p.battery||'').trim())issues.push('batteryMissing');
+ if(/уточню|do ustalenia|не вказано|nie podano/i.test(p.condition||''))issues.push('conditionUnknown');
  if (!/^https:\/\/t\.me\/h_m_g_pl\/\d+$/.test(p.telegramPost||'')) issues.push('post');
  if (!p.warranty) issues.push('warranty');
  if (!p.condition) issues.push('condition');
@@ -87,6 +91,6 @@ export function draftValues(formData) {
 }
 
 export function productReadiness(p, now=Date.now()) {
- const all=productIssues(p,now), optional=new Set(['post','photoKind','stale']);
+ const all=productIssues(p,now), optional=new Set(['post','photoKind','stale','singlePhoto','batteryMissing','conditionUnknown']);
  return {issues:all.filter(key=>!optional.has(key)),advisories:all.filter(key=>optional.has(key))};
 }

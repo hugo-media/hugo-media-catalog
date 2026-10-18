@@ -46,6 +46,7 @@ export function productItemCondition(value='') {
   const condition=String(value||'').toLowerCase();
   if(/уточню|do ustalenia|не вказано|nie podano/.test(condition)) return null;
   if(/refurb|renew|відновлен|восстановлен|odnow|rekondycj/.test(condition)) return 'https://schema.org/RefurbishedCondition';
+  if(/як\s+нов|jak\s+now|like\s+new|as\s+new|майже\s+нов|prawie\s+now/i.test(condition)) return 'https://schema.org/UsedCondition';
   if(/(^|[^a-z])(?:new|nowy|nowa|nowe)([^a-z]|$)|нов(?:ий|а|е|і)/i.test(condition)) return 'https://schema.org/NewCondition';
   return 'https://schema.org/UsedCondition';
 }

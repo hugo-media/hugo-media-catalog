@@ -202,7 +202,7 @@
 
 /* Compact purchase workspace; secondary information expands on demand. */
 #hugo-preview.hp-storefront .hp-detail-back{margin:12px 0 16px}
-#hugo-preview.hp-storefront .hm-compact-detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"gallery heading" "gallery overview";column-gap:32px;row-gap:12px;align-items:start}
+#hugo-preview.hp-storefront .hm-compact-detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"gallery heading" "gallery overview";grid-template-rows:min-content 1fr;column-gap:32px;row-gap:12px;align-items:start}
 #hugo-preview.hp-storefront .hm-detail-heading{grid-area:heading;min-width:0}
 #hugo-preview.hp-storefront .hm-detail-heading h1{font-size:32px;line-height:1.2;letter-spacing:-.7px;margin:6px 0 9px}
 #hugo-preview.hp-storefront .hm-detail-heading .hp-detail-config{margin:0;font-size:16px}
@@ -1186,3 +1186,9 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
 
 /* Avoid showing the fixed mobile action while its main button is in view. */
 #hugo-preview.hp-storefront .hp-mobile-order-bar[hidden]{display:none}
+
+/* Keep comparison choices recognizable and actionable. */
+#hugo-preview .hm-compare-product{display:grid;gap:10px;text-align:left;min-width:160px}
+#hugo-preview .hm-compare-product>a{display:grid;gap:8px}
+#hugo-preview .hm-compare-product img{width:100%;height:112px;object-fit:contain;background:#fff;border-radius:12px}
+#hugo-preview .hm-compare-product .hp-button{font-size:14px;padding:10px;min-height:44px;white-space:normal}
