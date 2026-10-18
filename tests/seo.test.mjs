@@ -89,7 +89,8 @@ test('empty categories and the start page stay out of the index; useful localize
  }}}};
  const category=await servePage(new URL('https://www.hugomedia.pl/pl/catalog/laptops'),{...options,loadSeo:async()=>seo});
  assert.equal(category.status,200);assert.match(category.body,/Przeglądaj używane laptopy biznesowe w Polsce/);
- assert.match(category.body,/href="\/pl\/catalog\/phones"/);
+ assert.match(category.body,/href="\/pl\/catalog\/laptops"/);
+ assert.doesNotMatch(category.body,/href="\/pl\/catalog\/phones"/);
  assert.match(category.body,/name="robots" content="index,follow/);
  assert.match(category.headers['Cache-Control'],/s-maxage=30/);
  const empty=await page('/pl/catalog/tablets');
