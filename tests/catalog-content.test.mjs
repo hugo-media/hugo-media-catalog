@@ -64,3 +64,8 @@ test('pasted Markdown is readable plain text and never turns HTML into executabl
  assert.equal(plainDescription('# **Заголовок**\\n\\n__Опис__'),'Заголовок\n\nОпис');
  assert.equal(plainDescription('<img src=x onerror=alert(1)>'),'<img src=x onerror=alert(1)>');
 });
+
+test('laptop specification rows expose verified display type, resolution and refresh rate',()=>{
+ const rows=deviceSpecRows({...laptop,panelType:'IPS',resolution:'1920×1080',hz:'60'},'uk');
+ for(const value of ['IPS','1920×1080','60'])assert(rows.some(row=>row[1]===value));
+});
