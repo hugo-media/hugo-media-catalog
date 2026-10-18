@@ -160,9 +160,14 @@ export function extraStorageLabel(p={}){
 }
 export function reconcileCart(ids,products){return [...new Set(ids)].filter(id=>products.some(p=>p.id===id&&p.status===0&&(p.quantity===''||p.quantity==null||Number(p.quantity)>0)));}
 export function capacityGB(value){const text=String(value||'').replace(',','.');const n=parseFloat(text);return /tb|тб/i.test(text)?n*1024:n;}
+export function ramUpgradesSupported(p={}){
+ if(Number(p.cat)!==0)return false;
+ const model=String(p.name||'').replace(/[-_/]+/g,' ');
+ return !/\bt490s\b|\bt14s\b.*\b(?:gen\s*1|g1)\b|\bxps\s*(?:13\s*)?9370\b|\bmacbook\b/i.test(model);
+}
 export function upgradeOptions(p){
  if(Number(p.cat)!==0)return [];
- return Object.entries(UPGRADES).flatMap(([key,o])=>{const raw=p[key+'Price'];const price=Number(raw);return p[key+'Enabled']==='true'&&raw!==''&&raw!=null&&Number.isFinite(price)&&price>=0&&price<=10000&&o.target>capacityGB(p[o.group])?[{key,...o,price}]:[];});
+ return Object.entries(UPGRADES).flatMap(([key,o])=>{const raw=p[key+'Price'];const price=Number(raw);return (o.group!=='ram'||ramUpgradesSupported(p))&&p[key+'Enabled']==='true'&&raw!==''&&raw!=null&&Number.isFinite(price)&&price>=0&&price<=10000&&o.target>capacityGB(p[o.group])?[{key,...o,price}]:[];});
 }
 export function configuration(p,bundleSelection='',upgradeSelection={},lang='uk',now=Date.now()){
  const allowed=csv(p.bundles).filter(k=>Object.hasOwn(BUNDLES,k));
