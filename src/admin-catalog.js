@@ -1,11 +1,12 @@
 import {configuredDiscountPercent,effectivePrice,fixedSalePrice,promotionState,warsawDateTimeToUtc,utcToWarsawDateTime,validateProduct} from './core.js';
-import {filterAdminProducts,normalizeQuickFields,planQuickChanges,quickValue,quickPricePreview} from './admin-catalog-core.js';
+import {filterAdminProducts,normalizeQuickFields,planQuickChanges,quickValue,quickPricePreview,planMarkToggle,adminGroupCounts} from './admin-catalog-core.js';
 
 export function createAdminCatalog(c) {
  const E=c.esc,L=(u,p)=>c.lang==='pl'?p:u;
  const q=selector=>c.root.querySelector(selector);
- const filters={search:'',category:'',status:'',mark:'',sort:'updated'};
- const selected=new Set(),drafts=new Map();
+ const filters={search:'',category:'',status:'',group:'',mark:'',sort:'updated'};
+ const selected=new Set(),drafts=new Map(),markFeedback=new Map();
+ let savingMark=null;
  let promoId=null,promoDraft=null,promoMessage='',promoError=false;
  let bulkField='discount',bulkValue='0',preview=null,busy=false,message='',error=false;
  const option=(value,label,current)=>`<option value="${E(value)}" ${String(value)===String(current)?'selected':''}>${E(label)}</option>`;
@@ -15,12 +16,23 @@ export function createAdminCatalog(c) {
  function previewPrice(p){return effectivePrice({...p,promoStartAt:'',promoEndAt:''});}
  function rawFields(p){return {price:String(p.price),discount:String(configuredDiscountPercent(p)),quantity:String(quickValue(p,'quantity')),status:String(p.status)};}
  function dirty(id){const d=drafts.get(id);if(!d)return false;try{return planQuickChanges([d.base],[id],d.fields).length>0;}catch{return true;}}
+
+ function groupButtons(){
+  const count=adminGroupCounts(c.products,filters);
+  return [['',L('Усі товари','Wszystkie produkty'),'all'],['best',labels().bestseller,'best'],['new',labels().newArrival,'new']].map(([value,label,key])=>`<button type="button" class="hm-admin-group ${filters.group===value?'is-active':''}" data-admin-group="${value}" aria-pressed="${filters.group===value}" ${busy?'disabled':''}><span>${E(label)}</span><b>${count[key]}</b></button>`).join('');
+ }
+ function refreshGroups(){const nav=q('#hm-admin-groups');if(nav)nav.innerHTML=groupButtons();}
+ function markControls(p){
+  const feedback=markFeedback.get(p.id),pending=savingMark?.id===p.id;
+  return `<div class="hm-admin-mark-controls" aria-label="${E(L('Групи товару','Grupy produktu'))}">${[['bestseller',L('Бестселер','Bestseller'),'star'],['newArrival',L('Нове надходження','Nowość'),'sparkles']].map(([field,label,icon])=>`<button type="button" class="hm-admin-mark-toggle ${p[field]==='true'?'is-active':''}" data-admin-mark="${field}" data-admin-product="${p.id}" aria-pressed="${p[field]==='true'}" aria-label="${E(label+': '+p.name)}" ${busy?'disabled':''}>${c.icon(icon)}<span>${E(label)}</span>${p[field]==='true'?c.icon('check'):''}</button>`).join('')}</div><p class="hm-admin-mark-feedback ${feedback?.error?'is-error':''}" data-admin-mark-status="${p.id}" role="${feedback?.error?'alert':'status'}" aria-live="polite" ${!feedback&&!pending?'hidden':''}>${E(pending?L('Зберігаю…','Zapisuję…'):feedback?.text||'')}</p>`;
+ }
+
  function productRow(p){
   const d=drafts.get(p.id),fields=d?.fields||rawFields(p),changed=dirty(p.id),stale=d&&d.base.updated_at!==p.updated_at;
   let final=previewPrice(p);try{const parsed=normalizeQuickFields(fields);final=previewPrice(quickPricePreview(p,parsed));}catch{final=null;}
   const title=E(p.name),id=`HMG-${String(p.id).padStart(3,'0')}`,disabled=busy?'disabled':'';
-  return `<article class="hm-admin-product ${changed?'is-dirty':''}" data-admin-row="${p.id}">
-   <div class="hm-admin-product-head"><label class="hm-admin-checkbox"><input type="checkbox" data-admin-select="${p.id}" aria-label="${E(L('Обрати','Wybierz'))} ${title}" ${selected.has(p.id)?'checked':''} ${disabled}></label>${p.images?.[0]?`<img class="hm-admin-thumb" src="${E(c.photoUrl(p.images[0]))}" alt="" loading="lazy">`:''}<div><h3>${title}</h3><p>${id} · ${E(c.t('categories')[p.cat])} · ${E(p.brand)}</p><div class="hm-admin-badges">${p.newArrival==='true'?`<span>${E(c.t('newArrival'))}</span>`:''}${p.bestseller==='true'?`<span>${E(c.t('bestseller'))}</span>`:''}</div></div></div>
+  return `<article class="hm-admin-product ${changed?'is-dirty':''}" data-admin-row="${p.id}" aria-busy="${savingMark?.id===p.id}">
+   <div class="hm-admin-product-info"><div class="hm-admin-product-head"><label class="hm-admin-checkbox"><input type="checkbox" data-admin-select="${p.id}" aria-label="${E(L('Обрати','Wybierz'))} ${title}" ${selected.has(p.id)?'checked':''} ${disabled}></label>${p.images?.[0]?`<img class="hm-admin-thumb" src="${E(c.photoUrl(p.images[0]))}" alt="" loading="lazy">`:''}<div><h3>${title}</h3><p>${id} · ${E(c.t('categories')[p.cat])} · ${E(p.brand)}</p><div class="hm-admin-badges">${p.newArrival==='true'?`<span>${E(c.t('newArrival'))}</span>`:''}${p.bestseller==='true'?`<span>${E(c.t('bestseller'))}</span>`:''}</div></div></div>${markControls(p)}</div>
    <form data-admin-quick-form="${p.id}" class="hm-admin-quick-form"><fieldset ${disabled}><legend class="hm-admin-sr">${E(L('Швидке редагування','Szybka edycja'))} ${title}</legend><div class="hm-admin-fields">${['price','discount','quantity'].map(key=>`<label class="hp-field"><span>${E(labels()[key])}</span><input data-admin-quick-input name="${key}" type="number" inputmode="${key==='price'?'decimal':'numeric'}" min="0" max="${key==='price'?10000000:99}" step="${key==='price'?'0.01':'1'}" required value="${E(fields[key])}"></label>`).join('')}<label class="hp-field"><span>${E(c.t('status'))}</span><select data-admin-quick-input name="status">${c.t('statuses').map((s,i)=>option(i,s,fields.status)).join('')}</select></label></div><div class="hm-admin-row-bottom"><span data-admin-final>${E(L('Після знижки','Po rabacie'))}: <strong>${final===null?'—':E(c.money(final))+' zł'}</strong></span><div><button type="button" class="hp-button" data-admin-reset="${p.id}" ${(!changed&&!stale)||busy?'disabled':''}>${E(stale?L('Взяти актуальні дані','Pobierz aktualne dane'):L('Скасувати','Anuluj'))}</button><button type="submit" class="hp-button hp-primary" data-admin-save-button ${!changed||busy||stale?'disabled':''}>${c.icon('check')}${E(L('Зберегти рядок','Zapisz wiersz'))}</button></div></div>${stale?`<p class="hm-admin-warning">${E(L('Товар змінився в іншому місці. Візьми актуальні дані перед новим редагуванням.','Produkt został zmieniony w innym miejscu. Pobierz aktualne dane przed ponowną edycją.'))}</p>`:''}</fieldset></form>
    <div class="hp-admin-actions hm-admin-full-actions"><button type="button" data-edit="${p.id}" aria-label="${E(c.t('edit'))}: ${title}" ${disabled}>${c.icon('pencil')}</button><button type="button" data-duplicate="${p.id}" aria-label="${E(c.t('duplicate'))}: ${title}" ${disabled}>${c.icon('copy')}</button><button type="button" data-delete="${p.id}" aria-label="${E(c.t('delete'))}: ${title}" ${disabled}>${c.icon('trash-2')}</button></div>
   </article>`;
@@ -99,13 +111,14 @@ export function createAdminCatalog(c) {
   return `<section class="hm-admin-review" aria-labelledby="hm-admin-review-title"><h3 id="hm-admin-review-title">${E(L('Перевір масові зміни','Sprawdź zmiany zbiorcze'))}</h3><p>${E(L('Будуть змінені тільки ці товари.','Zmienią się tylko te produkty.'))} ${preview.changes.length} ${E(L('із вибраних','z wybranych'))} ${selected.size}.</p><div class="hp-table-scroll"><table><thead><tr><th>${E(c.t('name'))}</th><th>${E(L('Було','Przed'))}</th><th>${E(L('Буде','Po'))}</th></tr></thead><tbody>${preview.changes.map(change=>{const p=preview.products.find(p=>p.id===change.id);return `<tr><th>${E(p.name)}<small>HMG-${String(p.id).padStart(3,'0')}</small></th><td>${E(formatValue(p,preview.field,quickValue(p,preview.field)))}</td><td>${E(formatValue(p,preview.field,preview.fields[preview.field]))}</td></tr>`;}).join('')}</tbody></table></div><div class="hm-admin-review-actions"><button type="button" class="hp-button" data-admin-cancel-preview ${busy?'disabled':''}>${E(L('Скасувати','Anuluj'))}</button><button type="button" class="hp-button hp-primary" data-admin-apply ${busy?'disabled':''}>${E(L('Зберегти зміни для','Zapisz zmiany dla'))} ${preview.changes.length} ${E(L('товарів','produktów'))}</button></div></section>`;
  }
  function render(){
-  cleanSelection();const visible=rows();
-  return `<section class="hm-admin-catalog" data-admin-catalog aria-busy="${busy}"><div class="hp-intro"><div><h1>${E(c.t('manage'))}</h1><p class="hp-muted">${E(L('Ціну, знижку, кількість і статус можна змінити прямо тут.','Cenę, rabat, ilość i status możesz zmienić tutaj.'))}</p></div><button type="button" class="hp-button hp-primary" id="hp-new" ${busy?'disabled':''}>${c.icon('plus')}${E(c.t('newProduct'))}</button></div>
-  ${promotionMarkup()}<div class="hm-admin-filters"><label class="hp-field hm-admin-search"><span>${E(L('Пошук товарів','Szukaj produktów'))}</span><input id="hm-admin-search" type="search" value="${E(filters.search)}" placeholder="${E(L('Назва, бренд або HMG-номер','Nazwa, marka lub numer HMG'))}"></label><label class="hp-field"><span>${E(c.t('category'))}</span><select data-admin-filter="category">${option('',L('Усі категорії','Wszystkie kategorie'),filters.category)}${c.t('categories').map((x,i)=>option(i,x,filters.category)).join('')}</select></label><label class="hp-field"><span>${E(c.t('status'))}</span><select data-admin-filter="status">${option('',L('Усі статуси','Wszystkie statusy'),filters.status)}${c.t('statuses').map((x,i)=>option(i,x,filters.status)).join('')}</select></label><label class="hp-field"><span>${E(L('Позначки','Oznaczenia'))}</span><select data-admin-filter="mark">${[['',L('Усі товари','Wszystkie produkty')],['new',c.t('newArrival')],['best',c.t('bestseller')],['discount',L('Зі знижкою','Z rabatem')],['empty',L('Кількість — 0','Ilość — 0')]].map(([v,l])=>option(v,l,filters.mark)).join('')}</select></label><label class="hp-field"><span>${E(L('Сортування','Sortowanie'))}</span><select data-admin-filter="sort">${[['updated',L('Нещодавно змінені','Ostatnio zmienione')],['name',L('За назвою','Nazwa')],['priceAsc',L('Від дешевих','Od najtańszych')],['priceDesc',L('Від дорогих','Od najdroższych')]].map(([v,l])=>option(v,l,filters.sort)).join('')}</select></label><button type="button" class="hp-button" data-admin-clear-filters>${E(L('Скинути фільтри','Wyczyść filtry'))}</button></div>
+  cleanSelection();const visible=rows(),promotionExpanded=q('#hm-admin-promotion-tools')?.open||false;
+  return `<section class="hm-admin-catalog" data-admin-catalog aria-busy="${busy}"><div class="hp-intro"><div><h1>${E(c.t('manage'))}</h1><p class="hp-muted">${E(L('Позначки груп зберігаються в один клік. Ціну, знижку, кількість і статус можна змінити в рядку.','Oznaczenia grup zapisujesz jednym kliknięciem. Cenę, rabat, ilość i status możesz zmienić w wierszu.'))}</p></div><button type="button" class="hp-button hp-primary" id="hp-new" ${busy?'disabled':''}>${c.icon('plus')}${E(c.t('newProduct'))}</button></div>
+  <nav id="hm-admin-groups" class="hm-admin-group-tabs" aria-label="${E(L('Групи товарів','Grupy produktów'))}">${groupButtons()}</nav><details id="hm-admin-promotion-tools" class="hm-admin-promotion-tools" ${promotionExpanded?'open':''}><summary>${c.icon('timer')}${E(L('Акція та таймер','Promocja i licznik'))}</summary>${promotionMarkup()}</details><div class="hm-admin-filters"><label class="hp-field hm-admin-search"><span>${E(L('Пошук товарів','Szukaj produktów'))}</span><input id="hm-admin-search" type="search" value="${E(filters.search)}" placeholder="${E(L('Назва, бренд або HMG-номер','Nazwa, marka lub numer HMG'))}"></label><label class="hp-field"><span>${E(c.t('category'))}</span><select data-admin-filter="category">${option('',L('Усі категорії','Wszystkie kategorie'),filters.category)}${c.t('categories').map((x,i)=>option(i,x,filters.category)).join('')}</select></label><label class="hp-field"><span>${E(c.t('status'))}</span><select data-admin-filter="status">${option('',L('Усі статуси','Wszystkie statusy'),filters.status)}${c.t('statuses').map((x,i)=>option(i,x,filters.status)).join('')}</select></label><label class="hp-field"><span>${E(L('Позначки','Oznaczenia'))}</span><select data-admin-filter="mark">${[['',L('Усі товари','Wszystkie produkty')],['discount',L('Зі знижкою','Z rabatem')],['empty',L('Кількість — 0','Ilość — 0')]].map(([v,l])=>option(v,l,filters.mark)).join('')}</select></label><label class="hp-field"><span>${E(L('Сортування','Sortowanie'))}</span><select data-admin-filter="sort">${[['updated',L('Нещодавно змінені','Ostatnio zmienione')],['name',L('За назвою','Nazwa')],['priceAsc',L('Від дешевих','Od najtańszych')],['priceDesc',L('Від дорогих','Od najdroższych')]].map(([v,l])=>option(v,l,filters.sort)).join('')}</select></label><button type="button" class="hp-button" data-admin-clear-filters>${E(L('Скинути фільтри','Wyczyść filtry'))}</button></div>
   <div class="hm-admin-summary"><span id="hm-admin-result-count">${visible.length} / ${c.products.length} ${E(L('товарів','produktów'))}</span><span id="hm-admin-draft-count"></span></div><form id="hm-admin-bulk-form" class="hm-admin-bulk"><label class="hm-admin-select-all"><input id="hm-admin-select-all" type="checkbox" ${busy?'disabled':''}>${E(L('Обрати показані','Wybierz widoczne'))}</label><strong id="hm-admin-selected-count">${E(L('Обрано','Wybrano'))}: ${selected.size}</strong><label class="hp-field"><span>${E(L('Масова дія','Zmiana zbiorcza'))}</span><select id="hm-admin-bulk-field" ${busy?'disabled':''}>${['discount','newArrival','bestseller','status'].map(key=>option(key,labels()[key],bulkField)).join('')}</select></label><label class="hp-field"><span>${E(L('Нове значення','Nowa wartość'))}</span><span id="hm-admin-bulk-control">${valueControl()}</span></label><button type="submit" class="hp-button" id="hm-admin-review-button" ${!selected.size||busy?'disabled':''}>${E(L('Переглянути зміни','Sprawdź zmiany'))}</button><button type="button" class="hp-button" data-admin-clear-selection ${!selected.size||busy?'disabled':''}>${E(L('Зняти вибір','Odznacz'))}</button><small>${E(L('До 100 товарів за одну операцію. При зміні пошуку або фільтрів вибір скидається.','Do 100 produktów w jednej operacji. Zmiana wyszukiwania lub filtrów usuwa zaznaczenie.'))}</small></form>
   <div id="hm-admin-message" role="${error?'alert':'status'}" class="hm-admin-message ${error?'is-error':''}" ${message?'':'hidden'}>${E(message)}</div><div id="hm-admin-bulk-preview">${previewMarkup()}</div><div id="hm-admin-results" class="hp-admin-list">${visible.map(productRow).join('')||`<div class="hp-empty">${E(L('Нічого не знайдено. Зміни пошук або скинь фільтри.','Brak wyników. Zmień wyszukiwanie lub usuń filtry.'))}</div>`}</div><div class="hm-admin-selection-bar" id="hm-admin-selection-bar" ${selected.size?'':'hidden'}><strong id="hm-admin-mobile-count">${E(L('Обрано','Wybrano'))}: ${selected.size}</strong><button type="button" class="hp-button hp-primary" data-admin-goto-bulk>${E(L('Масова зміна','Zmiana zbiorcza'))}</button></div></section>`;
  }
  function sync(){
+  q('[data-admin-catalog]')?.setAttribute('aria-busy',String(busy));
   if(busy)q('[data-admin-catalog]')?.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);
   const list=rows(),checkbox=q('#hm-admin-select-all');if(checkbox){checkbox.checked=list.length>0&&list.every(p=>selected.has(p.id));checkbox.indeterminate=list.some(p=>selected.has(p.id))&&!checkbox.checked;}
   const bar=q('#hm-admin-selection-bar');if(bar)bar.hidden=!selected.size;const mobile=q('#hm-admin-mobile-count');if(mobile)mobile.textContent=L('Обрано','Wybrano')+': '+selected.size;q('[data-admin-catalog]')?.classList.toggle('has-selection',selected.size>0);
@@ -119,7 +132,7 @@ export function createAdminCatalog(c) {
  function renderResults(){
   cleanSelection();const list=rows(),results=q('#hm-admin-results');if(results)results.innerHTML=list.map(productRow).join('')||`<div class="hp-empty">${E(L('Нічого не знайдено. Зміни пошук або скинь фільтри.','Brak wyników. Zmień wyszukiwanie lub usuń filtry.'))}</div>`;
   const count=q('#hm-admin-result-count');if(count)count.textContent=`${list.length} / ${c.products.length} `+L('товарів','produktów');
-  sync();c.refreshIcons();
+  refreshGroups();sync();c.refreshIcons();
  }
  function handleInput(el){
   if(!c.admin||c.view!=='admin'||busy)return false;
@@ -146,6 +159,49 @@ export function createAdminCatalog(c) {
   if(el.id==='hm-admin-bulk-field'){bulkField=el.value;bulkValue=bulkField==='discount'||bulkField==='status'?'0':'true';preview=null;q('#hm-admin-bulk-control').innerHTML=valueControl();sync();return true;}
   return handleInput(el);
  }
+
+ function refreshMarkedRow(id){
+  if(!c.admin||c.view!=='admin')return;
+  const row=q('[data-admin-row="'+id+'"]'),product=rows().find(p=>p.id===id);
+  if(row){if(product)row.outerHTML=productRow(product);else{row.remove();selected.delete(id);}}
+  const list=rows(),results=q('#hm-admin-results');
+  if(!list.length&&results)results.innerHTML=`<div class="hp-empty">${E(L('У цій групі немає товарів за вибраними фільтрами.','W tej grupie nie ma produktów dla wybranych filtrów.'))}</div>`;
+  const count=q('#hm-admin-result-count');if(count)count.textContent=list.length+' / '+c.products.length+' '+L('товарів','produktów');
+  refreshGroups();sync();c.refreshIcons();
+ }
+ async function persistMark(id,field){
+  if(!c.admin||c.view!=='admin'||busy)return;
+  const base=c.products.find(p=>p.id===id);if(!base)return;
+  let changes;try{changes=planMarkToggle(base,field);}catch{return;}
+  const catalog=q('[data-admin-catalog]');
+  const controls=Array.from(catalog?.querySelectorAll('input,select,button')||[],el=>({el,disabled:el.disabled}));
+  busy=true;savingMark={id,field};preview=null;message='';error=false;markFeedback.delete(id);refreshMarkedRow(id);
+  try{
+   const saved=await c.db.quickUpdateProducts(changes);
+   if(saved.length!==1||saved[0].id!==id||quickValue(saved[0],field)!==changes[0].fields[field])throw Error('saveUnconfirmed');
+   c.applyProducts(saved);
+   const draft=drafts.get(id);if(draft?.base.updated_at===base.updated_at)draft.base={...saved[0]};
+   if(promoDraft?.base.id===id&&promoDraft.base.updated_at===base.updated_at)promoDraft.base={...saved[0]};
+   const label=field==='bestseller'?L('Бестселер','Bestseller'):L('Нове надходження','Nowość');
+   message=label+': '+(saved[0][field]==='true'?L('додано','dodano'):L('прибрано','usunięto'))+'.';
+   markFeedback.set(id,{text:L('Збережено','Zapisano'),error:false});c.notify(message);
+  }catch(e){
+   error=true;
+   message=/editConflict/.test(e.message||'')?L('Товар змінився в іншому місці. Оновлюю дані — перевір позначку та повтори.','Produkt zmienił się w innym miejscu. Odświeżam dane — sprawdź oznaczenie i spróbuj ponownie.'):/notAdmin|permission/i.test(e.message||'')?L('Увійди в адмінку повторно.','Zaloguj się ponownie.'):L('Не вдалося підтвердити збереження позначки. Перевір з’єднання й повтори.','Nie udało się potwierdzić zapisu oznaczenia. Sprawdź połączenie i spróbuj ponownie.');
+   markFeedback.set(id,{text:message,error:true});
+   try{await c.refresh();}catch{}
+  }finally{
+   busy=false;savingMark=null;
+   for(const {el,disabled} of controls)if(el.isConnected)el.disabled=disabled;
+   if(c.admin&&c.view==='admin'&&q('[data-admin-catalog]')!==catalog){c.render();sync();}
+   else refreshMarkedRow(id);
+   if(c.admin&&c.view==='admin'){
+    const button=q('[data-admin-row="'+id+'"] [data-admin-mark="'+field+'"]');
+    (button||q('[data-admin-group="'+filters.group+'"]'))?.focus({preventScroll:true});
+   }
+  }
+ }
+
  async function persist(changes){
   if(busy||!c.admin)return;
   if(!changes.length){message=L('Значення вже такі — змін немає.','Wartości są już takie — brak zmian.');error=false;sync();return;}
@@ -178,10 +234,16 @@ export function createAdminCatalog(c) {
  async function handleClick(b){
   if(!b.closest('[data-admin-catalog]'))return false;
   if(!c.admin||busy)return true;
+  if(b.hasAttribute('data-admin-group')){
+   const group=b.dataset.adminGroup;if(!['','new','best'].includes(group))return true;
+   filters.group=group;selected.clear();preview=null;message='';error=false;renderResults();
+   q('[data-admin-group="'+group+'"]')?.focus({preventScroll:true});return true;
+  }
+  if(b.hasAttribute('data-admin-mark')){await persistMark(Number(b.dataset.adminProduct),b.dataset.adminMark);return true;}
   if(b.hasAttribute('data-promo-clear')){const p=promotionProduct();if(p){promoDraft={base:{...p},fields:{...promotionFields(p),discount:'0',salePrice:'',promoStartLocal:'',promoEndLocal:'',promoHome:'',promoTitleUk:'',promoTitlePl:''}};promoMessage=L('Акцію очищено у формі. Натисни «Зберегти акцію», щоб застосувати.','Promocja wyczyszczona w formularzu. Kliknij „Zapisz promocję”, aby zastosować.');promoError=false;refreshPromotion();}return true;}
   if(b.hasAttribute('data-admin-goto-bulk')){q('#hm-admin-bulk-form')?.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});return true;}
   if(b.hasAttribute('data-admin-reset')){drafts.delete(Number(b.dataset.adminReset));renderResults();return true;}
-  if(b.hasAttribute('data-admin-clear-filters')){Object.assign(filters,{search:'',category:'',status:'',mark:'',sort:'updated'});selected.clear();preview=null;message='';c.render();sync();return true;}
+  if(b.hasAttribute('data-admin-clear-filters')){Object.assign(filters,{search:'',category:'',status:'',group:'',mark:'',sort:'updated'});selected.clear();preview=null;message='';c.render();sync();return true;}
   if(b.hasAttribute('data-admin-clear-selection')){selected.clear();preview=null;renderResults();return true;}
   if(b.hasAttribute('data-admin-cancel-preview')){preview=null;sync();return true;}
   if(b.hasAttribute('data-admin-apply')){if(preview)await persist(preview.changes);return true;}
