@@ -173,7 +173,8 @@ export function createAdminCatalog(c) {
   if(!c.admin||c.view!=='admin'||busy)return;
   const base=c.products.find(p=>p.id===id);if(!base)return;
   let changes;try{changes=planMarkToggle(base,field);}catch{return;}
-  const controls=Array.from(q('[data-admin-catalog]')?.querySelectorAll('input,select,button')||[],el=>({el,disabled:el.disabled}));
+  const catalog=q('[data-admin-catalog]');
+  const controls=Array.from(catalog?.querySelectorAll('input,select,button')||[],el=>({el,disabled:el.disabled}));
   busy=true;savingMark={id,field};preview=null;message='';error=false;markFeedback.delete(id);refreshMarkedRow(id);
   try{
    const saved=await c.db.quickUpdateProducts(changes);
@@ -192,7 +193,8 @@ export function createAdminCatalog(c) {
   }finally{
    busy=false;savingMark=null;
    for(const {el,disabled} of controls)if(el.isConnected)el.disabled=disabled;
-   refreshMarkedRow(id);
+   if(c.admin&&c.view==='admin'&&q('[data-admin-catalog]')!==catalog){c.render();sync();}
+   else refreshMarkedRow(id);
    if(c.admin&&c.view==='admin'){
     const button=q('[data-admin-row="'+id+'"] [data-admin-mark="'+field+'"]');
     (button||q('[data-admin-group="'+filters.group+'"]'))?.focus({preventScroll:true});

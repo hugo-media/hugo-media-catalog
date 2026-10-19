@@ -126,3 +126,14 @@ test('saving a mark preserves an unsaved price draft and rebases it onto the ret
  assert.equal(h.writes[1][0].expected_updated_at,'2026-10-19T06:50:00Z');
  assert.deepEqual(h.writes[1][0].fields,{price:1500});
 });
+
+test('changing the catalog view during a pending save restores the new view to an enabled state',async()=>{
+ let release;
+ const h=markHarness((changes,c)=>new Promise(resolve=>{release=()=>resolve([{...c.products[0],bestseller:'true',updated_at:'2026-10-19T06:50:00Z'}]);}));
+ const block=()=>({querySelectorAll:()=>[],setAttribute:()=>{},classList:{toggle:()=>{}}});
+ let current=block();h.c.root.querySelector=selector=>selector==='[data-admin-catalog]'?current:null;
+ const pending=h.ui.handleClick(h.button());
+ current=block();h.c.lang='pl';release();await pending;
+ assert.equal(h.c.products[0].bestseller,'true');assert.equal(h.renderCount,1);
+ assert.match(h.ui.render(),/aria-busy="false"/);
+});
