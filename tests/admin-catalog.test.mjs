@@ -89,7 +89,7 @@ test('pending clicks do not pretend to save or issue a duplicate write',async()=
  const h=markHarness((changes,c)=>new Promise(resolve=>{release=()=>resolve([{...c.products[0],bestseller:'true',updated_at:'2026-10-19T06:50:00Z'}]);}));
  const pending=h.ui.handleClick(h.button());
  assert.equal(h.writes.length,1);assert.equal(h.c.products[0].bestseller,'');
- assert.match(h.ui.render(),/Зберігаю…/);
+ assert.match(h.ui.render(),/Зберігаю позначку…/);
  await h.ui.handleClick(h.button());assert.equal(h.writes.length,1);
  release();await pending;assert.equal(h.c.products[0].bestseller,'true');
 });
@@ -134,6 +134,26 @@ test('changing the catalog view during a pending save restores the new view to a
  let current=block();h.c.root.querySelector=selector=>selector==='[data-admin-catalog]'?current:null;
  const pending=h.ui.handleClick(h.button());
  current=block();h.c.lang='pl';release();await pending;
- assert.equal(h.c.products[0].bestseller,'true');assert.equal(h.renderCount,1);
+ assert.equal(h.c.products[0].bestseller,'true');assert.equal(h.renderCount,0);
  assert.match(h.ui.render(),/aria-busy="false"/);
+});
+
+test('independent product mark saves proceed together while duplicate clicks on one row are ignored',async()=>{
+ const release=new Map(),h=markHarness((changes,c)=>new Promise(resolve=>release.set(changes[0].id,()=>resolve([{...c.products.find(p=>p.id===changes[0].id),...changes[0].fields,updated_at:'2026-10-19T07:00:00Z'}]))));
+ h.c.products.push({...h.c.products[0],id:44,name:'Dell'});
+ const first=h.ui.handleClick(h.button('bestseller',43));
+ const second=h.ui.handleClick(h.button('newArrival',44));
+ await h.ui.handleClick(h.button('newArrival',43));
+ assert.equal(h.writes.length,2);
+ release.get(43)();await first;release.get(44)();await second;
+ assert.equal(h.c.products[0].bestseller,'true');assert.equal(h.c.products[1].newArrival,'');
+ assert.equal(h.renderCount,0);
+});
+test('active marks explain removal explicitly and invalid version errors are visible',async()=>{
+ const h=markHarness();h.c.products[0].bestseller='true';
+ assert.match(h.ui.render(),/aria-label="Прибрати: Бестселер/);
+ h.c.products[0].updated_at='';
+ await h.ui.handleClick(h.button());
+ assert.equal(h.writes.length,0);
+ assert.match(h.ui.render(),/Не вдалося підготувати зміну/);
 });
