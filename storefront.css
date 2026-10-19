@@ -1324,7 +1324,7 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
 }
 @media(prefers-reduced-motion:reduce){
   #hugo-preview.hp-storefront .hm-spotlight::before,
-  #hugo-preview.hp-storefront .hm-spotlight .hp-photo img,
+  #hugo-preview.hp-storefront .hm-spotlight .hm-hero-product .hp-photo img,
   #hugo-preview.hp-storefront .hm-spotlight-dot.is-active span::after{animation:none}
   #hugo-preview.hp-storefront .hm-spotlight-slide,
   #hugo-preview.hp-storefront .hm-spotlight-dot span{transition:none;transform:none}
