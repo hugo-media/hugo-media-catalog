@@ -4291,3 +4291,9 @@ body {
  #hugo-preview .hm-admin-product .hm-admin-full-actions{justify-content:flex-end}
  #hugo-preview .hm-admin-mark-toggle{font-size:14px;min-height:48px;padding:11px 9px}
 }
+
+#hugo-preview .hm-admin-mark-toggle>span{display:flex;flex-direction:column;gap:3px;text-align:left;min-width:0}
+#hugo-preview .hm-admin-mark-toggle strong{font-size:inherit;font-weight:650}
+#hugo-preview .hm-admin-mark-toggle small{font-size:11px;line-height:1.2;font-weight:500}
+#hugo-preview .hm-admin-mark-toggle{min-height:54px}
+@media(max-width:650px){#hugo-preview .hm-admin-mark-toggle small{font-size:12px}}
