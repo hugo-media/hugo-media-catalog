@@ -21,6 +21,8 @@ export function mountHomeSpotlight(root) {
     if (disposed) return;
     const playing = wantsRotation && inView && !hovered && !doc.hidden;
     root.classList.toggle('is-playing', playing);
+    // Keep the decorative motion visible on hover while slide rotation waits.
+    root.classList.toggle('has-motion', wantsRotation && inView && !doc.hidden && !motion.matches);
     stage.setAttribute('aria-live', playing ? 'off' : 'polite');
     toggle.setAttribute('aria-label', wantsRotation ? toggle.dataset.pauseLabel : toggle.dataset.playLabel);
     toggle.querySelector('[data-spotlight-toggle-text]').textContent = wantsRotation ? toggle.dataset.pauseText : toggle.dataset.playText;

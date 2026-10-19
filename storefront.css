@@ -1256,8 +1256,17 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
 #hugo-preview.hp-storefront .hm-spotlight-stage{position:relative;display:grid;min-width:0;touch-action:pan-y pinch-zoom}
 #hugo-preview.hp-storefront .hm-spotlight-stage::before{
   content:"";position:absolute;z-index:-1;inset:42px 3% 32%;border-radius:50%;
-  background:linear-gradient(145deg,#e6d9f280,#eee7f34d);transform:rotate(-14deg);pointer-events:none;
+  background:radial-gradient(ellipse at 50% 45%,#c6a5e955,#e6d9f280 48%,#eee7f322 74%);
+  transform:rotate(-14deg);pointer-events:none;
+  animation:hm-spotlight-aura 5.2s ease-in-out infinite paused;
 }
+#hugo-preview.hp-storefront .hm-spotlight-stage::after{
+  content:"";position:absolute;z-index:-1;inset:49px 5% 34%;border:1px solid #b18bd574;border-radius:50%;
+  transform:rotate(-14deg) scale(.9);opacity:0;pointer-events:none;
+  animation:hm-spotlight-ripple 5.2s ease-out infinite paused;
+}
+#hugo-preview.hp-storefront .hm-spotlight.has-motion .hm-spotlight-stage::before,
+#hugo-preview.hp-storefront .hm-spotlight.has-motion .hm-spotlight-stage::after{animation-play-state:running}
 #hugo-preview.hp-storefront .hm-spotlight-slide{
   grid-area:1/1;min-width:0;visibility:hidden;opacity:0;transform:translateX(18px);pointer-events:none;
   transition:opacity .45s ease,transform .45s ease,visibility .45s;
@@ -1279,7 +1288,7 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
   display:block;width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;opacity:1;
   filter:none;transform:none;animation:hm-spotlight-float 6.5s ease-in-out infinite paused;
 }
-#hugo-preview.hp-storefront .hm-spotlight.is-playing .is-active .hp-photo img{animation-play-state:running}
+#hugo-preview.hp-storefront .hm-spotlight.has-motion .is-active .hp-photo img{animation-play-state:running}
 #hugo-preview.hp-storefront .hm-spotlight .hm-hero-product-caption{
   display:grid;gap:0;min-width:0;padding:14px 0 12px;border-top:1px solid #c5b7d54d;
 }
@@ -1341,7 +1350,19 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
   #hugo-preview.hp-storefront .hm-spotlight .hm-hero-product:hover .hm-spotlight-detail{background:#211a2d;border-color:#211a2d;color:#fff}
   #hugo-preview.hp-storefront .hm-hero.hm-hero-premium .hm-hero-actions>.hp-primary:hover{background:#4d3371;border-color:#4d3371}
 }
-@keyframes hm-spotlight-float{50%{transform:translateY(-4px)}}
+@keyframes hm-spotlight-float{
+  0%,100%{transform:translate3d(0,0,0) rotate(-.8deg) scale(1)}
+  50%{transform:translate3d(0,-10px,0) rotate(1.2deg) scale(1.025)}
+}
+@keyframes hm-spotlight-aura{
+  0%,100%{transform:rotate(-14deg) scale(.94);opacity:.6}
+  50%{transform:rotate(-9deg) scale(1.055);opacity:1}
+}
+@keyframes hm-spotlight-ripple{
+  0%{transform:rotate(-14deg) scale(.88);opacity:0}
+  22%{opacity:.5}
+  85%,100%{transform:rotate(-10deg) scale(1.1);opacity:0}
+}
 @keyframes hm-spotlight-progress{to{transform:scaleX(1)}}
 @media(max-width:1100px) and (min-width:761px){
   #hugo-preview.hp-storefront .hm-hero.hm-hero-premium{padding:30px;gap:24px}
@@ -1386,6 +1407,8 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
   #hugo-preview.hp-storefront .hm-spotlight-arrows{gap:0}
 }
 @media(prefers-reduced-motion:reduce){
+  #hugo-preview.hp-storefront .hm-spotlight-stage::before,
+  #hugo-preview.hp-storefront .hm-spotlight-stage::after,
   #hugo-preview.hp-storefront .hm-spotlight .hm-hero-product .hp-photo img,
   #hugo-preview.hp-storefront .hm-spotlight-dot.is-active span::after{animation:none}
   #hugo-preview.hp-storefront .hm-spotlight-slide,
