@@ -72,6 +72,7 @@ test('homepage spotlight supports auto, pause, real pointer controls, touch, nar
   const targets=await until(async()=>await(await fetch('http://127.0.0.1:'+new URL(endpoint).port+'/json/list')).json(),rows=>rows.some(row=>row.type==='page'),'Chrome page');
   cdp=connect(targets.find(row=>row.type==='page').webSocketDebuggerUrl);
   await cdp.send('Page.enable');await cdp.send('Runtime.enable');
+  await cdp.send('Emulation.setFocusEmulationEnabled',{enabled:true});
   const evaluate=async(expression)=>{const r=await cdp.send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value;};
   const count=()=>evaluate('document.querySelector("[data-spotlight-current]").textContent');
   const active=()=>evaluate('Number(document.querySelector(".hm-spotlight-slide.is-active a").dataset.detail)');
