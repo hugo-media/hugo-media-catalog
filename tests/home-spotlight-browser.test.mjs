@@ -78,7 +78,7 @@ test('homepage spotlight supports auto, pause, real pointer controls, touch, nar
   const active=()=>evaluate('Number(document.querySelector(".hm-spotlight-slide.is-active a").dataset.detail)');
   const playing=()=>evaluate('document.querySelector("[data-home-spotlight]").classList.contains("is-playing")');
   const click=async selector=>{
-   const pos=await evaluate('(()=>{const el=document.querySelector('+JSON.stringify(selector)+');if(!el)throw Error("Missing click target");el.scrollIntoView({block:"center"});const r=el.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()');
+   const pos=await until(()=>evaluate('(()=>{const el=document.querySelector('+JSON.stringify(selector)+');if(!el)throw Error("Missing click target");const slide=el.closest("[data-spotlight-slide]");if(slide&&getComputedStyle(slide).opacity!=="1")return null;el.scrollIntoView({block:"center",behavior:"instant"});const r=el.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2,hit=document.elementFromPoint(x,y);return hit&&(hit===el||el.contains(hit))?{x,y}:null;})()'),Boolean,'click target is visible and receives pointer events');
    await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...pos});
    await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...pos});
   };
