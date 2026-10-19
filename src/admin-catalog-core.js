@@ -42,12 +42,24 @@ export function planQuickChanges(products,ids,fields) {
  });
 }
 
+export function planMarkToggle(product,field) {
+ if(!product||!['newArrival','bestseller'].includes(field))throw Error('validation');
+ return planQuickChanges([product],[product.id],{[field]:quickValue(product,field)==='true'?'':'true'});
+}
+
+export function adminGroupCounts(products,filters={}) {
+ const matching=filterAdminProducts(products,{...filters,group:''});
+ return {all:matching.length,new:matching.filter(p=>p.newArrival==='true').length,best:matching.filter(p=>p.bestseller==='true').length};
+}
+
 export function filterAdminProducts(products,filters={}) {
  const normalized=value=>String(value||'').normalize('NFKC').toLocaleLowerCase('uk').trim();
  const terms=normalized(filters.search).split(/\s+/).filter(Boolean);
  const rows=products.filter(p=>{
   if(filters.category!==''&&filters.category!=null&&Number(p.cat)!==Number(filters.category))return false;
   if(filters.status!==''&&filters.status!=null&&Number(p.status)!==Number(filters.status))return false;
+  if(filters.group==='new'&&p.newArrival!=='true')return false;
+  if(filters.group==='best'&&p.bestseller!=='true')return false;
   if(filters.mark==='new'&&p.newArrival!=='true')return false;
   if(filters.mark==='best'&&p.bestseller!=='true')return false;
   if(filters.mark==='discount'&&!configuredDiscountPercent(p))return false;
