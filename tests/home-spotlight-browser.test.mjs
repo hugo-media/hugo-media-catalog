@@ -87,7 +87,8 @@ test('homepage spotlight supports auto, pause, real pointer controls, touch, nar
   assert.equal(await count(),'01');
   await until(active,id=>id===2,'automatic rotation',170);
   assert.equal(await count(),'02');
-  await evaluate('document.querySelector(".hm-spotlight-slide.is-active a").focus()');
+  await until(()=>evaluate('getComputedStyle(document.querySelector(".hm-spotlight-slide.is-active")).opacity'),value=>value==='1','incoming slide is visually ready');
+  assert.equal(await evaluate('(()=>{const link=document.querySelector(".hm-spotlight-slide.is-active a");link.focus();return document.activeElement===link;})()'),true,'The visible product link must accept keyboard focus');
   assert.equal(await playing(),false,'Keyboard focus stops rotation until explicit restart');
   assert.equal(await evaluate('document.querySelector("[data-spotlight-toggle]").getAttribute("aria-label")'),'Увімкнути автоперемикання');
   await click('[data-spotlight-step="1"]');
