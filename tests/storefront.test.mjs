@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizedSpec,specLabel,filterValues,homeSelection,homeCollections,createStorefront,displayBrand,availabilityRank,matchesAvailability,catalogSort,comparisonSelection,comparisonRows,productMediaUrl} from '../src/storefront.js';
+import {spotlightProducts,normalizedSpec,specLabel,filterValues,homeSelection,homeCollections,createStorefront,displayBrand,availabilityRank,matchesAvailability,catalogSort,comparisonSelection,comparisonRows,productMediaUrl} from '../src/storefront.js';
 import {escapeHtml} from '../src/seo-core.js';
 test('mixed existing screen and capacity formats produce usable sorted filters',()=>{
  assert.deepEqual(filterValues([{ram:'16'},{ram:'8 GB'},{ram:'32'},{ram:'8'}],'ram'),['8','16','32']);
@@ -189,4 +189,33 @@ test('product media requires a real post path rather than a channel-only URL',()
  assert.equal(productMediaUrl('https://t.me/h_m_g_pl/123'),'https://t.me/h_m_g_pl/123');
  assert.equal(productMediaUrl('https://telegram.me/s/h_m_g_pl/123?single'),'https://t.me/h_m_g_pl/123');
  assert.equal(productMediaUrl(' https://t.me/h_m_g_pl/123?single '),'https://t.me/h_m_g_pl/123');
+});
+
+
+test('spotlight preserves the chosen first item and skips unavailable, duplicate, photo-less and daily-pick items',()=>{
+ const base={cat:0,status:0,quantity:'1',price:1000,name:'Laptop',images:['photo.webp']};
+ const items=[{...base,id:1},{...base,id:2,bestseller:'true'},{...base,id:3,newArrival:'true'},
+  {...base,id:4,bestseller:'true',status:2},{...base,id:5,newArrival:'true',quantity:'0'},
+  {...base,id:6,newArrival:'true',images:[]},{...base,id:7,bestseller:'true'}];
+ assert.deepEqual(spotlightProducts(items,[items[6]],1).map(p=>p.id),[1,2,3]);
+ assert.equal(spotlightProducts(items,[],3)[0].id,3);
+ assert.equal(spotlightProducts([{...base,id:1,status:2}],[],1).length,0);
+ assert.equal(spotlightProducts([items[0]],[],1).length,1);
+});
+
+test('spotlight uses localized native controls and one usable product link before enhancement',()=>{
+ const base={cat:0,status:0,quantity:'1',price:1000,images:['photo.webp']};
+ const products=[{...base,id:1,name:'Chosen <laptop>'},{...base,id:2,name:'Bestseller',bestseller:'true'}];
+ const c={lang:'pl',esc:escapeHtml,t:key=>key,icon:()=>'',stockQty:()=>1,reviewsBlock:()=>'',compare:[],homepage:{featuredProductId:1,featuredLabel:{pl:'Wybrany model'}},photo:(p,o)=>'<div class="hp-photo" data-priority="'+o?.priority+'"></div>',productTitle:p=>p.name,priceBlock:()=>'',localizedValue:value=>value,money:String};
+ const html=createStorefront(c).home(products,[]);
+ assert.match(html,/Poznaj bliżej/);
+ assert.match(html,/Wybrany model/);
+ assert.match(html,/Następny produkt/);
+ assert.match(html,/data-spotlight-toggle hidden/);
+ assert.match(html,/aria-hidden="true" inert/);
+ assert.match(html,/Chosen &lt;laptop&gt;/);
+ assert.equal((html.match(/data-priority="true"/g)||[]).length,1);
+ assert.equal((html.match(/data-spotlight-slide/g)||[]).length,2);
+ const single=createStorefront(c).home([products[0]],[]);
+ assert.doesNotMatch(single,/data-spotlight-toggle|data-spotlight-controls/);
 });

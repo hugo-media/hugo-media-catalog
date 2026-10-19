@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node scripts/build.mjs && node scripts/verify-build.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check src/intro.js && node --check src/app.js && node --check src/data.js && node --check src/core.js && node --check src/seo-core.js && node --check src/seo-client.js && node --check src/enhancements.js && node --check src/enhancement-core.js && node --check src/drafts.js && node --check src/storefront.js && node --check api/seo.js && node --check src/admin-catalog.js && node --check src/admin-catalog-core.js && node --check scripts/build.mjs && node --check scripts/verify-build.mjs && node --check supabase/functions/hmg-telegram-admin/bot-core.mjs && node --check supabase/functions/hmg-telegram-admin/handler.mjs && node --check src/device-fields.js"
+    "check": "node --check src/intro.js && node --check src/app.js && node --check src/data.js && node --check src/core.js && node --check src/seo-core.js && node --check src/seo-client.js && node --check src/enhancements.js && node --check src/enhancement-core.js && node --check src/drafts.js && node --check src/storefront.js && node --check src/home-spotlight.js && node --check api/seo.js && node --check src/admin-catalog.js && node --check src/admin-catalog-core.js && node --check scripts/build.mjs && node --check scripts/verify-build.mjs && node --check supabase/functions/hmg-telegram-admin/bot-core.mjs && node --check supabase/functions/hmg-telegram-admin/handler.mjs && node --check src/device-fields.js"
   },
   "engines": {
     "node": ">=22"

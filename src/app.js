@@ -7,6 +7,7 @@ import { configuration } from './core.js';
 import { safeSearch, startFunnel } from './insights-core.js';
 import { validateAnalyticsDates, presetAnalyticsDates, analyticsBuckets, dailyAnalytics, analyticsDateLabel, analyticsPeriodLabel } from './analytics-core.js';
 import { renderAnalyticsOverview, ANALYTICS_TREND_KEYS } from './analytics-chart.js';
+import { mountHomeSpotlight } from './home-spotlight.js';
 import { createAdminCatalog } from './admin-catalog.js';
 import { createStorefront, normalizedSpec, specLabel, filterValues, displayBrand, matchesAvailability, catalogSort, comparisonSelection, comparisonRows, productMediaUrl } from "./storefront.js";
 import { createEnhancements } from "./enhancements.js";
@@ -38,6 +39,7 @@ import {
   const q = (s) => root.querySelector(s);
   const all = (s) => [...root.querySelectorAll(s)];
   let mobileOrderObserver = null;
+  let cleanupHomeSpotlight = () => {};
   function updateCategoryScroll() {
     const nav=q('#hp-categories');
     if(!nav) return;
@@ -2231,6 +2233,8 @@ import {
     return `<div class="hm-loading-state" role="status" aria-live="polite"><span class="hm-loading-mark" aria-hidden="true"><span>H</span></span><span class="hm-loading-brand">HUGO MEDIA</span><span class="hm-loading-copy">${esc(label)}</span><span class="hm-loading-track" aria-hidden="true"><span></span></span></div>`;
   }
   function render() {
+    cleanupHomeSpotlight();
+    cleanupHomeSpotlight = () => {};
     mobileOrderObserver?.disconnect();
     mobileOrderObserver = null;
     const detailOpen = view==='detail' && q('.hm-compact-detail')?.dataset.detailProduct===String(selected)
@@ -2454,6 +2458,7 @@ import {
       else { view = "admin"; history.replaceState(null, "", "?admin"); render(); return; }
     }
     if (view === "edit") renderForm();
+    cleanupHomeSpotlight = mountHomeSpotlight(q('[data-home-spotlight]'));
     extra.afterRender();
     if (admin && view === "admin") adminCatalog.afterRender();
     for(const [id,open] of detailOpen){const el=document.getElementById(id);if(el)el.open=open;}
