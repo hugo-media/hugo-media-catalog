@@ -53,10 +53,11 @@ test('homepage shows three new arrivals and six bestsellers',()=>{
  assert.equal(new Set([...collections.newArrivals,...collections.bestsellers].map(p=>p.id)).size,9);
 });
 
-test('homepage keeps the localized admin SEO heading and intro visible after hydration',()=>{
+test('homepage uses a localized campaign heading while keeping the admin SEO intro',()=>{
  const app=createStorefront({lang:'pl',esc:escapeHtml,t:value=>value,icon:()=>'',stockQty:()=>1,reviewsBlock:()=>'',compare:[]});
  const html=app.home([],[],{title:'Używane laptopy w Polsce | Hugo Media',intro:'Porównaj <modele> i ceny.\n\nSprawdź dostępność.'});
- assert.match(html,/<h1>Używane laptopy w Polsce<\/h1>/);
+ assert.match(html,/<h1><span>Sięgaj<\/span> <span class="hm-hero-accent">po więcej\.<\/span><\/h1>/);
+ assert.doesNotMatch(html,/<h1>Używane laptopy/);
  assert.match(html,/<section class="hm-seo-copy"><p>Porównaj &lt;modele&gt; i ceny\.<\/p><p>Sprawdź dostępność\.<\/p><\/section>/);
 });
 

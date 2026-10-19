@@ -2,7 +2,7 @@ import { plainDescription } from '../src/catalog-content.js';
 import {deviceSpecRows,localizedSpecValue,resolveDeviceType,deviceFieldLabel} from '../src/device-fields.js';
 import { readFile } from 'node:fs/promises';
 import { fromRow, publicConfigValid, promotionState } from '../src/core.js';
-import { createStorefront } from '../src/storefront.js';
+import { createStorefront, homeCampaign } from '../src/storefront.js';
 import { ORIGIN, categories, labels, parseRoute, pagePath, catalogPath, productPath, categoryHasStock, metadata, headMarkup, sitemap, escapeHtml as E, imageUrl } from '../src/seo-core.js';
 const templatePromise=readFile(new URL('../index.html',import.meta.url),'utf8');
 const configPromise=readFile(new URL('../public-config.json',import.meta.url),'utf8').then(JSON.parse);
@@ -33,8 +33,9 @@ function serverContent(route,products,base,seo={},now=Date.now()) {
   if(view==='start') return createStorefront({lang,icon:name=>`<i data-lucide="${name}" aria-hidden="true"></i>`}).start();
   const list=cat>=0?products.filter(p=>Number(p.cat)===cat):products;
   const displayed=view==='home'?list.filter(p=>Number(p.status)===0&&(p.quantity===''||p.quantity==null?1:Number(p.quantity))>0).slice(0,8):list;
+  const campaign=homeCampaign(lang);
   const h1=String(meta.title).replace(/\s+(?:\||—|-)\s+Hugo Media$/i,'');
-  return nav+`<section class="hp-seo-copy"><h1>${E(h1)}</h1>${intro||`<p>${E(meta.description)}</p>`}</section><div class="hp-grid">${displayed.map(p=>`<article class="hp-product"><a class="hp-product-open" href="${E(productPath(p,lang))}">${p.images?.length?`<div class="hp-photo"><img src="${E(imageUrl(p.images[0],base))}" alt="${E(p.name)}" loading="lazy" decoding="async"></div>`:''}<div class="hp-product-body"><h2>${E(p.name)}</h2><p>${E(metadata({lang,view:'detail',product:p,now}).schema['@graph'][2].offers.price)} zł</p></div></a></article>`).join('')}</div>${view==='home'?'<p><a href="'+catalogPath(lang)+'">'+(pl?'Zobacz cały katalog':'Переглянути весь каталог')+'</a></p>':''}`;
+  return nav+`<section class="hp-seo-copy"><h1>${view==='home'?'<span>'+E(campaign.lead)+'</span> <span class="hm-hero-accent">'+E(campaign.accent)+'</span>':E(h1)}</h1>${intro||`<p>${E(meta.description)}</p>`}</section><div class="hp-grid">${displayed.map(p=>`<article class="hp-product"><a class="hp-product-open" href="${E(productPath(p,lang))}">${p.images?.length?`<div class="hp-photo"><img src="${E(imageUrl(p.images[0],base))}" alt="${E(p.name)}" loading="lazy" decoding="async"></div>`:''}<div class="hp-product-body"><h2>${E(p.name)}</h2><p>${E(metadata({lang,view:'detail',product:p,now}).schema['@graph'][2].offers.price)} zł</p></div></a></article>`).join('')}</div>${view==='home'?'<p><a href="'+catalogPath(lang)+'">'+(pl?'Zobacz cały katalog':'Переглянути весь каталог')+'</a></p>':''}`;
 }
 export async function servePage(url,{template,config,loadProducts=publicProducts,loadSeo=publicSeo}={}) {
   template ??= await templatePromise;

@@ -145,3 +145,14 @@ test('server descriptions and custom specs localize and escape pasted content be
  assert.doesNotMatch(result.body,/<dt>Stan<\/dt><dd>Як новий/);
  assert.match(result.body,/"itemCondition":"https:\/\/schema.org\/UsedCondition"/);
 });
+
+
+test('homepage campaign matches the client heading while search metadata stays descriptive',async()=>{
+ const seo={pages:{home:{uk:{title:'Вживані ноутбуки в Польщі | Hugo Media',description:'Перевірені ноутбуки, ціни та характеристики у Польщі.'}}}};
+ const opts={...options,loadSeo:async()=>seo};
+ const uk=await servePage(new URL('https://www.hugomedia.pl/uk'),opts);
+ assert.match(uk.body,/<title>Вживані ноутбуки в Польщі \| Hugo Media<\/title>/);
+ assert.match(uk.body,/<h1><span>Вмикай<\/span> <span class="hm-hero-accent">більше\.<\/span><\/h1>/);
+ const pl=await servePage(new URL('https://www.hugomedia.pl/pl'),opts);
+ assert.match(pl.body,/<h1><span>Sięgaj<\/span> <span class="hm-hero-accent">po więcej\.<\/span><\/h1>/);
+});
