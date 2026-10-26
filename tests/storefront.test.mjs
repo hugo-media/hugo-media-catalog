@@ -209,7 +209,7 @@ test('spotlight uses localized native controls and one usable product link befor
  const products=[{...base,id:1,name:'Chosen <laptop>'},{...base,id:2,name:'Bestseller',bestseller:'true'}];
  const c={lang:'pl',esc:escapeHtml,t:key=>key,icon:()=>'',stockQty:()=>1,reviewsBlock:()=>'',compare:[],homepage:{featuredProductId:1,featuredLabel:{pl:'Wybrany model'}},photo:(p,o)=>'<div class="hp-photo" data-priority="'+o?.priority+'"></div>',productTitle:p=>p.name,priceBlock:()=>'',localizedValue:value=>value,money:String};
  const html=createStorefront(c).home(products,[]);
- assert.match(html,/Poznaj bliżej/);
+ assert.match(html,/aria-roledescription="karuzela"/);
  assert.match(html,/Wybrany model/);
  assert.match(html,/Następny produkt/);
  assert.match(html,/data-spotlight-toggle hidden/);

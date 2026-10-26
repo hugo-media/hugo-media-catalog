@@ -150,13 +150,13 @@ export function createStorefront(c) {
   function spotlight(products,picks) {
     const items=spotlightProducts(products,picks,c.homepage?.featuredProductId,c.homepage?.carouselProductIds);
     if(!items.length)return '';
-    const title=L('Знайомся ближче','Poznaj bliżej');
+    const title=c.homepage?.featuredLabel?.[c.lang]||L('Знайомся ближче','Poznaj bliżej');
     const controls=items.length>1;
     const label=(product,index)=>index===0
       ? c.homepage?.featuredLabel?.[c.lang]||title
       : product.bestseller==='true'?L('Бестселер','Bestseller'):product.newArrival==='true'?L('Нове надходження','Nowość'):L('Вартий уваги','Warto zobaczyć');
     return '<section class="hm-spotlight" data-home-spotlight role="region" aria-roledescription="'+L('карусель','karuzela')+'" aria-labelledby="hm-spotlight-title">'
-      +'<header class="hm-spotlight-head"><span><small>HUGO SELECT</small><strong id="hm-spotlight-title">'+title+'</strong></span>'
+      +'<header class="hm-spotlight-head"><span><small>HUGO SELECT</small><strong id="hm-spotlight-title">'+E(title)+'</strong></span>'
       +(controls?'<button type="button" class="hm-spotlight-toggle" data-spotlight-toggle hidden aria-label="'+L('Зупинити автоперемикання','Zatrzymaj automatyczne przewijanie')+'" data-pause-label="'+L('Зупинити автоперемикання','Zatrzymaj automatyczne przewijanie')+'" data-play-label="'+L('Увімкнути автоперемикання','Włącz automatyczne przewijanie')+'" data-pause-text="'+L('Пауза','Pauza')+'" data-play-text="'+L('Авто','Auto')+'"><span class="hm-spotlight-play-icon" aria-hidden="true"></span><span data-spotlight-toggle-text>'+L('Пауза','Pauza')+'</span></button>':'')+'</header>'
       +'<div class="hm-spotlight-stage" data-spotlight-stage aria-live="off" aria-atomic="false">'
       +items.map((product,index)=>'<div class="hm-spotlight-slide'+(!index?' is-active':'')+'" data-spotlight-slide role="group" aria-roledescription="'+L('слайд','slajd')+'" aria-label="'+(index+1)+L(' з ',' z ')+items.length+'" aria-hidden="'+Boolean(index)+'" '+(index?'inert':'')+'>'
