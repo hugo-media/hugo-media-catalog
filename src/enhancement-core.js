@@ -17,7 +17,16 @@ export function validateSettings(value) {
  const featuredProductId=rawId==null||rawId===''?null:Number(rawId);
  if(featuredProductId!==null&&(!Number.isSafeInteger(featuredProductId)||featuredProductId<=0||!/^\d+$/.test(String(rawId))))throw Error('validation');
  const featuredLabel={};for(const lang of ['uk','pl']){const label=String(value.homepage?.featuredLabel?.[lang]||'').trim();if(label.length>80)throw Error('validation');featuredLabel[lang]=label;}
- return { links, trust, homepage:{featuredProductId,featuredLabel} };
+ const rawIds=value.homepage?.carouselProductIds;
+ if(rawIds!==undefined&&(!Array.isArray(rawIds)||rawIds.length>3))throw Error('validation');
+ const carouselProductIds=rawIds===undefined?undefined:Array.from({length:3},(_,index)=>{
+  const raw=rawIds[index];if(raw==null||raw==='')return null;
+  const id=Number(raw);if(!Number.isSafeInteger(id)||id<=0||!/^\d+$/.test(String(raw)))throw Error('validation');
+  return id;
+ });
+ const chosen=carouselProductIds?.filter(Boolean)||[];
+ if(new Set(chosen).size!==chosen.length)throw Error('duplicateCarousel');
+ return { links, trust, homepage:{featuredProductId:carouselProductIds?carouselProductIds[0]:featuredProductId,featuredLabel,...(carouselProductIds?{carouselProductIds}:{})} };
 }
 export function publicProduct(p) { return [0,1,2,4,5].includes(Number(p.status)); }
 export function availableProduct(p) { return p.status === 0 && (p.quantity === '' || p.quantity == null || Number(p.quantity) > 0); }

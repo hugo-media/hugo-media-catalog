@@ -220,3 +220,17 @@ test('spotlight uses localized native controls and one usable product link befor
  const single=createStorefront(c).home([products[0]],[]);
  assert.doesNotMatch(single,/data-spotlight-toggle|data-spotlight-controls/);
 });
+
+test('manual carousel order reserves later choices, replaces missing slots and never repeats products',()=>{
+ const base={cat:0,status:0,quantity:'1',price:1000,images:['photo.webp']};
+ const rows=[{...base,id:1},{...base,id:2,bestseller:'true'},{...base,id:3,newArrival:'true'},{...base,id:4},{...base,id:5,status:2}];
+ const ids=slots=>spotlightProducts(rows,[],1,slots).map(p=>p.id);
+ assert.deepEqual(ids([3,1,2]),[3,1,2]);
+ assert.deepEqual(ids([null,2,3]),[1,2,3]);
+ assert.deepEqual(ids([5,1,2]),[3,1,2]);
+ assert.equal(new Set(ids([1,1,2])).size,3);
+ assert.deepEqual(spotlightProducts(rows,[rows[1]],1,[3,2,1]).map(p=>p.id),[3,2,1]);
+ const unavailable=rows.map(p=>({...p,status:2}));
+ assert.deepEqual(spotlightProducts(unavailable,[],1,[1,2,3]),[]);
+ assert.deepEqual(spotlightProducts([rows[0]],[],1,[3,null,1]).map(p=>p.id),[1]);
+});

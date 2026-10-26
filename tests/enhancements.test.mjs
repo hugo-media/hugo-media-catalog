@@ -37,3 +37,11 @@ test('homepage settings normalize automatic selection and reject invalid product
 test('public unavailable and expected products remain readable while drafts and archives stay private',()=>{for(const status of [0,1,2,4,5])assert.equal(publicProduct({...p,status}),true);for(const status of [3,6,-1])assert.equal(publicProduct({...p,status}),false);});
 
 test('quality separates optional provenance and Telegram links from invalid price and missing purchase facts',()=>{const complete={...p,images:['photo.webp'],condition:'A',warranty:'12',charger:'included',descUk:'Опис',descPl:'Opis',updated_at:new Date().toISOString()};const state=productReadiness(complete);assert.deepEqual(state.issues,[]);assert.deepEqual(state.advisories,['singlePhoto','batteryMissing','post','photoKind']);assert(productReadiness({...complete,price:0}).issues.includes('price'));assert(productReadiness({...complete,images:[]}).issues.includes('photos'));});
+
+test('carousel settings persist three ordered slots including automatic gaps and legacy settings',()=>{
+ const home=validateSettings({homepage:{carouselProductIds:['12','','7'],featuredLabel:{uk:'Вибір'}}}).homepage;
+ assert.deepEqual(home.carouselProductIds,[12,null,7]);assert.equal(home.featuredProductId,12);
+ assert.deepEqual(validateSettings({homepage:JSON.parse(JSON.stringify(home))}).homepage,home);
+ assert.deepEqual(validateSettings({homepage:{carouselProductIds:[]}}).homepage.carouselProductIds,[null,null,null]);
+ for(const ids of [[1,1],[-1],['1e2'],['3.5'],[1,2,3,4],{},'1,2,3'])assert.throws(()=>validateSettings({homepage:{carouselProductIds:ids}}));
+});
