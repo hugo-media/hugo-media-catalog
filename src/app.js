@@ -2098,7 +2098,7 @@ import {
   function productTitle(p) {
     const title = String(p.name || "")
       .replace(
-        /\s+(?:—\s*)?(?:Intel\s+Core|i[3579](?:-\d+gen)?|Apple\s+M[1-4]|M[1-4](?:\s+(?:Pro|Max))?)\b.*$/i,
+        /\s+(?:—\s*)?(?:Intel\s+(?:Core|Xeon)|Xeon|i[3579](?:-\d+gen)?|Apple\s+M[1-4]|M[1-4](?:\s+(?:Pro|Max))?)\b.*$/i,
         "",
       )
       .replace(/\s{2,}/g, " ")

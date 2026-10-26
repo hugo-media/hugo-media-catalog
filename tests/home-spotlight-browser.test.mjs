@@ -40,6 +40,19 @@ function fixtureBoot(){
   if(link){event.preventDefault();fixture.opened.push(Number(link.dataset.detail));}
  });
  fixture.render();fixture.ready=true;
+ fixture.openEditor=async()=>{
+  cleanup();root.className='';
+  root.innerHTML='<main id="hp-content"></main>';
+  let saved=fixture.savedSettings||{homepage:{featuredProductId:1},links:{},trust:{},updated_at:'v1'};
+  const editorContext={root,lang:'uk',view:'settings',admin:true,products,readLocal:(_,fallback)=>fallback,esc,t:context.t,icon:context.icon,adminNav:()=>'',notify:()=>{},
+   db:{photoUrl:value=>value,readSettings:async()=>structuredClone(saved),getTelegramReportSettings:async()=>({configured:false}),
+    saveSettings:async value=>{if(fixture.failSave)throw Error('offline');if(value.updated_at!==saved.updated_at)throw Error('editConflict');saved={...structuredClone(value),updated_at:'v2'};fixture.savedSettings=saved;fixture.writes=(fixture.writes||0)+1;return structuredClone(saved);}},
+   run:async fn=>await fn(),render:()=>ui.afterRender()
+  };
+  const ui=createEnhancements(editorContext);await ui.reloadSettings();ui.afterRender();
+  root.addEventListener('submit',async event=>{event.preventDefault();await ui.handleSubmit(event.target);},{signal:(fixture.editorAbort=new AbortController()).signal});
+ };
+ fixture.showSaved=()=>{fixture.editorAbort?.abort();context.homepage=fixture.savedSettings.homepage;root.className='hp-storefront';fixture.render();};
 }
 function connect(url){
  const socket=new WebSocket(url),pending=new Map();let serial=0;
@@ -49,7 +62,7 @@ function connect(url){
 }
 test('homepage spotlight supports auto, pause, real pointer controls, touch, narrow screens and reduced motion',{timeout:45000,skip:!chrome&&!process.env.CI},async()=>{
  assert(chrome,'Chrome must be installed in CI for the spotlight browser test');
- const js="import {createStorefront} from '/src/storefront.js';\nimport {mountHomeSpotlight} from '/src/home-spotlight.js';\n("+fixtureBoot.toString()+")();";
+ const js="import {createEnhancements} from '/src/enhancements.js';\nimport {createStorefront} from '/src/storefront.js';\nimport {mountHomeSpotlight} from '/src/home-spotlight.js';\n("+fixtureBoot.toString()+")();";
  const server=createServer(async(req,res)=>{
   try{
    const path=new URL(req.url,'http://localhost').pathname;
@@ -133,6 +146,30 @@ test('homepage spotlight supports auto, pause, real pointer controls, touch, nar
   await click('[data-spotlight-step="1"]');
   assert.equal(await active(),2,'Manual navigation still works with reduced motion');
   assert.match(await evaluate('document.querySelector(".hm-spotlight-slide.is-active a").getAttribute("href")'),/^\/pl\/product\/2-/);
+  assert.equal(await evaluate('document.querySelectorAll(".hm-spotlight-thumbs button img").length'),3,'Every carousel control shows its product photo');
+  await evaluate('window.fixture.openEditor()');
+  assert.equal(await evaluate('document.querySelectorAll("[data-home-product]").length'),3);
+  assert.equal(await evaluate('document.querySelector("[name=home_carousel_0]").value'),'1','Legacy first choice survives');
+  await evaluate('(()=>{const input=document.querySelector("[name=home_carousel_1]");input.value="2";input.dispatchEvent(new Event("change",{bubbles:true}));const third=document.querySelector("[name=home_carousel_2]");third.value="3";third.dispatchEvent(new Event("change",{bubbles:true}));})()');
+  assert.equal(await evaluate('[...document.querySelector("[name=home_carousel_2]").options].find(option=>option.value==="2").disabled'),true,'Duplicate selections are unavailable');
+  await click('[data-home-slot="1"] [data-home-move="-1"]');
+  assert.deepEqual(await evaluate('[...document.querySelectorAll("[data-home-product]")].map(el=>el.value)'),['2','1','3']);
+  assert.equal(await evaluate('document.querySelectorAll("[data-home-slot]")[0].querySelector("[data-home-preview] strong").textContent'),'Lenovo ThinkPad X390 Yoga','Preview follows reordered item');
+  for(const width of [390,320]){
+   await cdp.send('Emulation.setDeviceMetricsOverride',{width,height:844,deviceScaleFactor:1,mobile:true});
+   assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth'),true,'Admin editor fits '+width+'px');
+  }
+  await evaluate('window.fixture.failSave=true');
+  await click('[data-home-editor] button[type="submit"]');
+  await until(()=>evaluate('document.getElementById("hp-home-settings-message").textContent'),value=>value.includes('Не вдалося'),'save failure shown');
+  assert.equal(await evaluate('window.fixture.writes||0'),0,'Failed write is not shown as saved');
+  await evaluate('window.fixture.failSave=false');
+  await click('[data-home-editor] button[type="submit"]');
+  await until(()=>evaluate('document.getElementById("hp-home-settings-message").textContent'),value=>value.includes('Збережено'),'successful save confirmed after readback');
+  assert.deepEqual(await evaluate('window.fixture.savedSettings.homepage.carouselProductIds'),[2,1,3]);
+  assert.deepEqual(await evaluate('[...document.querySelectorAll("[data-home-product]")].map(el=>el.value)'),['2','1','3'],'Choices survive complete settings rerender');
+  await evaluate('window.fixture.showSaved()');
+  assert.deepEqual(await evaluate('[...document.querySelectorAll("[data-spotlight-slide] a")].map(el=>Number(el.dataset.detail))'),[2,1,3],'Saved order reaches storefront');
   assert.deepEqual(await evaluate('window.fixture.errors'),[]);
  }finally{
   cdp?.close();processChrome.kill('SIGTERM');

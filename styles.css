@@ -4297,3 +4297,28 @@ body {
 #hugo-preview .hm-admin-mark-toggle small{font-size:11px;line-height:1.2;font-weight:500}
 #hugo-preview .hm-admin-mark-toggle{min-height:54px}
 @media(max-width:650px){#hugo-preview .hm-admin-mark-toggle small{font-size:12px}}
+
+/* Three independent carousel slots; usable on touch screens and by keyboard. */
+#hugo-preview .hm-carousel-editor-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:20px 0}
+#hugo-preview .hm-carousel-editor-slot{min-width:0;padding:16px;border:1px solid #dfd5eb;border-radius:16px;background:#fcfaff}
+#hugo-preview .hm-carousel-slot-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#hugo-preview .hm-carousel-slot-heading>div{display:flex;gap:4px}
+#hugo-preview .hm-carousel-slot-heading button{width:44px;height:44px;border:1px solid #d4c4e4;border-radius:10px;background:#fff;color:#603992;font-size:22px;cursor:pointer}
+#hugo-preview .hm-carousel-slot-heading button:disabled{opacity:.3;cursor:default}
+#hugo-preview .hm-carousel-preview{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:218px;padding:14px 0;text-align:center}
+#hugo-preview .hm-carousel-preview img{width:100%;height:112px;object-fit:contain;mix-blend-mode:multiply}
+#hugo-preview .hm-carousel-preview strong{font-size:14px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#hugo-preview .hm-carousel-preview>span,#hugo-preview .hm-carousel-preview small{font-size:13px;color:#78678c}
+#hugo-preview .hm-carousel-preview .hm-carousel-auto-symbol{font-size:44px;color:#9167bb}
+#hugo-preview .hm-carousel-editor-slot .hp-field{min-width:0}
+#hugo-preview .hm-carousel-editor-slot select{width:100%;min-width:0;max-width:100%;font-size:14px}
+#hugo-preview .hm-carousel-auto{min-height:44px;margin-top:8px;padding:8px 0;border:0;background:transparent;text-decoration:underline;color:#654098;cursor:pointer;font-size:14px}
+#hugo-preview [data-home-editor-status]{color:#654098;font-size:14px}
+#hugo-preview .hm-home-editor button:focus-visible{outline:3px solid #8053bd;outline-offset:2px}
+@media(max-width:900px){
+ #hugo-preview .hm-carousel-editor-slots{grid-template-columns:minmax(0,1fr)}
+ #hugo-preview .hm-carousel-editor-slot{padding:14px}
+ #hugo-preview .hm-carousel-preview{min-height:0;display:grid;grid-template-columns:88px minmax(0,1fr);text-align:left;column-gap:14px}
+ #hugo-preview .hm-carousel-preview img,#hugo-preview .hm-carousel-preview .hm-carousel-auto-symbol{grid-row:1/4;width:88px;height:80px;object-fit:contain;text-align:center}
+ #hugo-preview .hm-carousel-preview .hm-carousel-auto-symbol{display:grid;place-items:center}
+}

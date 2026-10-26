@@ -56,19 +56,23 @@ export function featuredProduct(products,picks=[],preferredId=null) {
   ||available.find(p=>p.cat===0&&!picks.some(pick=>pick.id===p.id))
   ||available.find(p=>p.cat===0)||available[0];
 }
-// Keep the owner's chosen item first; only rotate real, orderable products with photos.
-export function spotlightProducts(products, picks=[], preferredId=null) {
-  const first = featuredProduct(products,picks,preferredId);
-  if (!first) return [];
-  const excluded = new Set([first.id,...picks.map(p=>p.id)]);
-  const candidates = products.filter(p=>p.status===0 && (p.quantity===''||p.quantity==null||Number(p.quantity)>0) && p.images?.length && !excluded.has(p.id));
-  const newest = candidates.filter(p=>p.newArrival==='true').sort((a,b)=>b.id-a.id);
-  const best = candidates.filter(p=>p.bestseller==='true').sort((a,b)=>b.id-a.id);
-  const chosen = [first];
-  for (const product of [best[0],newest[0],...best,...newest,...candidates]) {
-    if (product && !chosen.some(p=>p.id===product.id)) chosen.push(product);
-    if (chosen.length===3) break;
+// Manual slots retain their order; unavailable slots use distinct, orderable fallbacks.
+export function spotlightProducts(products, picks=[], preferredId=null, manualIds) {
+  const available=products.filter(p=>p.status===0&&(p.quantity===''||p.quantity==null||Number(p.quantity)>0)&&p.images?.length);
+  const slots=Array.isArray(manualIds)?manualIds.slice(0,3):[preferredId,null,null];
+  const reserved=new Set(slots.map(Number).filter(id=>available.some(p=>p.id===id)));
+  const candidates=available.filter(p=>!reserved.has(p.id)&&!picks.some(pick=>pick.id===p.id));
+  const best=candidates.filter(p=>p.bestseller==='true').sort((a,b)=>b.id-a.id);
+  const newest=candidates.filter(p=>p.newArrival==='true').sort((a,b)=>b.id-a.id);
+  const fallback=[featuredProduct(candidates,[],null),best[0],newest[0],...best,...newest,...candidates];
+  const chosen=[];
+  for(let index=0;index<3;index++){
+    const requested=available.find(p=>p.id===Number(slots[index])&&!chosen.some(item=>item.id===p.id));
+    const product=requested||fallback.find(p=>p&&!chosen.some(item=>item.id===p.id));
+    if(product)chosen.push(product);
   }
+  // Preserve the one-product store and a preferred product that is also a daily pick.
+  if(!chosen.length){const first=featuredProduct(products,picks,preferredId);if(first)chosen.push(first);}
   return chosen;
 }
 export function productMediaUrl(value) {
@@ -144,15 +148,15 @@ export function createStorefront(c) {
     return `<button type="button" class="hp-button hp-finder-highlight" data-grow="finder">${c.icon('sparkles')}<span class="hp-finder-label"><strong>${L('Допомогти з вибором','Pomóż mi wybrać')}</strong><small>${L('Підбір ноутбука за 30 секунд','Dobór laptopa w 30 sekund')}</small></span></button>`;
   }
   function spotlight(products,picks) {
-    const items=spotlightProducts(products,picks,c.homepage?.featuredProductId);
+    const items=spotlightProducts(products,picks,c.homepage?.featuredProductId,c.homepage?.carouselProductIds);
     if(!items.length)return '';
-    const title=L('Знайомся ближче','Poznaj bliżej');
+    const title=c.homepage?.featuredLabel?.[c.lang]||L('Знайомся ближче','Poznaj bliżej');
     const controls=items.length>1;
     const label=(product,index)=>index===0
       ? c.homepage?.featuredLabel?.[c.lang]||title
       : product.bestseller==='true'?L('Бестселер','Bestseller'):product.newArrival==='true'?L('Нове надходження','Nowość'):L('Вартий уваги','Warto zobaczyć');
     return '<section class="hm-spotlight" data-home-spotlight role="region" aria-roledescription="'+L('карусель','karuzela')+'" aria-labelledby="hm-spotlight-title">'
-      +'<header class="hm-spotlight-head"><span><small>HUGO SELECT</small><strong id="hm-spotlight-title">'+title+'</strong></span>'
+      +'<header class="hm-spotlight-head"><span><small>HUGO SELECT</small><strong id="hm-spotlight-title">'+E(title)+'</strong></span>'
       +(controls?'<button type="button" class="hm-spotlight-toggle" data-spotlight-toggle hidden aria-label="'+L('Зупинити автоперемикання','Zatrzymaj automatyczne przewijanie')+'" data-pause-label="'+L('Зупинити автоперемикання','Zatrzymaj automatyczne przewijanie')+'" data-play-label="'+L('Увімкнути автоперемикання','Włącz automatyczne przewijanie')+'" data-pause-text="'+L('Пауза','Pauza')+'" data-play-text="'+L('Авто','Auto')+'"><span class="hm-spotlight-play-icon" aria-hidden="true"></span><span data-spotlight-toggle-text>'+L('Пауза','Pauza')+'</span></button>':'')+'</header>'
       +'<div class="hm-spotlight-stage" data-spotlight-stage aria-live="off" aria-atomic="false">'
       +items.map((product,index)=>'<div class="hm-spotlight-slide'+(!index?' is-active':'')+'" data-spotlight-slide role="group" aria-roledescription="'+L('слайд','slajd')+'" aria-label="'+(index+1)+L(' з ',' z ')+items.length+'" aria-hidden="'+Boolean(index)+'" '+(index?'inert':'')+'>'
@@ -162,7 +166,7 @@ export function createStorefront(c) {
         +'<span class="hm-hero-product-caption"><span><strong>'+E(c.productTitle(product))+'</strong><small>'+specSummary(product).split(' · ').slice(0,3).map(value=>'<span>'+E(value.replace(/\b(\d+) GB SSD\b/,(_,amount)=>Number(amount)>=1024&&Number(amount)%1024===0?(Number(amount)/1024)+' TB SSD':amount+' GB SSD'))+'</span>').join('')+'</small><small>'+[product.condition&&E(c.localizedValue(product.condition)),product.warranty&&E(c.t('warrantyShort'))+': '+E(c.localizedValue(product.warranty))].filter(Boolean).join(' · ')+'</small></span>'
         +'<span class="hm-spotlight-bottom"><b>'+c.money(effectivePrice(product))+' zł</b><span class="hm-spotlight-detail">'+L('Детальніше','Zobacz więcej')+c.icon('arrow-up-right')+'</span></span></span></a></div>').join('')+'</div>'
       +(controls?'<footer class="hm-spotlight-controls" data-spotlight-controls hidden><span class="hm-spotlight-count"><b data-spotlight-current>01</b><span aria-hidden="true"> / '+String(items.length).padStart(2,'0')+'</span></span>'
-        +'<div class="hm-spotlight-dots" role="group" aria-label="'+L('Обрати товар','Wybierz produkt')+'">'+items.map((product,index)=>'<button type="button" class="hm-spotlight-dot'+(!index?' is-active':'')+'" data-spotlight-to="'+index+'" aria-label="'+E(c.productTitle(product))+'" aria-disabled="'+(!index)+'"><span></span></button>').join('')+'</div>'
+        +'<div class="hm-spotlight-dots hm-spotlight-thumbs" role="group" aria-label="'+L('Обрати товар','Wybierz produkt')+'">'+items.map((product,index)=>'<button type="button" class="hm-spotlight-dot'+(!index?' is-active':'')+'" data-spotlight-to="'+index+'" aria-label="'+E(c.productTitle(product))+'" aria-disabled="'+(!index)+'">'+c.photo(product)+'<span class="hm-spotlight-progress" aria-hidden="true"></span></button>').join('')+'</div>'
         +'<div class="hm-spotlight-arrows"><button type="button" data-spotlight-step="-1" aria-label="'+L('Попередній товар','Poprzedni produkt')+'">'+c.icon('arrow-left')+'</button><button type="button" data-spotlight-step="1" aria-label="'+L('Наступний товар','Następny produkt')+'">'+c.icon('arrow-right')+'</button></div></footer>':'')
       +'</section>';
   }
@@ -170,9 +174,10 @@ export function createStorefront(c) {
     const campaign=homeCampaign(c.lang);
     const seoCopy=visibleSeoContent(seoPage,L('Твій наступний ноутбук. За розумну ціну.','Twój kolejny laptop. W rozsądnej cenie.'),E);
     const available=products.filter(p=>p.status===0&&c.stockQty(p)>0);
-    const featured=featuredProduct(products,picks,c.homepage?.featuredProductId);
+    const heroItems=spotlightProducts(products,picks,c.homepage?.featuredProductId,c.homepage?.carouselProductIds);
+    const featured=heroItems[0];
     const {newArrivals,bestsellers}=homeCollections(products,picks,featured);
-    const displayedPicks=picks.filter(p=>p.id!==featured?.id);
+    const displayedPicks=picks.filter(p=>!heroItems.some(item=>item.id===p.id));
     const collection = (id,title,subtitle,items,empty,compact=false) =>
       '<section class="hm-home-collection" aria-labelledby="'+id+'-title"><div class="hm-collection-heading"><h3 id="'+id+'-title">'+E(title)+'</h3><p>'+E(subtitle)+'</p></div><div class="hp-grid">'+(items.length?items.map(item=>card(item,{compact,collection:compact?'best':'new'})).join(''):'<p class="hp-empty">'+E(empty)+'</p>')+'</div></section>';
     return `<section class="hm-hero hm-hero-premium"><div class="hm-hero-copy"><span class="hp-kicker">HUGO MEDIA · ${L('ТЕХНІКА В ПОЛЬЩІ','ELEKTRONIKA W POLSCE')}</span><h1><span>${E(campaign.lead)}</span> <span class="hm-hero-accent">${E(campaign.accent)}</span></h1><p>${E(campaign.description)}</p><div class="hm-hero-actions"><button type="button" class="hp-button hp-primary" data-cat="-1">${L('Обрати техніку','Wybierz sprzęt')}${c.icon('arrow-right')}</button>${finderButton()}</div><div class="hm-hero-proof"><span>${c.icon('shield-check')}${L('Гарантія в картці товару','Gwarancja w karcie produktu')}</span><span>${c.icon('message-circle')}${L('Консультація українською / польською','Pomoc po polsku / ukraińsku')}</span></div></div>${spotlight(products,picks)}</section>
