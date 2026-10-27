@@ -1,9 +1,12 @@
--- Editorial picks for each Warsaw calendar day; at most two product IDs per date.
+-- Editorial picks: newest publication wins; optional deadline spans Warsaw calendar days.
+-- Existing installations: apply migrations/20261027095606_hmg_daily_picks_expiry.sql.
 begin;
 create table if not exists public.hmg_catalog_daily_picks (
   id bigint generated always as identity primary key,
   for_date date not null unique,
   product_ids bigint[] not null default '{}'::bigint[],
+  expires_at timestamptz,
+  constraint hmg_daily_picks_expiry_valid check (expires_at is null or (isfinite(expires_at) and expires_at > (for_date::timestamp at time zone 'Europe/Warsaw'))),
   constraint hmg_daily_picks_limit check (
     cardinality(product_ids) <= 2
     and array_position(product_ids, null) is null

@@ -3,7 +3,8 @@ import {renderDeviceSelector,renderDeviceFields,deviceSpecRows,localizedSpecValu
 import { productPath, catalogPath, pagePath, categories, visibleSeoContent } from './seo-core.js';
 import { updateSeo, currentRoute } from './seo-client.js';
 import { adminUpgrades, configPanel } from './configurator.js';
-import { configuration } from './core.js';
+import { configuration, warsawDateTimeToUtc, utcToWarsawDateTime } from './core.js';
+import { dailyPicksActive, picksExpiryPreset, validatePicksExpiry, watchPicksExpiry } from './daily-picks.js';
 import { safeSearch, startFunnel } from './insights-core.js';
 import { validateAnalyticsDates, presetAnalyticsDates, analyticsBuckets, dailyAnalytics, analyticsDateLabel, analyticsPeriodLabel } from './analytics-core.js';
 import { renderAnalyticsOverview, ANALYTICS_TREND_KEYS } from './analytics-chart.js';
@@ -40,6 +41,7 @@ import {
   const all = (s) => [...root.querySelectorAll(s)];
   let mobileOrderObserver = null;
   let cleanupHomeSpotlight = () => {};
+  let cleanupPicksExpiry = () => {};
   function updateCategoryScroll() {
     const nav=q('#hp-categories');
     if(!nav) return;
@@ -964,6 +966,11 @@ import {
     ]);
     dailyPicksDate = picks.date;
     dailyPicks = picks.ids;
+    dailyPicksExpiry = picks.endsAt;
+    cleanupPicksExpiry();
+    cleanupPicksExpiry = watchPicksExpiry(dailyPicksExpiry, () => {
+      if (!loading && (view === "home" || (view === "picks" && admin))) render();
+    });
     products = nextProducts;
     reviews = nextReviews;
     cart = reconcileCart(cart, products);
@@ -983,9 +990,10 @@ import {
           : error.message === "validation" ? "validation"
             : error.message === "imageError" ? "imageError"
               : error.message === "selectionUnavailable" ? "dailyPicksUnavailable"
-                : error.message === "saveUnconfirmed" ? "dailyPicksSaveError" : "error",
+                : error.message === "saveUnconfirmed" ? "dailyPicksSaveError"
+                  : error.message === "picksExpiryInvalid" ? "dailyPicksExpiryInvalid" : "error",
       );
-      const formError = q("#hp-form-error");
+      const formError = q("#hp-form-error") || q("#hp-picks-error");
       if (formError) {
         q("#hp-form .hp-inline-error")?.remove();
         const field = error.field ? q(`#hp-form [name="${error.field}"]`) : null;
@@ -1159,26 +1167,55 @@ import {
   function adminNav(active) {
     return `<div class="hp-admin-tabs"><button type="button" class="hp-button ${active === "admin" ? "hp-primary" : ""}" data-view="admin">${icon("package")}${t("productsTab")}</button><button type="button" class="hp-button ${active === "picks" ? "hp-primary" : ""}" data-view="picks">${icon("sparkles")}${t("dailyPicks")}</button><button type="button" class="hp-button ${active === "reviews" ? "hp-primary" : ""}" data-view="reviews">${icon("star")}${t("reviewsTab")}</button><button type="button" class="hp-button ${active === "stats" ? "hp-primary" : ""}" data-view="stats">${icon("bar-chart-3")}${t("analytics")}</button>${owner ? `<button type="button" class="hp-button ${active === "activity" ? "hp-primary" : ""}" data-view="activity">${icon("history")}${t("activity")}</button>` : ""}</div>`;
   }
+  function publishedPicks() {
+    return dailyPicksActive({ date: dailyPicksDate, endsAt: dailyPicksExpiry }) ? dailyPicks : [];
+  }
+  function resetPicksDraft() {
+    draftPicks = [...publishedPicks()];
+    draftPicksPeriod = draftPicks.length ? "custom" : "today";
+    draftPicksUntil = draftPicks.length ? utcToWarsawDateTime(dailyPicksExpiry) : picksExpiryPreset("today");
+  }
+  function picksDraftUnchanged() {
+    const published = publishedPicks();
+    return draftPicks.length === published.length && draftPicks.every((id, i) => id === published[i])
+      && (!draftPicks.length || warsawDateTimeToUtc(draftPicksUntil) === dailyPicksExpiry);
+  }
+  function updatePicksSaveButton() {
+    const button = q("#hp-save-picks");
+    if (button) { button.disabled = picksDraftUnchanged(); button.textContent = t(button.disabled ? "dailyPicksSaved" : "dailyPicksSave"); }
+    if (q("#hp-picks-error")) q("#hp-picks-error").textContent = "";
+  }
   function renderDailyPicksAdmin() {
     const available = products.filter((p) => p.status === 0 && stockQty(p) > 0);
     const eligibleIds = new Set(available.map((p) => p.id));
     draftPicks = draftPicks.filter((id) => eligibleIds.has(id));
-    const published = dailyPicksDate === warsawDate() ? dailyPicks : [];
-    const unchanged = draftPicks.length === published.length && draftPicks.every((id, i) => id === published[i]);
+    const published = publishedPicks();
+    const unchanged = picksDraftUnchanged();
     const publishedNames = published.map((id) => products.find((p) => p.id === id)?.name || `HMG-${id}`);
     q("#hp-content").innerHTML = `${adminNav("picks")}
       <div class="hp-intro"><div><h1>${t("dailyPicks")}</h1><span class="hp-muted">${t("dailyPicksSub")}</span></div></div>
       <section class="hp-picks-admin">
-        <div class="hp-picks-published" role="status"><strong>${t("dailyPicksPublished")}</strong><p>${publishedNames.length ? publishedNames.map((name) => esc(name)).join(" · ") : t("dailyPicksNothingPublished")}</p></div>
+        <div class="hp-picks-published" role="status"><strong>${t("dailyPicksPublished")}</strong><p>${publishedNames.length ? publishedNames.map((name) => esc(name)).join(" · ") : t("dailyPicksNothingPublished")}</p>${published.length ? `<p>${t("dailyPicksUntil")}: <strong>${esc(utcToWarsawDateTime(dailyPicksExpiry).replace("T", " "))}</strong> · ${t("dailyPicksWarsaw")}</p>` : ""}</div>
+        <div class="hp-picks-schedule">
+          <label class="hp-field">${t("dailyPicksDuration")}
+            <select id="hp-picks-period">${[["today", "dailyPicksToday"], ["24", "dailyPicks24h"], ["72", "dailyPicks3d"], ["168", "dailyPicks7d"], ["custom", "dailyPicksCustom"]].map(([value, label]) => `<option value="${value}" ${draftPicksPeriod === value ? "selected" : ""}>${t(label)}</option>`).join("")}</select>
+          </label>
+          <label class="hp-field">${t("dailyPicksUntil")}
+            <input type="datetime-local" id="hp-picks-until" value="${esc(draftPicksUntil)}" step="60" aria-describedby="hp-picks-time-help">
+          </label>
+          <p id="hp-picks-time-help">${t("dailyPicksScheduleHelp")}</p>
+        </div>
         <p>${t("dailyPicksHelp")}</p><strong>${t("dailyPicksCount")}: ${draftPicks.length}/2</strong>
         <div class="hp-picks-options">${available.map((p) => `<label class="hp-picks-option"><input type="checkbox" data-pick="${p.id}" ${draftPicks.includes(p.id) ? "checked" : ""}><span class="hp-picks-image">${p.images.length ? `<img src="${esc(pictureUrl(p.images[0]))}" alt="">` : icon(icons[p.cat])}</span><span><b>${esc(p.name)}</b><small>HMG-${String(p.id).padStart(3, "0")} · ${money(effectivePrice(p))} zł</small></span></label>`).join("") || `<p>${t("empty")}</p>`}</div>
+        <p id="hp-picks-error" class="hp-inline-error" role="alert"></p>
         <button type="button" class="hp-button hp-primary" id="hp-save-picks" ${unchanged ? "disabled" : ""}>${t(unchanged ? "dailyPicksSaved" : "dailyPicksSave")}</button>
       </section>`;
   }
   function renderAudit() {
     const content = q("#hp-content");
-    const labels = { homepage: lang==="uk"?"Головний екран":"Ekran główny", name: t("name"), brand: t("brand"), cat: t("category"), status: t("status"), price: t("price"), condition: t("condition"), warranty: t("warranty"), images: t("activityPhotos"), specs: t("activityOther"), text_uk: t("reviewUk"), text_pl: t("reviewPl"), customer_name: t("customerName"), purchased_model: t("purchasedModel"), rating: t("rating"), is_published: t("published"), product_ids: t("activityPickIds"), for_date: t("activityPickDate") };
+    const labels = { homepage: lang==="uk"?"Головний екран":"Ekran główny", name: t("name"), brand: t("brand"), cat: t("category"), status: t("status"), price: t("price"), condition: t("condition"), warranty: t("warranty"), images: t("activityPhotos"), specs: t("activityOther"), text_uk: t("reviewUk"), text_pl: t("reviewPl"), customer_name: t("customerName"), purchased_model: t("purchasedModel"), rating: t("rating"), is_published: t("published"), product_ids: t("activityPickIds"), for_date: t("activityPickDate"), expires_at: t("dailyPicksUntil") };
     const stringify = (value, key) => {
+      if (key === "expires_at") return esc(value ? utcToWarsawDateTime(new Date(value).toISOString()).replace("T", " ") + " · " + t("dailyPicksWarsaw") : "—");
       if (key === "images") return String((value || []).length);
       if (key === "product_ids") return esc((value || []).map((id) => products.find((p) => p.id === Number(id))?.name || `HMG-${id}`).join(", ") || "—");
       const raw = typeof value === "object" ? JSON.stringify(value || {}) : String(value ?? "—");
@@ -1940,10 +1977,15 @@ import {
     salePriceInvalid: "Акційна ціна має бути меншою за звичайну, не нижчою за 1% від неї та мати до 2 знаків після коми.",
     autonomy: "Автономність", bluetooth: "Bluetooth", weight: "Вага", dimensions: "Розміри",
     activity: "Журнал змін", activitySub: "Хто, коли й що змінив у товарах і відгуках. Видно тільки власнику.",
-    dailyPicks: "Рекомендуємо сьогодні", dailyPicksSub: "До 2 товарів на головній сторінці. Вибір діє до кінця дня за польським часом.",
+    dailyPicks: "Рекомендуємо сьогодні",
+    dailyPicksDuration: "Як довго показувати", dailyPicksToday: "До кінця сьогодні",
+    dailyPicks24h: "24 години", dailyPicks3d: "3 дні", dailyPicks7d: "7 днів",
+    dailyPicksCustom: "Своя дата й час", dailyPicksUntil: "Показувати до", dailyPicksWarsaw: "час Варшави",
+    dailyPicksScheduleHelp: "Дата й час — за Варшавою. Після цього терміну блок автоматично зникне. Для продовження зміни термін і збережи.",
+    dailyPicksExpiryInvalid: "Вкажи майбутню дату й час. Під час переведення годинника обери однозначний час, наприклад 04:00.", dailyPicksSub: "До 2 товарів на головній сторінці. Ти обираєш, скільки часу їх показувати.",
     dailyPicksPublicSub: "Ці моделі ми радимо подивитися першими.", dailyPicksPublished: "Зараз опубліковано на сайті", dailyPicksNothingPublished: "Наразі на головній немає рекомендацій.",
     dailyPicksConfirmed: "Збережено й перевірено на сайті.", dailyPicksSaved: "Збережено ✓", dailyPicksSaveError: "Не вдалося підтвердити збереження. Онови сторінку й перевір вибір.",
-    dailyPicksHelp: "Вибери не більше двох товарів у наявності й натисни «Зберегти». Завтра можна вибрати нові.",
+    dailyPicksHelp: "Вибери до двох товарів у наявності, задай термін і збережи. Щоб прибрати блок одразу, зніми обидві галочки й збережи.",
     dailyPicksSave: "Зберегти рекомендації", dailyPicksCount: "Вибрано", dailyPicksEmpty: "Сьогодні рекомендації ще не вибрані.",
     dailyPicksLimit: "Можна вибрати не більше двох товарів.", dailyPicksUnavailable: "Один із товарів уже недоступний. Перевір вибір.",
     activityRecommendation: "рекомендації дня", activityPickIds: "Рекомендовані товари", activityPickDate: "Дата",
@@ -1957,10 +1999,15 @@ import {
     salePriceInvalid: "Cena promocyjna musi być niższa od regularnej, wynosić co najmniej 1% tej ceny i mieć do 2 miejsc po przecinku.",
     autonomy: "Czas pracy", bluetooth: "Bluetooth", weight: "Waga", dimensions: "Wymiary",
     activity: "Historia zmian", activitySub: "Kto, kiedy i co zmienił w produktach i opiniach. Widoczne tylko dla właściciela.",
-    dailyPicks: "Polecamy dziś", dailyPicksSub: "Do 2 produktów na stronie głównej. Wybór obowiązuje do końca dnia według czasu polskiego.",
+    dailyPicks: "Polecamy dziś",
+    dailyPicksDuration: "Jak długo wyświetlać", dailyPicksToday: "Do końca dzisiejszego dnia",
+    dailyPicks24h: "24 godziny", dailyPicks3d: "3 dni", dailyPicks7d: "7 dni",
+    dailyPicksCustom: "Własna data i godzina", dailyPicksUntil: "Wyświetlaj do", dailyPicksWarsaw: "czas warszawski",
+    dailyPicksScheduleHelp: "Data i godzina według czasu warszawskiego. Po tym terminie sekcja zniknie automatycznie. Aby przedłużyć, zmień termin i zapisz.",
+    dailyPicksExpiryInvalid: "Podaj przyszłą datę i godzinę. W dniu zmiany czasu wybierz jednoznaczną godzinę, np. 04:00.", dailyPicksSub: "Do 2 produktów na stronie głównej. Ty decydujesz, jak długo będą widoczne.",
     dailyPicksPublicSub: "Te modele warto zobaczyć w pierwszej kolejności.", dailyPicksPublished: "Teraz opublikowane na stronie", dailyPicksNothingPublished: "Obecnie na stronie głównej nie ma polecanych produktów.",
     dailyPicksConfirmed: "Zapisano i potwierdzono na stronie.", dailyPicksSaved: "Zapisano ✓", dailyPicksSaveError: "Nie udało się potwierdzić zapisu. Odśwież stronę i sprawdź wybór.",
-    dailyPicksHelp: "Wybierz maksymalnie dwa dostępne produkty i kliknij «Zapisz». Jutro możesz wybrać inne.",
+    dailyPicksHelp: "Wybierz do dwóch dostępnych produktów, ustaw termin i zapisz. Aby od razu ukryć sekcję, odznacz oba produkty i zapisz.",
     dailyPicksSave: "Zapisz rekomendacje", dailyPicksCount: "Wybrano", dailyPicksEmpty: "Na dziś nie wybrano jeszcze rekomendacji.",
     dailyPicksLimit: "Można wybrać maksymalnie dwa produkty.", dailyPicksUnavailable: "Jeden z produktów jest już niedostępny. Sprawdź wybór.",
     activityRecommendation: "rekomendacje dnia", activityPickIds: "Polecane produkty", activityPickDate: "Data",
@@ -2009,7 +2056,10 @@ import {
     reviewImage = null,
     dailyPicks = [],
     dailyPicksDate = "",
+    dailyPicksExpiry = "",
     draftPicks = [],
+    draftPicksPeriod = "today",
+    draftPicksUntil = "",
     admin = false,
     owner = false,
     auditRows = [],
@@ -2299,7 +2349,7 @@ import {
     }
     if (view === "start") content.innerHTML = storefront.start();
     if (view === "home") {
-      const todayList = dailyPicksDate === warsawDate() ? dailyPicks.map(id=>products.find(p=>p.id===id && p.status===0 && stockQty(p)>0)).filter(Boolean).slice(0,2) : [];
+      const todayList = publishedPicks().map(id=>products.find(p=>p.id===id && p.status===0 && stockQty(p)>0)).filter(Boolean).slice(0,2);
       content.innerHTML = storefront.home(products, todayList, extra.seo?.pages?.home?.[lang] || {});
     }
     if (view === "catalog") {
@@ -2739,13 +2789,14 @@ import {
     } else if (b.id === "hp-save-picks") {
       await run(async () => {
         const expected = [...draftPicks];
+        const expectedExpiry = validatePicksExpiry(warsawDateTimeToUtc(expected.length ? draftPicksUntil : picksExpiryPreset("today")));
         await refresh();
         const eligibleIds = new Set(products.filter((p) => p.status === 0 && stockQty(p) > 0).map((p) => p.id));
         if (expected.some((id) => !eligibleIds.has(id))) throw Error("selectionUnavailable");
-        await db.saveDailyPicks(expected);
+        await db.saveDailyPicks(expected, expectedExpiry);
         await refresh();
-        if (dailyPicksDate !== warsawDate() || expected.length !== dailyPicks.length || expected.some((id, i) => id !== dailyPicks[i])) throw Error("saveUnconfirmed");
-        draftPicks = [...dailyPicks];
+        if (dailyPicksDate !== warsawDate() || dailyPicksExpiry !== expectedExpiry || expected.length !== dailyPicks.length || expected.some((id, i) => id !== dailyPicks[i])) throw Error("saveUnconfirmed");
+        resetPicksDraft();
         render();
         notify(t("dailyPicksConfirmed"));
       });
@@ -2767,7 +2818,7 @@ import {
     } else if (b.dataset.view) {
       if (view === "edit") clearPictures();
       view = b.dataset.view;
-      if (view === "picks") draftPicks = dailyPicksDate === warsawDate() ? [...dailyPicks] : [];
+      if (view === "picks") resetPicksDraft();
       history.replaceState(
         null,
         "",
@@ -3019,7 +3070,18 @@ import {
   root.addEventListener("change", async (e) => {
     const el = e.target;
     if (adminCatalog.handleChange(el)) return;
-    if (el.matches("input[data-pick]")) {
+    if (el.id === "hp-picks-period") {
+      draftPicksPeriod = el.value;
+      if (el.value !== "custom") draftPicksUntil = picksExpiryPreset(el.value);
+      q("#hp-picks-until").value = draftPicksUntil;
+      updatePicksSaveButton();
+      if (el.value === "custom") q("#hp-picks-until").focus();
+    } else if (el.id === "hp-picks-until") {
+      draftPicksUntil = el.value;
+      draftPicksPeriod = "custom";
+      q("#hp-picks-period").value = "custom";
+      updatePicksSaveButton();
+    } else if (el.matches("input[data-pick]")) {
       const id = Number(el.dataset.pick);
       if (el.checked && draftPicks.length >= 2) {
         el.checked = false;
@@ -3204,7 +3266,7 @@ import {
         const [isAdmin] = await Promise.all([db.isAdmin(), refresh(), extra.reloadSettings()]);
         admin = isAdmin;
         if (admin) owner = await db.isOwner();
-        if (view === "picks") draftPicks = [...dailyPicks];
+        if (view === "picks") resetPicksDraft();
         if (view === "activity" && owner) {
           auditRows = await db.listAudit();
         }

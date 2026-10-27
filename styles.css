@@ -4322,3 +4322,18 @@ body {
  #hugo-preview .hm-carousel-preview img,#hugo-preview .hm-carousel-preview .hm-carousel-auto-symbol{grid-row:1/4;width:88px;height:80px;object-fit:contain;text-align:center}
  #hugo-preview .hm-carousel-preview .hm-carousel-auto-symbol{display:grid;place-items:center}
 }
+
+/* Recommendation scheduling, including narrow admin screens. */
+#hugo-preview .hp-picks-schedule {
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;
+  padding:18px;border:1px solid var(--hp-line);border-radius:12px;background:var(--hp-soft);
+}
+#hugo-preview .hp-picks-schedule .hp-field {min-width:0;margin:0;}
+#hugo-preview .hp-picks-schedule select,
+#hugo-preview .hp-picks-schedule input {box-sizing:border-box;min-width:0;width:100%;min-height:46px;font-size:16px;}
+#hugo-preview .hp-picks-schedule p {grid-column:1/-1;margin:0;color:var(--hp-muted);font-size:13px;line-height:1.5;}
+#hugo-preview #hp-picks-error:empty {display:none;}
+@media(max-width:600px) {
+  #hugo-preview .hp-picks-schedule {grid-template-columns:1fr;padding:14px;}
+  #hugo-preview #hp-save-picks {width:100%;min-height:46px;}
+}
