@@ -1,4 +1,5 @@
 import { TABLE, BUCKET, toRow, fromRow, publicConfigValid, warsawDate, validateDailyPicks } from "./core.js";
+import { normalizeDailyPicks, validatePicksExpiry } from './daily-picks.js';
 import { normalizeQuickFields } from './admin-catalog-core.js';
 import { validateAnalyticsDates } from './analytics-core.js';
 let client;
@@ -45,17 +46,19 @@ export async function listDailyPicks() {
   const c = await connect();
   const date = warsawDate();
   const { data, error } = await c.from("hmg_catalog_daily_picks")
-    .select("product_ids").eq("for_date", date).maybeSingle();
+    .select("for_date,product_ids,expires_at").lte("for_date", date)
+    .order("for_date", { ascending: false }).limit(1).maybeSingle();
   if (error) throw error;
-  return { date, ids: (data?.product_ids || []).map(Number) };
+  return normalizeDailyPicks(data);
 }
-export async function saveDailyPicks(ids) {
+export async function saveDailyPicks(ids, endsAt) {
   if (!(await isAdmin())) throw Error("notAdmin");
   validateDailyPicks(ids);
+  const expiresAt = validatePicksExpiry(endsAt);
   const c = await connect();
   const { data, error } = await c.from("hmg_catalog_daily_picks")
-    .upsert({ for_date: warsawDate(), product_ids: ids }, { onConflict: "for_date" })
-    .select("for_date,product_ids").single();
+    .upsert({ for_date: warsawDate(), product_ids: ids, expires_at: expiresAt }, { onConflict: "for_date" })
+    .select("for_date,product_ids,expires_at").single();
   if (error) throw error;
   return data;
 }
