@@ -46,7 +46,7 @@ test('recommendation admin saves durations, survives reload, handles failed save
   'const stockQty=()=>1,reconcileCart=x=>x,writeLocal=()=>{},comparisonSelection=()=>[],adminNav=()=>"",icon=()=>"",icons=[],money=String,effectivePrice=p=>p.price,pictureUrl=x=>x,refreshIcons=()=>{},notify=message=>fixture.notice=message;',
   'const esc=value=>String(value??"").replace(/[&<>"\\x27]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","\\x27":"&#39;"}[c]));',
   'const labels={'+dictionary+'};const t=key=>labels[key]||key;',
-  'const adminCatalog={handleClick:async()=>false,handleChange:()=>false},extra={handleClick:async()=>false};',
+  'const ANALYTICS_TREND_KEYS=[];const adminCatalog={handleClick:async()=>false,handleChange:()=>false},extra={handleClick:async()=>false};',
   'const db={listDailyPicks:async()=>normalizeDailyPicks(stored),listProducts:async()=>products,listReviews:async()=>[],saveDailyPicks:async(ids,endsAt)=>{if(fixture.failSave)throw Error("offline");validatePicksExpiry(endsAt);stored={for_date:warsawDate(),product_ids:[...ids],expires_at:endsAt};fixture.writes.push(structuredClone(stored));}};',
   'function render(){if(view==="picks")renderDailyPicksAdmin();else q("#hp-content").textContent=publishedPicks().length?"visible":"hidden";}',
   refresh,run,helpers,clickSource,change,
@@ -94,6 +94,7 @@ test('recommendation admin saves durations, survives reload, handles failed save
   await click('input[data-pick="2"]');
   assert.equal(await evaluate('document.getElementById("hp-picks-until").value'),deadline,'Product rerender preserves duration');
   await click('#hp-save-picks');
+  assert.deepEqual(await evaluate('window.fixture.errors'),[],'Save click handler must run without runtime errors');
   await until(()=>evaluate('window.fixture.writes.length'),n=>n===1,'first persisted deadline');
   await until(()=>evaluate('document.getElementById("hp-save-picks").disabled'),Boolean,'readback confirmed');
   assert.equal(await evaluate('window.fixture.writes[0].product_ids.length'),2);
