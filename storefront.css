@@ -1463,3 +1463,15 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
 @keyframes hm-silk-in{from{opacity:0;transform:translateY(-8px)}to{opacity:.6;transform:none}}
 @media(max-width:760px){#hugo-preview .hm-winter .hm-ribbon{width:62%;right:-18%;top:-2%;opacity:.35;animation:none}}
 @media(prefers-reduced-motion:reduce){#hugo-preview .hm-winter .hm-ribbon{animation:none}}
+
+/* The seasonal switch follows visitors through every public view. */
+#hugo-preview.hp-storefront.hm-festive-shop{--holiday-lights:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22180%22%20height%3D%2220%22%20viewBox%3D%220%200%20180%2020%22%3E%3Cpath%20d%3D%22M-5%202Q40%2016%2090%204T185%202%22%20fill%3D%22none%22%20stroke%3D%22%23756480%22%2F%3E%3Cg%20fill%3D%22%23fae4ae%22%20stroke%3D%22%23bc9860%22%3E%3Ccircle%20cx%3D%2214%22%20cy%3D%228%22%20r%3D%222.5%22%2F%3E%3Ccircle%20cx%3D%2270%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Ccircle%20cx%3D%22132%22%20cy%3D%221.8%22%20r%3D%222.5%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22m39%208%205%208m-4-6-4%201m5%201%202-4m-1%206-4-1m62-12%206%209m-5-7-4%201m6%201%202-4m-1%207-5-1%22%20fill%3D%22none%22%20stroke%3D%22%23526e60%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E");background-color:#faf8fc;background-image:radial-gradient(ellipse at 0 0,#ece4f3,transparent 44rem)}
+#hugo-preview.hp-storefront.hm-festive-shop .hp-header{border-bottom:2px solid #ab8baf;box-shadow:0 4px 16px #42234312;background-image:var(--holiday-lights);background-repeat:repeat-x;background-position:top;background-size:180px 14px}
+#hugo-preview.hp-storefront.hm-festive-shop .hp-main{border-top:1px solid #d6c5d7}
+#hugo-preview.hp-storefront.hm-festive-shop .hm-catalog-hero,#hugo-preview.hp-storefront.hm-festive-shop.hp-start-mode .hm-start{background-image:var(--holiday-lights),radial-gradient(ellipse at 90% 0,#735277,transparent 65%),linear-gradient(135deg,#281b37,#3c284a);background-repeat:repeat-x,no-repeat,no-repeat;color:#fff;border-radius:22px;border:1px solid #ae92ac;padding:clamp(20px,4vw,38px)}
+#hugo-preview.hm-festive-shop :is(.hm-start,.hm-catalog-hero) :is(h1,h2){color:#fff}
+#hugo-preview.hm-festive-shop .hm-catalog-hero p{color:#f3eaf5}
+#hugo-preview.hm-festive-shop :is(.hp-finder-result,.hp-detail-info-card,.hp-detail-config){border-color:#dacada}
+#hugo-preview.hm-festive-shop .hm-detail-media{border:1px solid #c9b7c9;border-radius:18px}
+#hugo-preview.hm-festive-shop .hp-section-title h2::before,#hugo-preview.hm-festive-shop .hm-collection-heading h3::before{content:"✦";display:inline-block;color:#94692d;font-size:.65em;margin-inline-end:.5em;vertical-align:middle}
+#hugo-preview.hm-festive-shop footer:not(.hm-spotlight-controls){border-top-color:#c8b1c9}

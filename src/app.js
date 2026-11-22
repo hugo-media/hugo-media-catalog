@@ -2293,6 +2293,8 @@ import {
     updateSeo({lang,view,cat,product:view==="detail"?products.find(p=>p.id===selected):undefined,products,loading,search,seo:extra.seo});
     renderConsent();
     root.classList.toggle("hp-storefront", ["home","catalog","detail","start","finder","shared","compare","cart"].includes(view));
+    const holiday=extra.homepage?.holiday;
+    root.classList.toggle("hm-festive-shop",root.classList.contains("hp-storefront") && holiday?.enabled===true && warsawDate()<=holiday.endsOn);
     root.classList.toggle("hp-start-mode", view === "start");
     root.classList.toggle("hp-detail-mode", view === "detail");
     let adminReturn = q("#hp-admin-return");
