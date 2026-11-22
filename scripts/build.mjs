@@ -49,3 +49,5 @@ for(const file of assets){
 await writeFile('dist/config.js','window.HUGO_CONFIG = '+JSON.stringify({supabaseUrl,supabaseKey})+';\n');
 console.log('Production JS/CSS: '+sourceBytes+' -> '+outputBytes+' bytes; gzip estimate '+sourceGzip+' -> '+outputGzip+' bytes.');
 console.log(supabaseUrl?'Build ready with public Supabase configuration.':'Build ready. Supabase not configured; site will show an honest setup state.');
+
+if(process.env.VERCEL_ENV==='preview')await copyFile('winter-review.html','dist/winter-review.html');
