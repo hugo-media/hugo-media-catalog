@@ -2740,7 +2740,7 @@ import {
     }
     if (view === "reviewEdit" && (b.dataset.view || b.dataset.lang || b.dataset.cat) && !confirm(t("abandon"))) return;
     if (b.dataset.budget || b.dataset.purpose) {
-      cat=0; search=''; q('#hp-search').value=''; filters=b.dataset.budget?{max:b.dataset.budget}:{purpose:b.dataset.purpose};
+      const gift=b.hasAttribute('data-gift-budget'); cat=gift?-1:0; search=''; q('#hp-search').value=''; filters=b.dataset.budget?{max:b.dataset.budget,...(gift?{availability:'in-stock'}:{})}:{purpose:b.dataset.purpose};
       view='catalog'; recordEvent('catalog_click',null,'catalog'); history.replaceState(null,'','?catalog'); render(); window.scrollTo(0,0); return;
     }
     if (b.dataset.clearFilter) {delete filters[b.dataset.clearFilter];render();return;}

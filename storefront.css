@@ -1451,3 +1451,15 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
  #hugo-preview.hp-storefront .hm-spotlight-dot{width:46px;flex-basis:46px}
  #hugo-preview.hp-storefront .hm-spotlight-dots{gap:4px}
 }
+
+/* Seasonal storefront. Decoration stays behind product imagery and touch controls. */
+#hugo-preview.hp-storefront .hm-hero.hm-hero-premium.hm-winter{position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(ellipse at 75% 22%,#59448b 0,transparent 46%),linear-gradient(120deg,#161321,#2c2047 66%,#151220);color:#fff}
+#hugo-preview .hm-winter .hm-ribbon{position:absolute;pointer-events:none;width:min(52%,620px);height:auto;right:12%;top:-10%;opacity:.6;z-index:-1;animation:hm-silk-in 1.5s ease-out both}
+#hugo-preview.hp-storefront .hm-hero.hm-hero-premium.hm-winter h1{color:#fff}
+#hugo-preview.hp-storefront .hm-hero.hm-hero-premium.hm-winter .hm-hero-accent{color:#e0caff;background:none;-webkit-text-fill-color:currentColor}
+#hugo-preview.hp-storefront .hm-hero.hm-hero-premium.hm-winter .hm-hero-copy>p,#hugo-preview.hp-storefront .hm-winter .hm-hero-proof span,#hugo-preview.hp-storefront .hm-winter .hm-hero-copy>.hp-kicker{color:#e7dbff}
+#hugo-preview .hm-winter + .hm-quick [data-gift-budget]{min-height:44px;background:#f2ecff;border-color:#d8c6f4;color:#43236b}
+#hugo-preview:has(.hm-winter) [data-promo-id]{border-color:#bda1dc;box-shadow:0 8px 28px #46206916}
+@keyframes hm-silk-in{from{opacity:0;transform:translateY(-8px)}to{opacity:.6;transform:none}}
+@media(max-width:760px){#hugo-preview .hm-winter .hm-ribbon{width:62%;right:-18%;top:-2%;opacity:.35;animation:none}}
+@media(prefers-reduced-motion:reduce){#hugo-preview .hm-winter .hm-ribbon{animation:none}}

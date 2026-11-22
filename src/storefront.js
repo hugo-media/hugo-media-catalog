@@ -1,6 +1,6 @@
 import {deviceProfile,deviceTypeLabel} from './device-fields.js';
 import { productPath, pagePath, visibleSeoContent } from './seo-core.js';
-import { effectivePrice, discountPercent, discountBadge, csv, telegramLink, availabilityRequestText, normalizeTelegramPost } from './core.js';
+import { warsawDate, effectivePrice, discountPercent, discountBadge, csv, telegramLink, availabilityRequestText, normalizeTelegramPost } from './core.js';
 
 // The visible brand campaign is independent of the search-result title.
 export function homeCampaign(lang='uk') {
@@ -171,7 +171,9 @@ export function createStorefront(c) {
       +'</section>';
   }
   function home(products, picks, seoPage={}) {
-    const campaign=homeCampaign(c.lang);
+    const holiday=c.homepage?.holiday;
+    const festive=holiday?.enabled===true && warsawDate()<=holiday.endsOn;
+    const campaign=festive ? {lead:L('Вмикай більше','Sięgaj po więcej'),accent:L('у 2027.','w 2027.'),description:L('Для великих планів і маленьких сюрпризів. Обирай техніку собі або на подарунок.','Na wielkie plany i małe niespodzianki. Wybierz sprzęt dla siebie lub na prezent.')} : homeCampaign(c.lang);
     const seoCopy=visibleSeoContent(seoPage,L('Твій наступний ноутбук. За розумну ціну.','Twój kolejny laptop. W rozsądnej cenie.'),E);
     const available=products.filter(p=>p.status===0&&c.stockQty(p)>0);
     const heroItems=spotlightProducts(products,picks,c.homepage?.featuredProductId,c.homepage?.carouselProductIds);
@@ -180,8 +182,8 @@ export function createStorefront(c) {
     const displayedPicks=picks.filter(p=>!heroItems.some(item=>item.id===p.id));
     const collection = (id,title,subtitle,items,empty,compact=false) =>
       '<section class="hm-home-collection" aria-labelledby="'+id+'-title"><div class="hm-collection-heading"><h3 id="'+id+'-title">'+E(title)+'</h3><p>'+E(subtitle)+'</p></div><div class="hp-grid">'+(items.length?items.map(item=>card(item,{compact,collection:compact?'best':'new'})).join(''):'<p class="hp-empty">'+E(empty)+'</p>')+'</div></section>';
-    return `<section class="hm-hero hm-hero-premium"><div class="hm-hero-copy"><span class="hp-kicker">HUGO MEDIA · ${L('ТЕХНІКА В ПОЛЬЩІ','ELEKTRONIKA W POLSCE')}</span><h1><span>${E(campaign.lead)}</span> <span class="hm-hero-accent">${E(campaign.accent)}</span></h1><p>${E(campaign.description)}</p><div class="hm-hero-actions"><button type="button" class="hp-button hp-primary" data-cat="-1">${L('Обрати техніку','Wybierz sprzęt')}${c.icon('arrow-right')}</button>${finderButton()}</div><div class="hm-hero-proof"><span>${c.icon('shield-check')}${L('Гарантія в картці товару','Gwarancja w karcie produktu')}</span><span>${c.icon('message-circle')}${L('Консультація українською / польською','Pomoc po polsku / ukraińsku')}</span></div></div>${spotlight(products,picks)}</section>
-      <section class="hm-quick"><span>${L('Швидкий вибір','Szybki wybór')}</span>${[1000,1500,2500].map(n=>`<button type="button" data-budget="${n}">${L('До','Do')} ${n} zł</button>`).join('')}<button type="button" data-purpose="study">${c.t('purposeStudy')}</button><button type="button" data-purpose="office">${c.t('purposeOffice')}</button><button type="button" data-cat="-1">${L('Уся техніка','Cały asortyment')} ↗</button></section>
+    return `<section class="hm-hero hm-hero-premium${festive?' hm-winter':''}">${festive?`<svg class="hm-ribbon" viewBox="0 0 420 260" aria-hidden="true" focusable="false"><defs><linearGradient id="hm-silk" x2="1" y2=".5" gradientUnits="objectBoundingBox"><stop stop-color="#746794"/><stop offset=".28" stop-color="#eeeaff"/><stop offset=".55" stop-color="#9484bc"/><stop offset=".78" stop-color="#f8f5ff"/><stop offset="1" stop-color="#9283ae"/></linearGradient></defs><path d="M480 -20 C300 160 130 -30 185 42 S390 199 135 241" fill="none" stroke="url(#hm-silk)" stroke-width="17"/></svg>`:''}<div class="hm-hero-copy"><span class="hp-kicker">HUGO MEDIA · ${festive?L('СВЯТКОВА ДОБІРКА','ŚWIĄTECZNE INSPIRACJE'):L('ТЕХНІКА В ПОЛЬЩІ','ELEKTRONIKA W POLSCE')}</span><h1><span>${E(campaign.lead)}</span> <span class="hm-hero-accent">${E(campaign.accent)}</span></h1><p>${E(campaign.description)}</p><div class="hm-hero-actions"><button type="button" class="hp-button hp-primary" data-cat="-1">${L('Обрати техніку','Wybierz sprzęt')}${c.icon('arrow-right')}</button>${finderButton()}</div><div class="hm-hero-proof"><span>${c.icon('shield-check')}${L('Гарантія в картці товару','Gwarancja w karcie produktu')}</span><span>${c.icon('message-circle')}${L('Консультація українською / польською','Pomoc po polsku / ukraińsku')}</span></div></div>${spotlight(products,picks)}</section>
+      <section class="hm-quick"><span>${festive?L('Подарунки за бюджетом','Prezenty według budżetu'):L('Швидкий вибір','Szybki wybór')}</span>${(festive?[250,1000,2000]:[1000,1500,2500]).map(n=>`<button type="button" data-budget="${n}" ${festive?'data-gift-budget':''}>${L('До','Do')} ${n} zł</button>`).join('')}<button type="button" data-purpose="study">${c.t('purposeStudy')}</button><button type="button" data-purpose="office">${c.t('purposeOffice')}</button><button type="button" data-cat="-1">${L('Уся техніка','Cały asortyment')} ↗</button></section>
       ${displayedPicks.length?`<section class="hp-home-section hm-daily"><div class="hp-section-title"><div><span class="hp-kicker">HUGO SELECT</span><h2>${c.t('dailyPicks')}</h2><p>${L('Наш вибір із того, що зараз у наявності.','Nasz wybór z aktualnie dostępnych modeli.')}</p></div></div><div class="hm-picks">${displayedPicks.slice(0,2).map(card).join('')}</div></section>`:''}
        <section class="hp-home-section hm-selection">
          <div class="hp-section-title"><div><h2>${L('Знайди свій варіант','Znajdź coś dla siebie')}</h2><p>${available.length} ${L('товарів у наявності','produktów w ofercie')}</p></div><button type="button" class="hp-home-link" data-cat="-1">${L('Увесь каталог','Cały katalog')}${c.icon('arrow-right')}</button></div>
