@@ -1452,29 +1452,44 @@ a.hp-category[aria-current="page"]{background:#eee8ff;color:#6545ad}
  #hugo-preview.hp-storefront .hm-spotlight-dots{gap:4px}
 }
 
-/* Seasonal storefront. Decoration stays behind product imagery and touch controls. */
-#hugo-preview.hp-storefront .hm-hero.hm-hero-premium.hm-winter{position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(ellipse at 75% 22%,#59448b 0,transparent 46%),linear-gradient(120deg,#161321,#2c2047 66%,#151220);color:#fff}
-#hugo-preview .hm-winter .hm-ribbon{position:absolute;pointer-events:none;width:min(52%,620px);height:auto;right:12%;top:-10%;opacity:.6;z-index:-1;animation:hm-silk-in 1.5s ease-out both}
-#hugo-preview.hp-storefront .hm-hero.hm-hero-premium.hm-winter h1{color:#fff}
-#hugo-preview.hp-storefront .hm-hero.hm-hero-premium.hm-winter .hm-hero-accent{color:#e0caff;background:none;-webkit-text-fill-color:currentColor}
-#hugo-preview.hp-storefront .hm-hero.hm-hero-premium.hm-winter .hm-hero-copy>p,#hugo-preview.hp-storefront .hm-winter .hm-hero-proof span,#hugo-preview.hp-storefront .hm-winter .hm-hero-copy>.hp-kicker{color:#e7dbff}
-#hugo-preview .hm-winter + .hm-quick [data-gift-budget]{min-height:44px;background:#f2ecff;border-color:#d8c6f4;color:#43236b}
-#hugo-preview:has(.hm-winter) [data-promo-id]{border-color:#bda1dc;box-shadow:0 8px 28px #46206916}
-@keyframes hm-silk-in{from{opacity:0;transform:translateY(-8px)}to{opacity:.6;transform:none}}
-@media(max-width:760px){#hugo-preview .hm-winter .hm-ribbon{width:62%;right:-18%;top:-2%;opacity:.35;animation:none}}
-@media(prefers-reduced-motion:reduce){#hugo-preview .hm-winter .hm-ribbon{animation:none}}
 
-/* The seasonal switch follows visitors through every public view. */
-#hugo-preview.hp-storefront.hm-festive-shop{--holiday-lights:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22180%22%20height%3D%2220%22%20viewBox%3D%220%200%20180%2020%22%3E%3Cpath%20d%3D%22M-5%202Q40%2016%2090%204T185%202%22%20fill%3D%22none%22%20stroke%3D%22%23756480%22%2F%3E%3Cg%20fill%3D%22%23fae4ae%22%20stroke%3D%22%23bc9860%22%3E%3Ccircle%20cx%3D%2214%22%20cy%3D%228%22%20r%3D%222.5%22%2F%3E%3Ccircle%20cx%3D%2270%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Ccircle%20cx%3D%22132%22%20cy%3D%221.8%22%20r%3D%222.5%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22m39%208%205%208m-4-6-4%201m5%201%202-4m-1%206-4-1m62-12%206%209m-5-7-4%201m6%201%202-4m-1%207-5-1%22%20fill%3D%22none%22%20stroke%3D%22%23526e60%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E");background-color:#faf8fc;background-image:radial-gradient(ellipse at 0 0,#ece4f3,transparent 44rem)}
-#hugo-preview.hp-storefront.hm-festive-shop .hp-header{border-bottom:2px solid #ab8baf;box-shadow:0 4px 16px #42234312;background-image:var(--holiday-lights);background-repeat:repeat-x;background-position:top;background-size:180px 14px}
-#hugo-preview.hp-storefront.hm-festive-shop .hp-main{border-top:1px solid #d6c5d7}
-#hugo-preview.hp-storefront.hm-festive-shop .hm-catalog-hero,#hugo-preview.hp-storefront.hm-festive-shop.hp-start-mode .hm-start{background-image:var(--holiday-lights),radial-gradient(ellipse at 90% 0,#735277,transparent 65%),linear-gradient(135deg,#281b37,#3c284a);background-repeat:repeat-x,no-repeat,no-repeat;color:#fff;border-radius:22px;border:1px solid #ae92ac;padding:clamp(20px,4vw,38px)}
-#hugo-preview.hm-festive-shop :is(.hm-start,.hm-catalog-hero) :is(h1,h2){color:#fff}
-#hugo-preview.hm-festive-shop .hm-catalog-hero p{color:#f3eaf5}
-#hugo-preview.hm-festive-shop :is(.hp-finder-result,.hp-detail-info-card,.hp-detail-config){border-color:#dacada}
-#hugo-preview.hm-festive-shop .hm-detail-media{border:1px solid #c9b7c9;border-radius:18px}
-#hugo-preview.hm-festive-shop .hp-section-title h2::before,#hugo-preview.hm-festive-shop .hm-collection-heading h3::before{content:"✦";display:inline-block;color:#94692d;font-size:.65em;margin-inline-end:.5em;vertical-align:middle}
-#hugo-preview.hm-festive-shop footer:not(.hm-spotlight-controls){border-top-color:#c8b1c9}
-
-#hugo-preview.hp-storefront.hm-festive-shop .hm-season-strip[hidden]{display:block!important;text-align:center;padding:10px 12px;color:#ffedc7;background:radial-gradient(ellipse at 16% 0%,#477361,transparent 38%),radial-gradient(ellipse at 89% 100%,#76434d,transparent 42%),#172f2b;border-bottom:2px solid #cfac68;font:700 clamp(13px,2vw,16px)/1.3 system-ui;letter-spacing:.07em}
-.hm-season-strip span{display:none}html:lang(uk) .hm-season-strip [lang=uk],html:lang(pl) .hm-season-strip [lang=pl]{display:inline}
+/* Winter edition: one illustration, three scales. Product photography remains unadorned. */
+#hugo-preview.hp-storefront.hm-festive-shop{--winter-ink:#291f34;--winter-line:#ddd5dc;--winter-paper:#faf8f6;--winter-night:linear-gradient(113deg,#201926 8%,#382940 68%,#4e394b);--winter-art:url('/winter-atelier.svg');background:var(--winter-paper);color:var(--winter-ink)}
+#hugo-preview.hm-festive-shop .hp-header{border-bottom:1px solid var(--winter-line);box-shadow:none}
+#hugo-preview.hp-storefront.hm-festive-shop :is(.hm-hero.hm-winter,.hm-catalog-hero,.hm-detail-heading),#hugo-preview.hp-storefront.hp-start-mode.hm-festive-shop .hm-winter-entry{color:#fffaf7;background:var(--winter-art) right top / auto 180px no-repeat,var(--winter-night);border:1px solid #554255;border-radius:20px}
+#hugo-preview.hp-storefront.hm-festive-shop .hm-hero.hm-winter{background-size:auto 175px,cover;background-position:52% top,center;padding:clamp(18px,4vw,54px);gap:clamp(18px,4vw,56px)}
+#hugo-preview.hp-storefront.hm-festive-shop .hm-hero.hm-winter h1,#hugo-preview.hp-storefront.hm-festive-shop .hm-winter-entry h1{color:#fffaf7;font-family:Georgia,'Times New Roman',serif;font-weight:400;line-height:1.03;letter-spacing:-.045em}
+#hugo-preview.hp-storefront.hm-festive-shop .hm-hero.hm-winter h1 span{display:block}
+#hugo-preview.hp-storefront.hm-festive-shop .hm-hero.hm-winter .hm-hero-accent{background:none;color:#f2dcd0;-webkit-text-fill-color:currentColor;font-style:italic}
+#hugo-preview.hp-storefront.hm-festive-shop .hm-winter .hm-hero-copy>p,#hugo-preview.hp-storefront.hm-festive-shop .hm-winter .hm-hero-proof span,#hugo-preview.hp-storefront.hm-festive-shop .hm-winter .hm-hero-copy>.hp-kicker{color:#e7dfe5}
+#hugo-preview.hp-storefront.hm-festive-shop .hm-winter .hm-hero-copy>.hp-kicker{letter-spacing:.15em}
+#hugo-preview.hp-storefront.hm-festive-shop .hm-spotlight{position:relative;background:#fffdfa;color:#261f28;border:1px solid #d6c9ca;box-shadow:0 16px 45px #100c171f}
+#hugo-preview .hm-ribbon{display:none}
+#hugo-preview .hm-winter .hm-ribbon{display:block;position:absolute;z-index:1;pointer-events:none;right:81px;top:-8px;width:45px;height:24px;background:url('/winter-bow.svg') center / contain no-repeat}
+#hugo-preview.hm-festive-shop .hm-quick [data-gift-budget]{min-height:44px;background:white;color:#413344;border:1px solid #cdbfc9;font-weight:700}
+#hugo-preview.hm-festive-shop .hm-quick [data-gift-budget]:focus-visible,#hugo-preview.hm-festive-shop a:focus-visible,#hugo-preview.hm-festive-shop button:focus-visible{outline:3px solid #976425;outline-offset:2px}
+#hugo-preview.hp-storefront.hp-start-mode.hm-festive-shop{background:#211a28}
+#hugo-preview.hp-storefront.hp-start-mode.hm-festive-shop .hm-winter-entry{max-width:660px;text-align:left;padding:clamp(24px,5vw,54px);background-size:auto clamp(135px,23vw,230px),cover;box-shadow:0 24px 60px #15102155}
+#hugo-preview.hp-storefront.hp-start-mode.hm-festive-shop .hm-start-brand{width:clamp(104px,17vw,145px);margin:0 0 32px}
+#hugo-preview.hp-storefront.hp-start-mode.hm-festive-shop .hm-winter-entry h1{font-size:clamp(42px,7vw,72px);margin:12px 0}
+#hugo-preview.hp-storefront.hp-start-mode.hm-festive-shop .hm-winter-entry>p{margin:0 0 25px;max-width:34ch;color:#e4dae5}
+#hugo-preview.hp-storefront.hp-start-mode.hm-festive-shop .hm-start .hp-kicker{color:#e2c1a7;font-size:10px}
+#hugo-preview.hp-storefront.hp-start-mode.hm-festive-shop .hm-entry-links a{justify-content:space-between;padding:14px 18px;min-height:56px;margin-bottom:9px;border-radius:12px}
+#hugo-preview.hp-storefront.hp-start-mode.hm-festive-shop .hm-entry-links .hm-start-catalog{background:#fff6ec;color:#302532;border-color:#fff6ec}
+#hugo-preview.hp-storefront.hp-start-mode.hm-festive-shop .hm-entry-links .hm-start-main{background:#194968;color:#fff;border-color:#5086a7;justify-content:flex-start;box-shadow:none}
+#hugo-preview.hp-storefront.hm-festive-shop .hm-catalog-hero{background-position:64% top,center;background-size:auto 125px,cover}
+#hugo-preview.hp-storefront.hm-festive-shop .hm-catalog-hero :is(h1,.hp-muted,summary,.hp-kicker),#hugo-preview.hp-storefront.hm-festive-shop .hm-detail-heading :is(h1,.hp-detail-config,.hp-kicker){color:#fff7f5}
+#hugo-preview.hp-storefront.hm-festive-shop .hm-catalog-about[open] .hp-seo-copy{background:#fff;color:#302532;padding:14px;border-radius:10px}
+#hugo-preview.hp-storefront.hm-festive-shop .hm-detail-heading{background-size:auto 105px,cover;padding:22px 110px 20px 24px}
+#hugo-preview.hm-festive-shop .hm-detail-media{border:1px solid var(--winter-line);border-radius:16px}
+#hugo-preview.hp-storefront.hm-festive-shop :is(.hp-product,.hp-finder-result){border-color:var(--winter-line);box-shadow:0 3px 12px #24192408}
+#hugo-preview.hm-festive-shop .hp-bottom{border-color:var(--winter-line)}
+@media(max-width:760px){
+ #hugo-preview.hp-storefront.hm-festive-shop .hm-hero.hm-winter{background-position:right top,center;background-size:auto 95px,cover;padding:18px 14px}
+ #hugo-preview.hp-storefront.hm-festive-shop .hm-hero.hm-winter h1{font-size:clamp(34px,8.4vw,48px);padding-right:46px;margin-block:6px}
+ #hugo-preview.hp-storefront.hm-festive-shop .hm-winter .hm-hero-copy>p{max-width:36ch}
+ #hugo-preview.hp-storefront.hm-festive-shop .hm-catalog-hero{background-position:right top,center;background-size:auto 92px,cover}
+ #hugo-preview.hp-storefront.hm-festive-shop .hm-catalog-hero h1{padding-right:64px}
+ #hugo-preview.hp-storefront.hm-festive-shop .hm-detail-heading{background-size:auto 72px,cover;padding:16px}
+ #hugo-preview.hp-storefront.hm-festive-shop .hm-detail-heading h1{color:#fff;padding-right:36px;overflow-wrap:anywhere;font-size:clamp(23px,6vw,32px)}
+}

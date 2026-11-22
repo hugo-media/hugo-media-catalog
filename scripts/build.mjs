@@ -21,7 +21,7 @@ export async function moduleFiles(directory='src'){
 
 await rm('dist',{recursive:true,force:true});
 await mkdir('dist/src',{recursive:true});
-for(const file of ['brand.svg','brand-mark.svg','favicon.jpg','brand-start.svg'])await copyFile(file,'dist/'+file);
+for(const file of ['brand.svg','brand-mark.svg','favicon.jpg','brand-start.svg','winter-atelier.svg','winter-bow.svg'])await copyFile(file,'dist/'+file);
 
 // Keep public URLs, ES module imports/exports, and the intro's classic-script behavior.
 // Transform minifies with a parser; it does not bundle, mangle properties, or remove code.
