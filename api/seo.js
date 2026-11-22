@@ -1,7 +1,7 @@
 import { plainDescription } from '../src/catalog-content.js';
 import {deviceSpecRows,localizedSpecValue,resolveDeviceType,deviceFieldLabel} from '../src/device-fields.js';
 import { readFile } from 'node:fs/promises';
-import { fromRow, publicConfigValid, promotionState } from '../src/core.js';
+import { fromRow, publicConfigValid, warsawDate, promotionState } from '../src/core.js';
 import { createStorefront, homeCampaign } from '../src/storefront.js';
 import { ORIGIN, categories, labels, parseRoute, pagePath, catalogPath, productPath, categoryHasStock, metadata, headMarkup, sitemap, escapeHtml as E, imageUrl } from '../src/seo-core.js';
 const templatePromise=readFile(new URL('../index.html',import.meta.url),'utf8');
@@ -19,7 +19,7 @@ async function publicProducts(config) {
 }
 async function publicSeo(config) {
   if(!publicConfigValid(config)||/example\.supabase\.co$/.test(new URL(config.supabaseUrl).hostname)) return {};
-  try {const r=await fetch(`${config.supabaseUrl}/rest/v1/hmg_catalog_settings?select=seo&id=eq.1`,{headers:{apikey:config.supabaseKey},signal:AbortSignal.timeout(3000)});if(!r.ok)return {};const rows=await r.json();return rows[0]?.seo||{};}catch{return {};}
+  try {const r=await fetch(`${config.supabaseUrl}/rest/v1/hmg_catalog_settings?select=seo,homepage&id=eq.1`,{headers:{apikey:config.supabaseKey},signal:AbortSignal.timeout(3000)});if(!r.ok)return {};const rows=await r.json();return {...rows[0]?.seo,holiday:rows[0]?.homepage?.holiday};}catch{return {};}
 }
 function serverContent(route,products,base,seo={},now=Date.now()) {
   const {lang,view,cat,product}=route,pl=lang==='pl';
@@ -86,7 +86,7 @@ export async function servePage(url,{template,config,loadProducts=publicProducts
   let html=template.replace(/<title>[\s\S]*?<\/title>/,'').replace(/<meta name="description"[^>]*>/,'').replace('<html lang="uk">',`<html lang="${route.lang}">`).replace('</head>',headMarkup(meta)+'</head>');
   html=html.replace(/<main class="hp-main" id="hp-content">[\s\S]*?<\/main>/,()=>`<main class="hp-main" id="hp-content"${body?' data-ssr="true"':''}>${body}</main>`);
   if(!privatePage && status===200) {
-    const classes='hp-storefront'+(route.view==='start'?' hp-start-mode':route.view==='detail'?' hp-detail-mode':'');
+    const classes='hp-storefront'+(seo.holiday?.enabled===true && warsawDate()<=seo.holiday.endsOn?' hm-festive-shop':'')+(route.view==='start'?' hp-start-mode':route.view==='detail'?' hp-detail-mode':'');
     html=html.replace('<div id="hugo-preview">',`<div id="hugo-preview" class="${classes}">`);
     if(route.lang==='pl') html=html.replace('data-lang="uk" aria-pressed="true"','data-lang="uk" aria-pressed="false"').replace('data-lang="pl" aria-pressed="false"','data-lang="pl" aria-pressed="true"');
   }
