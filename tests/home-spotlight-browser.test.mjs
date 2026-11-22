@@ -163,6 +163,7 @@ test('homepage spotlight supports auto, pause, real pointer controls, touch, nar
   await click('[data-home-editor] button[type="submit"]');
   await until(()=>evaluate('document.getElementById("hp-home-settings-message").textContent'),value=>value.includes('Не вдалося'),'save failure shown');
   assert.equal(await evaluate('window.fixture.writes||0'),0,'Failed write is not shown as saved');
+  await evaluate('document.querySelector("[name=holiday_enabled]").checked=true;document.querySelector("[name=holiday_ends]").value="2099-01-06"');
   await evaluate('window.fixture.failSave=false');
   await click('[data-home-editor] button[type="submit"]');
   await until(()=>evaluate('document.getElementById("hp-home-settings-message").textContent'),value=>value.includes('Збережено'),'successful save confirmed after readback');
@@ -170,6 +171,15 @@ test('homepage spotlight supports auto, pause, real pointer controls, touch, nar
   assert.deepEqual(await evaluate('[...document.querySelectorAll("[data-home-product]")].map(el=>el.value)'),['2','1','3'],'Choices survive complete settings rerender');
   await evaluate('window.fixture.showSaved()');
   assert.deepEqual(await evaluate('[...document.querySelectorAll("[data-spotlight-slide] a")].map(el=>Number(el.dataset.detail))'),[2,1,3],'Saved order reaches storefront');
+  assert.deepEqual(await evaluate('window.fixture.savedSettings.homepage.holiday'),{enabled:true,endsOn:'2099-01-06'});
+  assert.deepEqual(await evaluate('[...document.querySelectorAll("[data-gift-budget]")].map(el=>el.dataset.budget)'),['250','1000','2000']);
+  for(const width of [320,390]){
+    await cdp.send('Emulation.setDeviceMetricsOverride',{width,height:844,deviceScaleFactor:1,mobile:true});
+    assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth'),true,'Holiday layout fits '+width+'px');
+  }
+  assert.equal(await evaluate('getComputedStyle(document.querySelector(".hm-ribbon")).animationName'),'none');
+  await evaluate('window.fixture.savedSettings.homepage.holiday.endsOn="2000-01-01";window.fixture.showSaved()');
+  assert.equal(await evaluate('document.querySelector(".hm-winter")===null'),true);
   assert.deepEqual(await evaluate('window.fixture.errors'),[]);
  }finally{
   cdp?.close();processChrome.kill('SIGTERM');
